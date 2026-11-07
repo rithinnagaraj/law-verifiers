@@ -79,3 +79,53 @@ def safe_workers(requested: int) -> int:
     if cap < requested:
         print(f"[safe_workers] {requested} workers requested, {cap} fit in available memory", file=sys.stderr)
     return min(requested, cap)
+
+
+def run_jobs(fn, jobs, workers: int, checkpoint: Path | None = None, max_tasks_per_child: int = 2, retries: int = 3):
+    """Run fn over jobs in a process pool, robustly.
+
+    - Each finished job's result is appended to `checkpoint` (JSONL) and
+      skipped on a rerun, so a crash loses at most the jobs in flight.
+    - Workers are recycled every `max_tasks_per_child` jobs, releasing the
+      PolicyEngine systems and simulations they hold.
+    - If a worker dies (e.g. the memory-capped scope's OOM killer), the pool
+      is rebuilt with half the workers and the remaining jobs are retried.
+    Returns results in job order (jobs that kept failing are left out).
+    """
+    import json as _json
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    from concurrent.futures.process import BrokenProcessPool
+
+    key = lambda j: _json.dumps(j, sort_keys=True, default=str)
+    done: dict = {}
+    if checkpoint is not None and checkpoint.exists():
+        for line in checkpoint.read_text().splitlines():
+            if line.strip():
+                rec = _json.loads(line)
+                done[rec["key"]] = rec["result"]
+        print(f"[run_jobs] resuming: {len(done)} of {len(jobs)} jobs done", file=sys.stderr)
+    w = safe_workers(workers)
+    for attempt in range(retries + 1):
+        pending = [j for j in jobs if key(j) not in done]
+        if not pending:
+            break
+        try:
+            with ProcessPoolExecutor(min(w, len(pending)), max_tasks_per_child=max_tasks_per_child) as ex:
+                futs = {ex.submit(fn, j): j for j in pending}
+                for f in as_completed(futs):
+                    j = futs[f]
+                    try:
+                        r = f.result()
+                    except BrokenProcessPool:
+                        raise
+                    except Exception as e:  # a bug in one job: report, keep going
+                        print(f"[run_jobs] job failed: {key(j)[:120]}: {e!r}", file=sys.stderr)
+                        continue
+                    done[key(j)] = r
+                    if checkpoint is not None:
+                        with open(checkpoint, "a") as fh:
+                            fh.write(_json.dumps({"key": key(j), "result": r}, default=float) + "\n")
+        except BrokenProcessPool:
+            w = max(1, w // 2)
+            print(f"[run_jobs] a worker died (attempt {attempt + 1}); retrying with {w} workers", file=sys.stderr)
+    return [done[key(j)] for j in jobs if key(j) in done]

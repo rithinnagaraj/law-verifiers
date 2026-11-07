@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import pandas as pd
-from common import chunks, out_dir, run_metadata, safe_workers, write_json
+from common import chunks, out_dir, run_jobs, run_metadata, write_json
 
 from taxred.generate import archetypes, random_households
 from taxred.law import Law
@@ -55,18 +55,17 @@ def main():
     ap.add_argument("--conditions", nargs="*", default=list(PROPOSERS))
     ap.add_argument("--from-csv", action="store_true")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--chunk", type=int, default=8, help="households per job")
     a = ap.parse_args()
     od = out_dir("phase1/search_smoke" + (f"_{a.tag}" if a.tag else ""))
     if a.from_csv:
         df = pd.read_csv(od / "records.csv.gz")
     else:
         ids = [h.id for h in households(a.n, a.seed, a.year)]
-        size = max(1, -(-len(ids) // a.workers))
-        jobs = [(c, cond, a.budget, a.seed, a.n, a.year) for cond in a.conditions for c in chunks(ids, size)]
-        rows = []
-        with ProcessPoolExecutor(safe_workers(a.workers)) as ex:
-            for r in ex.map(run, jobs):
-                rows += r
+        # Small chunks bound each worker's simulation size; the checkpoint
+        # makes a crash lose only the jobs in flight.
+        jobs = [(list(c), cond, a.budget, a.seed, a.n, a.year) for cond in a.conditions for c in chunks(ids, a.chunk)]
+        rows = [row for r in run_jobs(run, jobs, a.workers, checkpoint=od / "checkpoint.jsonl") for row in r]
         df = pd.DataFrame(rows)
         df.to_csv(od / "records.csv.gz", index=False)
 

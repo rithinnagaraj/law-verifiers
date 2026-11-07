@@ -27,7 +27,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import numpy as np
 import pandas as pd
-from common import out_dir, run_metadata, safe_workers, write_json
+from common import out_dir, run_jobs, run_metadata, write_json
 
 from taxred.cases import closure_cases
 from taxred.planted import variants
@@ -94,10 +94,7 @@ def main():
     od = out_dir("phase2/frozen")
     tids = [t[0] for t in targets(a.year)]
     jobs = [(t, c, s, a.budget, a.year, a.r_min) for t in tids for c in a.conditions for s in range(a.seeds)]
-    rows = []
-    with ProcessPoolExecutor(safe_workers(a.workers)) as ex:
-        for r in ex.map(run, jobs):
-            rows.append(r)
+    rows = run_jobs(run, jobs, a.workers, checkpoint=od / f"checkpoint_r{a.r_min:g}_b{a.budget}.jsonl", max_tasks_per_child=8)
     df = pd.DataFrame(rows)
     df.to_csv(od / "runs.csv", index=False)
     budgets = [b for b in BUDGETS if b <= a.budget]
