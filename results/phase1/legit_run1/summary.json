@@ -1,0 +1,133 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T09:06:19Z",
+    "git_commit": "b48a4c5589c093fedf717fa678458f5531a6881c",
+    "git_dirty": true,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e0_6_legit.py",
+      "--workers",
+      "6"
+    ]
+  },
+  "n_positive": 96,
+  "n_negative": 20,
+  "fp_rate": 0.08333333333333333,
+  "fp_rate_by_split": {
+    "dev": 0.037037037037037035,
+    "test": 0.14285714285714285
+  },
+  "fp_rate_by_family": {
+    "401k": 0.0,
+    "claim_child": 0.25,
+    "gift_allowance": 0.2222222222222222,
+    "ira": 0.0,
+    "itemize": 0.5
+  },
+  "negatives_correct": 1.0,
+  "negatives_correct_by_family": {
+    "benefit_cliff": 1.0,
+    "sacrifice": 1.0,
+    "wash_sale": 1.0
+  },
+  "labels_by_family": {
+    "401k": {
+      "benefit_cliff": 0,
+      "candidate": 0,
+      "code_disagreement": 0,
+      "intended_concession": 46,
+      "no_gain": 0,
+      "sacrifice": 0
+    },
+    "benefit_cliff": {
+      "benefit_cliff": 12,
+      "candidate": 0,
+      "code_disagreement": 0,
+      "intended_concession": 0,
+      "no_gain": 0,
+      "sacrifice": 0
+    },
+    "claim_child": {
+      "benefit_cliff": 0,
+      "candidate": 2,
+      "code_disagreement": 0,
+      "intended_concession": 5,
+      "no_gain": 1,
+      "sacrifice": 0
+    },
+    "gift_allowance": {
+      "benefit_cliff": 0,
+      "candidate": 4,
+      "code_disagreement": 0,
+      "intended_concession": 14,
+      "no_gain": 0,
+      "sacrifice": 0
+    },
+    "ira": {
+      "benefit_cliff": 0,
+      "candidate": 0,
+      "code_disagreement": 0,
+      "intended_concession": 18,
+      "no_gain": 2,
+      "sacrifice": 0
+    },
+    "itemize": {
+      "benefit_cliff": 0,
+      "candidate": 0,
+      "code_disagreement": 2,
+      "intended_concession": 0,
+      "no_gain": 2,
+      "sacrifice": 0
+    },
+    "sacrifice": {
+      "benefit_cliff": 0,
+      "candidate": 0,
+      "code_disagreement": 0,
+      "intended_concession": 0,
+      "no_gain": 0,
+      "sacrifice": 6
+    },
+    "wash_sale": {
+      "benefit_cliff": 0,
+      "candidate": 0,
+      "code_disagreement": 0,
+      "intended_concession": 0,
+      "no_gain": 2,
+      "sacrifice": 0
+    }
+  },
+  "ablation": {
+    "full": {
+      "fp_rate": 0.08333333333333333,
+      "negatives_flagged": 0.0
+    },
+    "no_reality_check": {
+      "fp_rate": 0.08333333333333333,
+      "negatives_flagged": 0.9
+    },
+    "no_crosscheck": {
+      "fp_rate": 0.08333333333333333,
+      "negatives_flagged": 0.0
+    },
+    "no_whitelist": {
+      "fp_rate": 0.9479166666666666,
+      "negatives_flagged": 0.0
+    },
+    "no_anti_abuse_override": {
+      "fp_rate": 0.08333333333333333,
+      "negatives_flagged": 0.0
+    },
+    "no_gain_threshold": {
+      "fp_rate": 0.08333333333333333,
+      "negatives_flagged": 0.0
+    }
+  }
+}

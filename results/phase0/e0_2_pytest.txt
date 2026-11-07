@@ -1,0 +1,18 @@
+............x..............                                              [100%]
+=============================== warnings summary ===============================
+tests/test_known_answers.py::test_single_50k[policyengine]
+tests/test_known_answers.py::test_mfj_100k_two_kids[policyengine]
+tests/test_known_answers.py::test_hoh_20k_one_child_eitc_actc[policyengine]
+tests/test_known_answers.py::test_kiddie_parent_hoh[policyengine]
+tests/test_known_answers.py::test_kiddie_parent_hoh[policyengine]
+tests/test_known_answers.py::test_kiddie_child_current_law[policyengine]
+tests/test_known_answers.py::test_kiddie_child_current_law[policyengine]
+tests/test_known_answers.py::test_child_no_kiddie_tax_amt[policyengine]
+tests/test_known_answers.py::test_pe_drops_dependent_income_inside_parent_unit
+  /home/rithin_nagaraj/law-verifiers/.venv/lib/python3.12/site-packages/policyengine_us/variables/gov/irs/income/taxable_income/adjusted_gross_income/irs_gross_income/unemployment_insurance/taxable_unemployment_insurance.py:22: RuntimeWarning: invalid value encountered in divide
+    share = where(tax_unit_uc > 0, person_uc / tax_unit_uc, 0)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+XFAIL tests/test_known_answers.py::test_child_no_kiddie_tax_amt[policyengine] - FINDING: PolicyEngine-US does not apply the child AMT exemption limit (computes 2,012)
+26 passed, 1 xfailed, 9 warnings in 125.37s (0:02:05)
