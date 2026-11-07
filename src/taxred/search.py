@@ -73,6 +73,8 @@ def random_move(hh: Household, rng: np.random.Generator, continuous: bool = Fals
         ops.append("donate_asset")
     if any(hh.people[p].ira_balance > 0 for p in people):
         ops.append("roth_convert")
+    if hh.scenarios and any(hh.people[p].ira_balance > 0 for p in people):
+        ops.append("recharacterize")
     op = _choice(rng, ops)
 
     if op == "gift_asset":
@@ -118,6 +120,11 @@ def random_move(hh: Household, rng: np.random.Generator, continuous: bool = Fals
     if op == "donate_asset":
         p, a = _choice(rng, [(p, a.id) for p in people for a in hh.people[p].assets if a.unrealized_gain > 0])
         return {"op": op, "person": p, "asset": a, "fraction": _frac(rng, continuous, (0.05, 0.1, 0.25), 0.01, 0.5)}
+    if op == "recharacterize":
+        p = _choice(rng, [p for p in people if hh.people[p].ira_balance > 0])
+        names = [s["name"] for s in hh.scenarios]
+        return {"op": op, "person": p, "amount": max(100.0, round(min(hh.people[p].ira_balance, 100_000) * _frac(rng, continuous))),
+                "of_year": hh.year, "year": hh.year + 1, "if_scenario": [_choice(rng, names)]}
     if op == "roth_convert":
         p = _choice(rng, [p for p in people if hh.people[p].ira_balance > 0])
         return {"op": op, "person": p, "amount": max(100.0, round(min(hh.people[p].ira_balance, 100_000) * _frac(rng, continuous)))}

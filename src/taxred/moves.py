@@ -312,8 +312,18 @@ def roth_convert(hh: Household, person: str, amount: float) -> None:
     p.other["ira_distributions"] = p.other.get("ira_distributions", 0.0) + amount
 
 
+def recharacterize(hh: Household, person: str, amount: float, of_year: int) -> None:
+    """Undo (part of) a Roth conversion made in `of_year` (allowed only by the
+    following year, and only under law that permits it). Its effect is
+    resolved in household_in_year; applied directly it only checks its inputs."""
+    _person(hh, person)
+    if float(amount) <= 0:
+        raise MoveError("amount must be positive")
+
+
 MOVES.update(
     {
+        "recharacterize": recharacterize,
         "contribute_hsa": contribute_hsa,
         "donate_cash": donate_cash,
         "reduce_donation": reduce_donation,

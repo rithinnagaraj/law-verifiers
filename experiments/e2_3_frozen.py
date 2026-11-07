@@ -48,12 +48,14 @@ HIST_RULES = {
     "kiddie_tipra2005": "A child's net unearned income is taxed at the parent's rate only for children under 14.",
     "kiddie_sbwota2007": "A child's net unearned income is taxed at the parent's rate only for children under 18.",
     "dependent_std_tra1986": "There is no special tax on a child's unearned income, and a dependent filer gets the full standard deduction.",
+    "roth_recharacterization_tcja2017": "A conversion of a traditional IRA to a Roth IRA may be recharacterized (undone) until October 15 of the following year.",
 }
 HIST_WITNESS = {
     "kiddie_tra1986": "w200000_i20000_a8",
     "kiddie_tipra2005": "w200000_i20000_a16",
     "kiddie_sbwota2007": "w200000_i20000_a20s",
     "dependent_std_tra1986": "w100000_i20000_a13",
+    "roth_recharacterization_tcja2017": "r40000_200000",
 }
 
 
@@ -70,7 +72,7 @@ def targets(year: int, disguised: bool = False):
     for name, hid in HIST_WITNESS.items():
         c = cases[name]
         hh = next(h for h in c.panel(year) if h.id == hid)
-        out.append((f"hist:{name}", "historical", c.law_pre, c.law_post, hh, 1, f"{BASE_RULES} {HIST_RULES[name]}"))
+        out.append((f"hist:{name}", "historical", c.law_pre, c.law_post, hh, c.horizon, f"{BASE_RULES} {HIST_RULES[name]}"))
     return out
 
 
@@ -94,9 +96,12 @@ def make_pool(tid: str, hh, n: int, year: int, stage: int = 0):
     rng = np.random.default_rng(1000 + s)
     others = [bank[i] for i in rng.choice(len(bank), n - 1, replace=False)]
     pool = others[:pos] + [hh] + others[pos:]
+    from taxred.household import with_scenarios
+
     renamed = []
     for k, h in enumerate(pool):
-        c = copy.copy(h)
+        c = h if h.scenarios else with_scenarios(h)  # every household gets the same possible futures
+        c = copy.copy(c)
         c.id = f"h{k}"
         renamed.append(c)
     return renamed, f"h{pos}"

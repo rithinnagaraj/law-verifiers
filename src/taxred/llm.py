@@ -36,6 +36,8 @@ Any move may carry "year": Y (default: the first tax year) when several tax year
 - {"op": "donate_cash", "person": P, "amount": x} / {"op": "reduce_donation", "person": P, "amount": x}   (cash giving this year; date them to shift giving between years)
 - {"op": "donate_asset", "person": P, "asset": A, "fraction": f}   (appreciated property to charity at market value; at most 20% of household income)
 - {"op": "roth_convert", "person": P, "amount": x}   (traditional IRA to Roth; taxable in the year of conversion)
+- {"op": "recharacterize", "person": P, "amount": x, "of_year": Y}   (undo a conversion made in year Y, by year Y+1; only where the rules allow it)
+A move may carry "if_scenario": [names] to apply only in those possible futures (only for moves dated once the future is known).
 """
 
 SYSTEM = """\
