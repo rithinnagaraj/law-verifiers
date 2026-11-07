@@ -81,10 +81,18 @@ def _extract(path: Path, year: int) -> dict:
         "state": c("state_code", "person"),
         "weight": c("household_weight", "person"),
         "childcare_spm": c("spm_unit_pre_subsidy_childcare_expenses", "person"),
-        "retirement_hh": c("scf_retirement_assets", "person"),
         "hh_head": c("is_household_head"),
-        "esi": c("reported_has_employer_sponsored_health_coverage_at_interview"),
     }
+    # Survey fields that are data, not PolicyEngine variables: read from the
+    # file and matched by id.
+    import h5py
+
+    with h5py.File(path, "r") as f:
+        y = str(year)
+        hh_ret = dict(zip(f[f"household_id/{y}"][:], f[f"scf_retirement_assets/{y}"][:]))
+        esi = dict(zip(f[f"person_id/{y}"][:], f[f"reported_has_employer_sponsored_health_coverage_at_interview/{y}"][:]))
+    out["retirement_hh"] = np.array([float(hh_ret.get(h, 0.0)) for h in out["hid"]])
+    out["esi"] = np.array([bool(esi.get(p, False)) for p in out["pid"]])
     for k, v in {**PERSON_VARS, **OTHER_VARS}.items():
         out[k] = c(v)
     return out
