@@ -15,6 +15,11 @@ export TAXRED_PE_CACHE="${TAXRED_PE_CACHE:-8}"
 mkdir -p results/logs
 log="results/logs/${name}_$(date -u +%Y%m%dT%H%M%SZ).log"
 MEM_MAX="${MEM_MAX:-68G}"
+# A user scope dies with the user manager when the last ssh session closes
+# unless lingering is on (it killed a chain on 2026-11-07).
+if command -v loginctl >/dev/null && [ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" != "yes" ]; then
+  sudo -n loginctl enable-linger "$USER" 2>/dev/null || echo "warning: lingering is off; run with nohup only" >&2
+fi
 wrap=()
 if command -v systemd-run >/dev/null && systemd-run --user --scope -q true 2>/dev/null; then
   wrap=(systemd-run --user --scope -q -p "MemoryMax=$MEM_MAX" -p MemorySwapMax=0)
