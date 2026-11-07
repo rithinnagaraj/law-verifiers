@@ -17,6 +17,9 @@ Imputations (the survey has income flows, not balance sheets):
   - 401(k) and IRA contributions are clipped to the statutory limits; IRA
     contributions are dropped in units with a 401(k) participant (deductibility
     under s.219(g) is computed by PolicyEngine only);
+  - HSA eligibility (HDHP): 30% of workers with employer coverage, seeded;
+  - traditional IRA balance: half of the household's SCF retirement assets, on
+    the household head;
   - negative rental income is set to 0 (passive-loss rules differ between the
     calculators and are outside the move vocabulary).
 """
@@ -78,6 +81,9 @@ def _extract(path: Path, year: int) -> dict:
         "state": c("state_code", "person"),
         "weight": c("household_weight", "person"),
         "childcare_spm": c("spm_unit_pre_subsidy_childcare_expenses", "person"),
+        "retirement_hh": c("scf_retirement_assets", "person"),
+        "hh_head": c("is_household_head"),
+        "esi": c("reported_has_employer_sponsored_health_coverage_at_interview"),
     }
     for k, v in {**PERSON_VARS, **OTHER_VARS}.items():
         out[k] = c(v)
@@ -115,6 +121,13 @@ def _build(ix: np.ndarray, a: dict, year: int) -> Household:
         lim = _retirement_limits(year, p.age)
         p.traditional_401k = min(p.traditional_401k, lim["401k"])
         p.traditional_ira = min(p.traditional_ira, lim["ira"], max(p.earned_income, 0.0))
+        # HSA eligibility: a seeded 30% of workers with employer coverage (about
+        # the share of covered workers in HSA-eligible plans; an imputation).
+        p.hdhp = bool(a["esi"][i] and p.earned_income > 0 and _hash01(f"{hh_id}:{pid}:hdhp") < 0.3)
+        # Traditional IRA balance: half of the household's SCF-imputed
+        # retirement assets, held by the household head (an imputation).
+        if a["hh_head"][i]:
+            p.ira_balance = 0.5 * float(max(a["retirement_hh"][i], 0.0))
         if p.earned_income > 0 and p.hours <= 0:
             p.hours = 2080.0  # survey hours missing for a worker
         if a["interest"][i] > 0:

@@ -219,6 +219,110 @@ MOVES: dict[str, Callable] = {
 }
 
 
+
+
+# ---------------------------------------------------------------------------
+# Stage 1 moves (bright-line statutory rules only)
+# ---------------------------------------------------------------------------
+
+HSA_CATCH_UP = 1_000.0  # s.223(b)(3)(B), not indexed
+
+
+def contribute_hsa(hh: Household, person: str, amount: float, coverage: str = "self") -> None:
+    """HSA contribution (deductible, s.223). Requires HDHP coverage; within the
+    self-only or family limit, plus $1,000 at 55+. Cash moves into the HSA:
+    wealth unchanged."""
+    from .taxes import _pe_params
+
+    p = _person(hh, person)
+    amount = float(amount)
+    if amount <= 0:
+        raise MoveError("amount must be positive")
+    if not p.hdhp:
+        raise MoveError("not covered by a high-deductible health plan")
+    if coverage not in ("self", "family"):
+        raise MoveError("coverage is self or family")
+    lim = _pe_params().gov.irs.gross_income.health_savings_account_contributions.limit
+    d = f"{hh.year}-01-01"
+    cap = float((lim.family if coverage == "family" else lim.self_only)(d)) + (HSA_CATCH_UP if p.age >= 55 else 0.0)
+    if p.hsa + amount > cap + 1e-6:
+        raise MoveError(f"HSA limit is {cap:.0f}")
+    if p.hsa + amount > p.earned_income + sum(q.earned_income for q in hh.people.values() if hh.spouse_of(person) == q.id):
+        raise MoveError("HSA contribution exceeds the household's pay (modelled as funded from pay)")
+    p.hsa += amount
+
+
+def donate_cash(hh: Household, person: str, amount: float) -> None:
+    """A cash gift to a public charity this year (one-time when dated). The
+    money leaves the household."""
+    p = _person(hh, person)
+    amount = float(amount)
+    if amount <= 0:
+        raise MoveError("amount must be positive")
+    p.charitable_cash += amount
+    p.given_away += amount
+
+
+def reduce_donation(hh: Household, person: str, amount: float) -> None:
+    """Give less in cash this year than the household normally does (one-time
+    when dated); with donate_cash in another year this bunches giving."""
+    p = _person(hh, person)
+    amount = float(amount)
+    if amount <= 0 or amount > p.charitable_cash + 1e-6:
+        raise MoveError("can only reduce the cash this person gives this year")
+    p.charitable_cash -= amount
+    p.given_away -= amount
+
+
+DONATE_ASSET_CAP = 0.2  # share of the household's gross income (vocabulary rule)
+
+
+def donate_asset(hh: Household, person: str, asset: str, fraction: float = 1.0) -> None:
+    """Give (part of) a long-held appreciated asset to a public charity: a
+    deduction at fair market value and no capital gain (one-time when dated).
+    Vocabulary rule: at most 20% of the household's gross income per year,
+    below the AGI limits (30%/50%) that only PolicyEngine applies, so both
+    calculators see the same deduction."""
+    p = _person(hh, person)
+    f = _fraction(fraction)
+    a = p.asset(asset)
+    value = a.value * f
+    gross = sum(q.earned_income + q.unearned_income for q in hh.people.values())
+    if value + sum(q.charitable_noncash for q in hh.people.values()) > DONATE_ASSET_CAP * max(gross, 0.0):
+        raise MoveError("donated property above 20% of household income (vocabulary limit)")
+    a.value *= 1 - f
+    a.basis *= 1 - f
+    if a.value <= 0:
+        p.assets.remove(a)
+    p.charitable_noncash += value
+    p.given_away += value
+
+
+def roth_convert(hh: Household, person: str, amount: float) -> None:
+    """Convert part of a traditional IRA to a Roth IRA: the amount is a taxable
+    IRA distribution this year (one-time when dated). Wealth unchanged (the
+    balance moves accounts). No recharacterization (repealed for conversions
+    after 2017; see the scenario extension)."""
+    p = _person(hh, person)
+    amount = float(amount)
+    if amount <= 0 or amount > p.ira_balance + 1e-6:
+        raise MoveError("amount must be positive and at most the traditional IRA balance")
+    p.ira_balance -= amount
+    p.roth_balance += amount
+    p.other["ira_distributions"] = p.other.get("ira_distributions", 0.0) + amount
+
+
+MOVES.update(
+    {
+        "contribute_hsa": contribute_hsa,
+        "donate_cash": donate_cash,
+        "reduce_donation": reduce_donation,
+        "donate_asset": donate_asset,
+        "roth_convert": roth_convert,
+    }
+)
+
+
 def apply_moves(hh: Household, moves: list[dict]) -> Household:
     out = hh.copy()
     for i, m in enumerate(moves):
@@ -244,7 +348,10 @@ def apply_moves(hh: Household, moves: list[dict]) -> Household:
 # Multi-year horizon
 # ---------------------------------------------------------------------------
 
-ONE_TIME_OPS = ("realize_gain",)
+ONE_TIME_OPS = ("realize_gain", "donate_cash", "reduce_donation", "donate_asset", "roth_convert", "contribute_hsa")
+# Per-year flows that one-time moves change; their stock effects (basis,
+# balances, given_away) persist.
+FLOW_FIELDS = ("long_term_gains", "charitable_cash", "charitable_noncash", "hsa")
 
 
 def household_in_year(hh: Household, moves: list[dict], year: int) -> Household:
@@ -271,10 +378,12 @@ def household_in_year(hh: Household, moves: list[dict], year: int) -> Household:
         if m.get("op") in ONE_TIME_OPS and y < year:
             if chunk:
                 out, chunk = apply_moves(out, chunk), []
-            before = {pid: p.long_term_gains for pid, p in out.people.items()}
+            before = {pid: ({f: getattr(p, f) for f in FLOW_FIELDS}, dict(p.other)) for pid, p in out.people.items()}
             out = apply_moves(out, [m])
-            for pid, v in before.items():
-                out.people[pid].long_term_gains = v
+            for pid, (flows, other) in before.items():
+                for f, v in flows.items():
+                    setattr(out.people[pid], f, v)
+                out.people[pid].other = other
         else:
             chunk.append(m)
     if chunk or not moves:

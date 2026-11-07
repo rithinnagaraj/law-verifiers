@@ -62,6 +62,17 @@ def random_move(hh: Household, rng: np.random.Generator, continuous: bool = Fals
     ops.append("itemize_or_standard")
     if any(hh.people[p].wages > 0 for p in people):
         ops.append("contribute_retirement")
+    if any(hh.people[p].hdhp for p in people):
+        ops.append("contribute_hsa")
+    earners = [p for p in people if hh.people[p].earned_income + hh.people[p].unearned_income > 0]
+    if earners:
+        ops.append("donate_cash")
+    if any(hh.people[p].charitable_cash > 0 for p in people):
+        ops.append("reduce_donation")
+    if any(a.unrealized_gain > 0 for p in people for a in hh.people[p].assets):
+        ops.append("donate_asset")
+    if any(hh.people[p].ira_balance > 0 for p in people):
+        ops.append("roth_convert")
     op = _choice(rng, ops)
 
     if op == "gift_asset":
@@ -93,6 +104,23 @@ def random_move(hh: Household, rng: np.random.Generator, continuous: bool = Fals
         return {"op": op, "person": p, "hours": round(hh.people[p].hours * _frac(rng, continuous, (0.5, 0.8, 1.2), 0.5, 1.2))}
     if op == "itemize_or_standard":
         return {"op": op, "tax_unit": _choice(rng, hh.tax_units).id, "itemize": bool(rng.random() < 0.5)}
+    if op == "contribute_hsa":
+        p = _choice(rng, [p for p in people if hh.people[p].hdhp])
+        cov = _choice(rng, ["self", "family"])
+        return {"op": op, "person": p, "amount": round(_frac(rng, continuous) * (8_300 if cov == "family" else 4_150)), "coverage": cov}
+    if op == "donate_cash":
+        p = _choice(rng, earners)
+        inc = hh.people[p].earned_income + hh.people[p].unearned_income
+        return {"op": op, "person": p, "amount": max(10.0, round(inc * 0.1 * _frac(rng, continuous)))}
+    if op == "reduce_donation":
+        p = _choice(rng, [p for p in people if hh.people[p].charitable_cash > 0])
+        return {"op": op, "person": p, "amount": max(1.0, round(hh.people[p].charitable_cash * _frac(rng, continuous)))}
+    if op == "donate_asset":
+        p, a = _choice(rng, [(p, a.id) for p in people for a in hh.people[p].assets if a.unrealized_gain > 0])
+        return {"op": op, "person": p, "asset": a, "fraction": _frac(rng, continuous, (0.05, 0.1, 0.25), 0.01, 0.5)}
+    if op == "roth_convert":
+        p = _choice(rng, [p for p in people if hh.people[p].ira_balance > 0])
+        return {"op": op, "person": p, "amount": max(100.0, round(min(hh.people[p].ira_balance, 100_000) * _frac(rng, continuous)))}
     if op == "contribute_retirement":
         p = _choice(rng, [p for p in people if hh.people[p].wages > 0])
         acct = _choice(rng, ["401k", "ira"])

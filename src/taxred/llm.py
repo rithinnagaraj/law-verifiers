@@ -32,6 +32,10 @@ Any move may carry "year": Y (default: the first tax year) when several tax year
 - {"op": "set_hours", "person": P, "hours": h}   (wages scale with hours; changes economic reality)
 - {"op": "itemize_or_standard", "tax_unit": U, "itemize": true|false}
 - {"op": "contribute_retirement", "person": P, "account": "401k"|"ira", "amount": x}   (pre-tax, within statutory limits)
+- {"op": "contribute_hsa", "person": P, "amount": x, "coverage": "self"|"family"}   (needs HDHP coverage; within limits)
+- {"op": "donate_cash", "person": P, "amount": x} / {"op": "reduce_donation", "person": P, "amount": x}   (cash giving this year; date them to shift giving between years)
+- {"op": "donate_asset", "person": P, "asset": A, "fraction": f}   (appreciated property to charity at market value; at most 20% of household income)
+- {"op": "roth_convert", "person": P, "amount": x}   (traditional IRA to Roth; taxable in the year of conversion)
 """
 
 SYSTEM = """\

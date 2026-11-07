@@ -100,6 +100,7 @@ def _pe_person_inputs(p: Person, year: int, income_on: bool, role: str) -> dict:
                 "home_mortgage_interest": {Y: p.mortgage_interest},
                 "traditional_401k_contributions_desired": {Y: p.traditional_401k},
                 "traditional_ira_contributions_desired": {Y: p.traditional_ira},
+                "charitable_non_cash_donations": {Y: p.charitable_noncash},
             }
         )
         for k, v in p.other.items():
@@ -171,6 +172,8 @@ class PolicyEngineEngine:
                 tu["local_sales_tax"] = {Y: 0.0}
             if fu.itemize is not None:
                 tu["tax_unit_itemizes"] = {Y: bool(fu.itemize)}
+            # HSA deduction (Form 8889), always set so batches stay consistent.
+            tu["health_savings_account_ald"] = {Y: float(sum(p.hsa for p in fu.filers()))}
             sit["tax_units"][f"t{i}"] = tu
             sit["families"][f"f{i}"] = {"members": ids}
             sit["spm_units"][f"s{i}"] = {"members": ids, "spm_unit_pre_subsidy_childcare_expenses": {Y: childcare}}
@@ -280,6 +283,8 @@ def _tc_record(rec_id: int, fu: FilingUnit, salt: float = 0.0) -> dict:
         EIC=min(3, len(eitc_kids)),
         elderly_dependents=sum(1 for d in deps if d.age >= 65),
         e18400=float(salt),
+        e03290=s("hsa"),
+        e20100=s("charitable_noncash"),
     )
     for p in filers:
         for k, v in p.other.items():

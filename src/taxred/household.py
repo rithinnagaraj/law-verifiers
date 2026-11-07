@@ -74,6 +74,17 @@ class Person:
     # cash into a retirement account: wealth and gross pay are unchanged.
     traditional_401k: float = 0.0
     traditional_ira: float = 0.0
+    # Stage 1 vocabulary. hdhp: covered by a high-deductible health plan
+    # (HSA-eligible). hsa: HSA contribution this year (deductible).
+    # charitable_noncash: fair market value of property donated this year.
+    # given_away: cumulative value donated by moves (leaves the household).
+    # ira_balance / roth_balance: retirement balances (wealth).
+    hdhp: bool = False
+    hsa: float = 0.0
+    charitable_noncash: float = 0.0
+    given_away: float = 0.0
+    ira_balance: float = 0.0
+    roth_balance: float = 0.0
     # Exogenous items both calculators model, keyed by OTHER_ITEMS (survey
     # households). They repeat each year and no move changes them.
     other: dict = field(default_factory=dict)
@@ -98,7 +109,7 @@ class Person:
 
     @property
     def wealth(self) -> float:
-        return sum(a.value for a in self.assets)
+        return sum(a.value for a in self.assets) + self.ira_balance + self.roth_balance - self.given_away
 
     def asset(self, asset_id: str) -> Asset:
         for a in self.assets:
