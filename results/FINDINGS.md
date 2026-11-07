@@ -31,7 +31,7 @@ rule, canary bugs, and search baselines on pool targets.
   ready: `uv pip install -e ".[llm]"`, set `ANTHROPIC_API_KEY`, then
   `python experiments/e2_3_frozen.py --pool 40 --budget 1000 --conditions llm random`
   (add `--disguised` for H3). Other providers: subclass `LLMProposer._complete`.
-- **No GPU on the VM**: Phase 3 (RL, A100 in the plan) cannot run there.
+- **GPU:** the VM has an A100 SXM4 40 GB (a2-highgpu-1g); only the NVIDIA driver was missing (an earlier note here wrongly said "no GPU" because `nvidia-smi` was absent). Driver + CUDA install pending; with 40 GB, Phase 3 uses a 3–4B model with LoRA (experiment plan).
 - **Pre-registration decisions** (`preregistration-draft.md`): cross-check mode
   (evidence favours tolerance), R = 0.1 vs 0.2, how to report benefit-only
   gains (F9).
