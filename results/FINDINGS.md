@@ -217,8 +217,9 @@ kill. Engineering, not science — recorded because it cost two hours.
 `VerifierConfig.horizon` (default 1): moves may carry a `year`; most persist,
 `realize_gain` is a one-time event whose basis step-up persists; assets may
 have a `sale_year`. Gains and the reality check are summed over the horizon,
-each year under its own law year (2025/2026 include the 2025 reconciliation
-law in both calculators). Test: harvesting $40k of gains in the 0% bracket in
+each year under its own law year. Calculator agreement for 2025/2026 (after
+the 2025 reconciliation law) is not yet checked: E0.1 for those years is an
+open item before any horizon run. Test: harvesting $40k of gains in the 0% bracket in
 2024 is worth nothing within 2024 and > $1,000 over 2024–2026 (both
 calculators agree).
 
