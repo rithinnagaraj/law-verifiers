@@ -329,6 +329,9 @@ class TaxCalculatorEngine:
 
         year = units[0].year
         df = pd.DataFrame([_tc_record(i + 1, fu, salt.get(fu.id, 0.0)) for i, fu in enumerate(units)])
+        # Records carry only the items they have; a missing item is 0, not NaN
+        # (NaN fails Tax-Calculator's input checks and poisons its arithmetic).
+        df = df.fillna(0.0)
         for c in df.columns:
             df[c] = df[c].astype(int if c in _TC_INT_COLS else float)
         pol = tc.Policy()
