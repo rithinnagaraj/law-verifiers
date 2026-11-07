@@ -22,7 +22,9 @@ src/taxred/
   cases.py       historical-closure set (E0.5) and seed known current-law strategies
   planning.py    legitimate-planning set and labelled negatives (E0.6)
   planted.py     planted-loophole variants, plain and disguised (E2.1)
-  search.py      random / greedy proposers and the batched search loop (E1.4, E2.3 baselines)
+  search.py      random / greedy proposers, single-household and pool search loops
+  llm.py         LLM proposers (Anthropic SDK; optional extra `llm`)
+  canaries.py    PolicyEngine-only canary bugs (E2.6b)
   generate.py    archetypes and a seeded random household generator
 experiments/
   e0_1_agreement.py     E0.1 calculator agreement baseline
@@ -33,16 +35,22 @@ experiments/
   e1_kiddie_pilot.py    E1.1 pilot: kiddie-tax closures, dose-response (superseded by e1_closures)
   e1_4_search_smoke.py  E1.4 random / greedy search against the verifier on current law
   e2_1_planted.py       E2.1 validate planted variants, measure reach
+  e2_3_frozen.py        E2.3 frozen search comparison (witness-only or pool targets; random, greedy, llm)
+  e2_6_canaries.py      E2.6a/b canary bugs: exploit and cross-check catch rates
 tests/
   test_known_answers.py E0.2 hand-computed known-answer tests
   test_cases.py         closure cases (pre/post TRA 1986 known answers), anti-abuse rule
   test_retirement.py    401(k) / IRA known answers, limits, wash sale
   test_moves.py         moves and economic-reality invariants
+  test_horizon.py       multi-year horizon (gain harvesting)
+  test_search.py        search loops with a stub verifier
+  test_llm.py           LLM reply parsing, offline pool proposer
 scripts/
   setup_vm.sh           clone/update + environment + tests on the experiment VM
   run_phase0.sh         run Phase 0 experiments and commit results
   run_phase1.sh         tests + E0.6/E1.2 + E1.1 + E1.4
   vm_run.sh             run one experiment in the background in a memory-capped scope
+  chain_phase2*.sh      sequential experiment chains run through vm_run.sh
 results/                experiment outputs (summaries committed)
 ```
 
@@ -108,15 +116,19 @@ tax, benefits) is seen only by PolicyEngine.
 
 ## Known limitations
 
-- **Single tax year.** The plan's 3-year horizon is not yet implemented, so
-  timing strategies (`realize_gain`) can only show same-year effects.
+- **Horizon.** `VerifierConfig(horizon=3)` evaluates 2024–2026 (dated moves,
+  one-time realizations, planned sales); the default is 1 year. Only the
+  `cg0_single` planted family uses it so far.
 - **Kiddie tax is implemented in this package**, not in either calculator
   (neither models Form 8615). Its effect is therefore common to both
   calculators and not independently cross-checked; it is covered by
   known-answer tests instead. Not modelled: the earned-income support test
   for ages 18–23, and the Form 8814 election.
-- **TAXSIM is not wired in yet.** It is unreachable from the development
-  container's network; the adapter will be added and tested on the VM.
+- **TAXSIM is not wired in.** It would need NBER's binary or web service;
+  left for the researcher to decide (third calculator, state taxes, pre-2013).
+- **Batch consistency.** Results must not depend on what else is in a batch
+  (findings F4, F8, F12; regression tests in `tests/test_engines.py`).
+  `VerifierConfig(recheck_flagged=True)` re-evaluates flagged proposals alone.
 - **Benefits come from PolicyEngine only.** Benefit gains are `single-calc`.
 - **Saver's credit is PolicyEngine-only** (Tax-Calculator takes it as an
   input); it is left out of the cross-check comparison and counts as
@@ -125,7 +137,13 @@ tax, benefits) is seen only by PolicyEngine.
   switched off so both calculators see the same SALT inputs (finding F6;
   `TAXRED_PE_SALES_TAX=1` restores it). State income tax is not yet passed
   to Tax-Calculator, so non-TX households with itemized SALT will differ.
-- **No LLM search yet.** The VM has no model API keys; the search scaffold
-  (`search.py`) runs the random and greedy baselines.
+- **No LLM search yet.** The VM has no model API keys. `src/taxred/llm.py`
+  and `experiments/e2_3_frozen.py --conditions llm [--disguised]` are ready;
+  install with `uv pip install -e ".[llm]"` and set `ANTHROPIC_API_KEY`.
+- **No GPU on the VM**, so Phase 3 (RL) cannot run there.
 - Households from `generate.py` are synthetic draws, not survey microdata yet.
-- `itemize_or_standard` forcing is passed to PolicyEngine only.
+- `itemize_or_standard` forcing is passed to PolicyEngine only (Tax-Calculator
+  always takes the better of the two).
+- **Cross-check mode.** The default is still the plan's ratio test; E2.6b
+  shows the tolerance test (`crosscheck_mode="tolerance"`) catches far more
+  calculator bugs — a pre-registration decision (`preregistration-draft.md`).
