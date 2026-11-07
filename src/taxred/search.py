@@ -36,8 +36,14 @@ def _choice(rng, seq):
     return seq[int(rng.integers(len(seq)))]
 
 
-def random_move(hh: Household, rng: np.random.Generator) -> Optional[dict]:
-    """One random move that is plausible for `hh` (it may still be invalid)."""
+def _frac(rng, continuous: bool, choices=(0.25, 0.5, 1.0), lo: float = 0.05, hi: float = 1.0) -> float:
+    """A fraction: one of a few round values, or (stage 1) any value."""
+    return round(float(rng.uniform(lo, hi)), 3) if continuous else float(_choice(rng, list(choices)))
+
+
+def random_move(hh: Household, rng: np.random.Generator, continuous: bool = False) -> Optional[dict]:
+    """One random move that is plausible for `hh` (it may still be invalid).
+    continuous: draw fractions and amounts from a continuum (stage 1)."""
     people = list(hh.people)
     ops = []
     with_assets = [p for p in people if hh.people[p].assets]
@@ -62,16 +68,16 @@ def random_move(hh: Household, rng: np.random.Generator) -> Optional[dict]:
         g = _choice(rng, with_assets)
         r = _choice(rng, [p for p in people if p != g])
         a = _choice(rng, hh.people[g].assets).id
-        return {"op": op, "giver": g, "recipient": r, "asset": a, "fraction": float(_choice(rng, [0.25, 0.5, 1.0]))}
+        return {"op": op, "giver": g, "recipient": r, "asset": a, "fraction": _frac(rng, continuous)}
     if op == "shift_income":
         payer = _choice(rng, [p for p in people if hh.people[p].self_employment > 0])
         payee = _choice(rng, [p for p in people if p != payer])
-        amt = round(hh.people[payer].self_employment * float(_choice(rng, [0.1, 0.25, 0.5])), -1)
+        amt = round(hh.people[payer].self_employment * _frac(rng, continuous, (0.1, 0.25, 0.5), 0.02, 0.6), -1)
         return {"op": op, "payer": payer, "payee": payee, "amount": max(amt, 10.0)}
     if op == "realize_gain":
         cands = [(p, a.id) for p in people for a in hh.people[p].assets if a.unrealized_gain > 0]
         p, a = _choice(rng, cands)
-        return {"op": op, "person": p, "asset": a, "fraction": float(_choice(rng, [0.25, 0.5, 1.0]))}
+        return {"op": op, "person": p, "asset": a, "fraction": _frac(rng, continuous)}
     if op == "assign_dependent":
         src = _choice(rng, [tu for tu in hh.tax_units if tu.dependents])
         d = _choice(rng, src.dependents)
@@ -84,32 +90,36 @@ def random_move(hh: Household, rng: np.random.Generator) -> Optional[dict]:
         return {"op": op, "tax_unit": tu.id, "status": _choice(rng, ["SEPARATE", "JOINT", "SINGLE", "HEAD_OF_HOUSEHOLD"])}
     if op == "set_hours":
         p = _choice(rng, [p for p in people if hh.people[p].hours > 0])
-        return {"op": op, "person": p, "hours": round(hh.people[p].hours * float(_choice(rng, [0.5, 0.8, 1.2])))}
+        return {"op": op, "person": p, "hours": round(hh.people[p].hours * _frac(rng, continuous, (0.5, 0.8, 1.2), 0.5, 1.2))}
     if op == "itemize_or_standard":
         return {"op": op, "tax_unit": _choice(rng, hh.tax_units).id, "itemize": bool(rng.random() < 0.5)}
     if op == "contribute_retirement":
         p = _choice(rng, [p for p in people if hh.people[p].wages > 0])
         acct = _choice(rng, ["401k", "ira"])
         cap = 23_000 if acct == "401k" else 7_000
-        return {"op": op, "person": p, "account": acct, "amount": float(min(hh.people[p].wages, cap) * _choice(rng, [0.25, 0.5, 1.0]))}
+        return {"op": op, "person": p, "account": acct, "amount": round(float(min(hh.people[p].wages, cap) * _frac(rng, continuous)), 0)}
     return None
 
 
-def random_sequence(hh: Household, rng: np.random.Generator, max_len: int = 3, tries: int = 20) -> list[dict]:
-    """A valid random sequence of 1..max_len moves (built move by move)."""
+def random_sequence(hh: Household, rng: np.random.Generator, max_len: int = 3, tries: int = 20, continuous: bool = False, horizon: int = 1) -> list[dict]:
+    """A valid random sequence of 1..max_len moves (built move by move).
+    With horizon > 1, each move is dated in a random year of the horizon
+    with probability 1/2 (otherwise it applies from the first year)."""
     n = int(rng.integers(1, max_len + 1))
     seq: list[dict] = []
     cur = hh
     for _ in range(tries):
         if len(seq) >= n:
             break
-        m = random_move(cur, rng)
+        m = random_move(cur, rng, continuous)
         if m is None:
             continue
         try:
             nxt = apply_moves(cur, [m])
         except MoveError:
             continue
+        if horizon > 1 and rng.random() < 0.5:
+            m = dict(m, year=hh.year + int(rng.integers(horizon)))
         seq.append(m)
         cur = nxt
     return seq
@@ -158,11 +168,11 @@ class Proposer(Protocol):
 
 
 class RandomProposer:
-    def __init__(self, max_len: int = 3):
-        self.max_len = max_len
+    def __init__(self, max_len: int = 3, continuous: bool = False, horizon: int = 1):
+        self.max_len, self.continuous, self.horizon = max_len, continuous, horizon
 
     def propose(self, hh, history, k, rng):
-        return [random_sequence(hh, rng, self.max_len) for _ in range(k)]
+        return [random_sequence(hh, rng, self.max_len, continuous=self.continuous, horizon=self.horizon) for _ in range(k)]
 
 
 class GreedyProposer:
@@ -171,8 +181,18 @@ class GreedyProposer:
     re-draw one move). Falls back to random sequences until there is an
     archive."""
 
-    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.3):
+    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.3, continuous: bool = False, horizon: int = 1):
         self.max_len, self.top, self.explore = max_len, top, explore
+        self.continuous, self.horizon = continuous, horizon
+
+    def _seq(self, hh, rng):
+        return random_sequence(hh, rng, self.max_len, continuous=self.continuous, horizon=self.horizon)
+
+    def _move(self, hh, rng):
+        m = random_move(hh, rng, self.continuous)
+        if m is not None and self.horizon > 1 and rng.random() < 0.5:
+            m = dict(m, year=hh.year + int(rng.integers(self.horizon)))
+        return m
 
     def propose(self, hh, history, k, rng):
         good = [r for r in history if r.verdict.label not in ("invalid", "sacrifice", "benefit_cliff") and r.verdict.gain > 0]
@@ -181,17 +201,17 @@ class GreedyProposer:
         out = []
         for _ in range(k):
             if not elite or rng.random() < self.explore:
-                out.append(random_sequence(hh, rng, self.max_len))
+                out.append(self._seq(hh, rng))
                 continue
             base = list(_choice(rng, elite))
             kind = rng.random()
             try:
                 cur = apply_moves(hh, base)
             except MoveError:
-                out.append(random_sequence(hh, rng, self.max_len))
+                out.append(self._seq(hh, rng))
                 continue
             if kind < 0.5 and len(base) < self.max_len:
-                m = random_move(cur, rng)
+                m = self._move(cur, rng)
                 out.append(base + ([m] if m else []))
             elif kind < 0.7 and len(base) > 1:
                 i = int(rng.integers(len(base)))
@@ -202,7 +222,7 @@ class GreedyProposer:
                     pre = apply_moves(hh, base[:i])
                 except MoveError:
                     pre = hh
-                m = random_move(pre, rng)
+                m = self._move(pre, rng)
                 out.append(base[:i] + ([m] if m else []) + base[i + 1 :])
         return out
 
@@ -265,14 +285,14 @@ class PoolProposer(Protocol):
 class RandomPoolProposer:
     """Uniform household, random valid move sequence."""
 
-    def __init__(self, max_len: int = 3):
-        self.max_len = max_len
+    def __init__(self, max_len: int = 3, continuous: bool = False, horizon: int = 1):
+        self.max_len, self.continuous, self.horizon = max_len, continuous, horizon
 
     def propose_pool(self, pool, history, k, rng):
         out = []
         for _ in range(k):
             i = int(rng.integers(len(pool)))
-            out.append((i, random_sequence(pool[i], rng, self.max_len)))
+            out.append((i, random_sequence(pool[i], rng, self.max_len, continuous=self.continuous, horizon=self.horizon)))
         return out
 
 
@@ -281,8 +301,8 @@ class GreedyPoolProposer:
     far on their own household; explore new households with probability
     `explore`."""
 
-    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.4):
-        self.inner = GreedyProposer(max_len=max_len, top=top, explore=0.0)
+    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.4, continuous: bool = False, horizon: int = 1):
+        self.inner = GreedyProposer(max_len=max_len, top=top, explore=0.0, continuous=continuous, horizon=horizon)
         self.max_len, self.top, self.explore = max_len, top, explore
 
     def propose_pool(self, pool, history, k, rng):
@@ -294,12 +314,12 @@ class GreedyPoolProposer:
         for _ in range(k):
             if not elite or rng.random() < self.explore:
                 i = int(rng.integers(len(pool)))
-                out.append((i, random_sequence(pool[i], rng, self.max_len)))
+                out.append((i, self.inner._seq(pool[i], rng)))
                 continue
             i, _r = elite[int(rng.integers(len(elite)))]
             hist_i = [r for r in history if r.household_id == pool[i].id]
             props = self.inner.propose(pool[i], hist_i, 1, rng)
-            out.append((i, props[0] if props else random_sequence(pool[i], rng, self.max_len)))
+            out.append((i, props[0] if props else self.inner._seq(pool[i], rng)))
         return out
 
 

@@ -223,6 +223,7 @@ def apply_moves(hh: Household, moves: list[dict]) -> Household:
     out = hh.copy()
     for i, m in enumerate(moves):
         m = dict(m)
+        m.pop("year", None)  # dating is handled by household_in_year
         op = m.pop("op", None)
         if op not in MOVES:
             raise MoveError(f"move {i}: unknown op {op!r}")
