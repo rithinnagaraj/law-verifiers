@@ -12,8 +12,9 @@ export PATH="$HOME/.local/bin:$PATH"
 # shellcheck disable=SC1091
 . .venv/bin/activate
 export TAXRED_PE_CACHE="${TAXRED_PE_CACHE:-6}"
-mkdir -p results/logs
-log="results/logs/${name}_$(date -u +%Y%m%dT%H%M%SZ).log"
+export TAXRED_RESULTS="${TAXRED_RESULTS:-$HOME/lv-results}"
+mkdir -p "$TAXRED_RESULTS/logs"
+log="$TAXRED_RESULTS/logs/${name}_$(date -u +%Y%m%dT%H%M%SZ).log"
 MEM_MAX="${MEM_MAX:-68G}"
 export TAXRED_MEM_GB="${MEM_MAX%G}"
 # A user scope dies with the user manager when the last ssh session closes

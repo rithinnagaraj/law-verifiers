@@ -13,8 +13,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def results_root() -> Path:
+    """Where experiments write. On the VM, scripts/vm_run.sh points
+    TAXRED_RESULTS outside the checkout so `git pull` never meets untracked
+    result files; summaries are copied into results/ and committed locally."""
+    return Path(os.environ.get("TAXRED_RESULTS", ROOT / "results"))
+
+
 def out_dir(name: str) -> Path:
-    d = ROOT / "results" / name
+    d = results_root() / name
     d.mkdir(parents=True, exist_ok=True)
     return d
 

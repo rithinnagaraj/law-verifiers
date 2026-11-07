@@ -5,3 +5,4 @@ __pycache__/
 results/**/raw/
 results/**/*.parquet
 *.log
+results/**/checkpoint*.jsonl
