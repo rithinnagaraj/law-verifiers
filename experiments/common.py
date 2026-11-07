@@ -93,14 +93,15 @@ def run_jobs(fn, jobs, workers: int, checkpoint: Path | None = None, max_tasks_p
 
     - Each finished job's result is appended to `checkpoint` (JSONL) and
       skipped on a rerun, so a crash loses at most the jobs in flight.
-    - Workers are recycled every `max_tasks_per_child` jobs, releasing the
-      PolicyEngine systems and simulations they hold.
+    - Jobs run in waves of `workers x max_tasks_per_child`, each wave in a
+      fresh pool, which releases the PolicyEngine systems and simulations
+      the workers hold. (ProcessPoolExecutor's own max_tasks_per_child
+      deadlocked on the VM: workers gone, parent waiting on a futex.)
     - If a worker dies (e.g. the memory-capped scope's OOM killer), the pool
       is rebuilt with half the workers and the remaining jobs are retried.
     Returns results in job order (jobs that kept failing are left out).
     """
     import json as _json
-    from concurrent.futures import ProcessPoolExecutor, as_completed
     from concurrent.futures.process import BrokenProcessPool
 
     key = lambda j: _json.dumps(j, sort_keys=True, default=str)
@@ -117,22 +118,34 @@ def run_jobs(fn, jobs, workers: int, checkpoint: Path | None = None, max_tasks_p
         if not pending:
             break
         try:
-            with ProcessPoolExecutor(min(w, len(pending)), max_tasks_per_child=max_tasks_per_child) as ex:
-                futs = {ex.submit(fn, j): j for j in pending}
-                for f in as_completed(futs):
-                    j = futs[f]
-                    try:
-                        r = f.result()
-                    except BrokenProcessPool:
-                        raise
-                    except Exception as e:  # a bug in one job: report, keep going
-                        print(f"[run_jobs] job failed: {key(j)[:120]}: {e!r}", file=sys.stderr)
-                        continue
-                    done[key(j)] = r
-                    if checkpoint is not None:
-                        with open(checkpoint, "a") as fh:
-                            fh.write(_json.dumps({"key": key(j), "result": r}, default=float) + "\n")
+            wave = max(1, w * max_tasks_per_child)
+            for start in range(0, len(pending), wave):
+                _run_wave(fn, pending[start : start + wave], min(w, len(pending)), key, done, checkpoint)
         except BrokenProcessPool:
             w = max(1, w // 2)
             print(f"[run_jobs] a worker died (attempt {attempt + 1}); retrying with {w} workers", file=sys.stderr)
     return [done[key(j)] for j in jobs if key(j) in done]
+
+
+def _run_wave(fn, jobs, workers, key, done, checkpoint):
+    """One fresh pool for one wave of jobs; raises BrokenProcessPool if a
+    worker dies (run_jobs then retries the rest with fewer workers)."""
+    import json as _json
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    from concurrent.futures.process import BrokenProcessPool
+
+    with ProcessPoolExecutor(workers) as ex:
+        futs = {ex.submit(fn, j): j for j in jobs}
+        for f in as_completed(futs):
+            j = futs[f]
+            try:
+                r = f.result()
+            except BrokenProcessPool:
+                raise
+            except Exception as e:  # a bug in one job: report, keep going
+                print(f"[run_jobs] job failed: {key(j)[:120]}: {e!r}", file=sys.stderr)
+                continue
+            done[key(j)] = r
+            if checkpoint is not None:
+                with open(checkpoint, "a") as fh:
+                    fh.write(_json.dumps({"key": key(j), "result": r}, default=float) + "\n")
