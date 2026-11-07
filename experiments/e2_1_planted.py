@@ -27,7 +27,10 @@ from common import out_dir, run_metadata, safe_workers, write_json
 from taxred.planted import variants
 from taxred.verifier import Verifier, VerifierConfig
 
-MIN_REDUCTION = 0.5
+# Fixed validity bar, independent of the matching threshold chosen in E0.7
+# (which is computed on the valid set). 0.5 rejected kiddie_allowance, whose
+# witnesses also collect current-law gains (allowance, NIIT avoidance).
+MIN_REDUCTION = 0.3
 FLAGGED = ("candidate", "code_disagreement")
 
 
