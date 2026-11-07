@@ -143,6 +143,10 @@ class Household:
     tax_units: list[TaxUnit]
     # Pairs of people who are legally married (needed for SEPARATE status).
     married_pairs: list[tuple[str, str]] = field(default_factory=list)
+    # Possible futures (stage 1): [{"name", "prob", "from_year", "asset_growth",
+    # "wage_factor"}]. From `from_year` on, asset values and IRA balances are
+    # multiplied by asset_growth and wages by wage_factor. Empty = one future.
+    scenarios: list = field(default_factory=list)
 
     # ---- helpers ----------------------------------------------------------
     def copy(self) -> "Household":
@@ -202,6 +206,7 @@ class Household:
             people=people,
             tax_units=[TaxUnit(**tu) for tu in d["tax_units"]],
             married_pairs=[tuple(p) for p in d.get("married_pairs", [])],
+            scenarios=list(d.get("scenarios", [])),
         )
 
     def to_json(self) -> str:
@@ -341,3 +346,18 @@ def economic_snapshot(hh: Household) -> EconomicSnapshot:
         wealth=sum(p.wealth for p in ps),
         hours=sum(p.hours for p in ps),
     )
+
+
+STANDARD_SCENARIOS = [
+    {"name": "up", "prob": 1 / 3, "from_year": 2025, "asset_growth": 1.25, "wage_factor": 1.0},
+    {"name": "down", "prob": 1 / 3, "from_year": 2025, "asset_growth": 0.75, "wage_factor": 1.0},
+    {"name": "income_drop", "prob": 1 / 3, "from_year": 2025, "asset_growth": 1.0, "wage_factor": 0.5},
+]
+
+
+def with_scenarios(hh: "Household", scenarios: list | None = None) -> "Household":
+    """A copy of hh with possible futures attached (default: assets +25% or
+    -25% from 2025, or wages halved from 2025; equally likely)."""
+    out = hh.copy()
+    out.scenarios = [dict(s, from_year=s["from_year"] - 2024 + hh.year) for s in (scenarios or STANDARD_SCENARIOS)]
+    return out

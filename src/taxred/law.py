@@ -197,6 +197,9 @@ class Law:
     pe_reform: tuple = ()  # tuple of (path, value) for hashability
     tc_reform: tuple = ()
     disabled: frozenset = frozenset()  # provision names switched off
+    # Pre-2018 law let a Roth conversion be recharacterized (undone) until the
+    # following October; TCJA 2017 s.13611 repealed it for conversions.
+    roth_recharacterization: bool = False
     label: str = "current law"
 
     def with_kiddie(self, key: str) -> "Law":

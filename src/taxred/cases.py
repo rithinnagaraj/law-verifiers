@@ -25,7 +25,7 @@ not appear in the gain's attribution signature.
 from __future__ import annotations
 
 import itertools
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Callable
 
 from .household import Asset, Household, Person, TaxUnit
@@ -133,6 +133,25 @@ class ClosureCase:
     witness: Callable[[Household], list] = gift_bond
     sources: list = field(default_factory=list)
     notes: str = ""
+    horizon: int = 1  # tax years the verifier evaluates for this case
+
+
+def _roth_panel(year: int) -> list:
+    from .household import with_scenarios
+
+    out = []
+    for wages, bal in itertools.product((20_000, 40_000, 80_000), (100_000, 200_000, 400_000)):
+        hh = Household(f"r{wages}_{bal}", year, "TX", {"p": Person("p", 62, wages=wages, hours=2080 if wages else 0, ira_balance=bal)}, [TaxUnit("t", "p")])
+        out.append(with_scenarios(hh))
+    return out
+
+
+def _roth_witness(hh: Household) -> list:
+    amt = round(0.4 * hh.people["p"].ira_balance)
+    return [
+        {"op": "roth_convert", "person": "p", "amount": amt, "year": hh.year},
+        {"op": "recharacterize", "person": "p", "amount": amt, "of_year": hh.year, "year": hh.year + 1, "if_scenario": ["down"]},
+    ]
 
 
 def closure_cases(year: int = 2024) -> dict[str, ClosureCase]:
@@ -218,6 +237,22 @@ def closure_cases(year: int = 2024) -> dict[str, ClosureCase]:
             _child_amt_binds,
             sources=["IRC s.59(j)", "IRS Form 6251 instructions"],
             notes="Finding F3: PolicyEngine does not apply the limit; expect the closure to be invisible to it.",
+        ),
+        ClosureCase(
+            "roth_recharacterization_tcja2017",
+            "Convert a traditional IRA to a Roth, then undo the conversion if the assets fall",
+            "Tax Cuts and Jobs Act 2017, s.13611: no recharacterization of Roth conversions after 2017",
+            "congress",
+            "two-calc",
+            replace(base, roth_recharacterization=True),
+            base,
+            ("roth_recharacterization",),
+            lambda hh: True,
+            panel=_roth_panel,
+            witness=_roth_witness,
+            sources=["P.L. 115-97 s.13611", "IRS Pub. 590-A (recharacterizations)"],
+            notes="Needs scenarios (assets +25% / -25% / wages halved from 2025) and terminal valuation of IRA balances; horizon 3.",
+            horizon=3,
         ),
     ]
     return {c.name: c for c in cases}

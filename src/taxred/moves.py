@@ -328,6 +328,7 @@ def apply_moves(hh: Household, moves: list[dict]) -> Household:
     for i, m in enumerate(moves):
         m = dict(m)
         m.pop("year", None)  # dating is handled by household_in_year
+        m.pop("if_scenario", None)  # scenarios are resolved by household_in_year
         op = m.pop("op", None)
         if op not in MOVES:
             raise MoveError(f"move {i}: unknown op {op!r}")
@@ -354,50 +355,99 @@ ONE_TIME_OPS = ("realize_gain", "donate_cash", "reduce_donation", "donate_asset"
 FLOW_FIELDS = ("long_term_gains", "charitable_cash", "charitable_noncash", "hsa")
 
 
-def household_in_year(hh: Household, moves: list[dict], year: int) -> Household:
-    """The household as it stands in tax year `year` of a horizon starting at
-    hh.year, after the moves dated (key "year", default hh.year) up to then.
+def _year_of(m: dict, start: int) -> int:
+    try:
+        return int(m.get("year", start))
+    except (TypeError, ValueError) as e:
+        raise MoveError("bad year") from e
 
-    Facts repeat each year (a static household). Moves persist into later
-    years, except one-time events (realize_gain): their realized gain counts
-    only in their own year, while the basis step-up persists. Assets with a
-    `sale_year` realize their remaining gain in that year (reinvested)."""
-    out = hh.copy()
+
+def _resolve(hh: Household, moves: list[dict], scenario: dict | None, allow_recharacterization: bool = False) -> list[dict]:
+    """The moves that apply in `scenario`: contingent moves ("if_scenario")
+    are kept only in their scenarios and only once the future is known;
+    recharacterizations cancel (part of) a conversion of the year they name
+    where the law allows it, and have no effect where it does not (TCJA 2017
+    repealed recharacterization of conversions: the conversion stands)."""
     start = hh.year
-    chunk: list[dict] = []  # consecutive moves applied together, as apply_moves does
+    out = []
     for i, m in enumerate(moves):
-        m = dict(m)
-        try:
-            y = int(m.pop("year", start))
-        except (TypeError, ValueError) as e:
-            raise MoveError(f"move {i}: bad year") from e
+        y = _year_of(m, start)
         if y < start:
             raise MoveError(f"move {i}: year {y} before the horizon starts ({start})")
-        if y > year:
-            continue
-        if m.get("op") in ONE_TIME_OPS and y < year:
-            if chunk:
-                out, chunk = apply_moves(out, chunk), []
-            before = {pid: ({f: getattr(p, f) for f in FLOW_FIELDS}, dict(p.other)) for pid, p in out.people.items()}
-            out = apply_moves(out, [m])
-            for pid, (flows, other) in before.items():
-                for f, v in flows.items():
-                    setattr(out.people[pid], f, v)
-                out.people[pid].other = other
-        else:
-            chunk.append(m)
-    if chunk or not moves:
-        out = apply_moves(out, chunk)
-    for p in out.people.values():
-        for a in p.assets:
-            if a.sale_year is None:
+        cond = m.get("if_scenario")
+        if cond is not None:
+            if not hh.scenarios:
+                raise MoveError(f"move {i}: contingent move, but the household has one future")
+            names = [cond] if isinstance(cond, str) else list(cond)
+            reveal = min(s["from_year"] for s in hh.scenarios)
+            if y < reveal:
+                raise MoveError(f"move {i}: depends on a future not known until {reveal}")
+            if scenario is None or scenario["name"] not in names:
                 continue
-            if a.sale_year == year and a.unrealized_gain > 0:
-                p.long_term_gains += a.unrealized_gain
-                a.basis = a.value
-            elif a.sale_year < year:
-                # Sold and reinvested in an earlier year. (A realize_gain dated
-                # after the sale on the same asset is not modelled.)
-                a.basis = max(a.basis, a.value)
+        out.append({k: v for k, v in m.items() if k != "if_scenario"})
+    for m in [m for m in out if m.get("op") == "recharacterize" and allow_recharacterization]:
+        of = int(m.get("of_year", start))
+        d = _year_of(m, start)
+        if not of <= d <= of + 1:
+            raise MoveError("a conversion can be recharacterized only by the following year")
+        left = float(m.get("amount", 0.0))
+        if left <= 0:
+            raise MoveError("amount must be positive")
+        convs = [c for c in out if c.get("op") == "roth_convert" and c.get("person") == m.get("person") and _year_of(c, start) == of]
+        if sum(float(c["amount"]) for c in convs) + 1e-6 < left:
+            raise MoveError("recharacterizes more than was converted that year")
+        for c in convs:
+            take = min(left, float(c["amount"]))
+            c["amount"] = float(c["amount"]) - take
+            left -= take
+        out = [c for c in out if not (c.get("op") == "roth_convert" and float(c["amount"]) <= 0)]
+    return [m for m in out if m.get("op") != "recharacterize"]
+
+
+def household_in_year(hh: Household, moves: list[dict], year: int, scenario: dict | None = None, allow_recharacterization: bool = False) -> Household:
+    """The household as it stands in tax year `year` of a horizon starting at
+    hh.year, simulated forward year by year.
+
+    Facts repeat each year (a static household) unless a scenario changes the
+    world: from its from_year on, asset values and IRA balances are scaled by
+    asset_growth and wages by wage_factor. Moves dated (key "year") in a year
+    apply from that year on; one-time events (ONE_TIME_OPS) count their flows
+    only in their own year while their stock effects persist. Assets with a
+    `sale_year` realize their remaining gain in that year (reinvested)."""
+    start = hh.year
+    moves = _resolve(hh, moves, scenario, allow_recharacterization)
+    out = hh.copy()
+    for y in range(start, year + 1):
+        if scenario is not None and y == scenario["from_year"]:
+            g, wf = float(scenario.get("asset_growth", 1.0)), float(scenario.get("wage_factor", 1.0))
+            for p in out.people.values():
+                p.wages *= wf
+                p.self_employment *= wf
+                for a in p.assets:
+                    a.value *= g
+                p.ira_balance *= g
+                p.roth_balance *= g
+        chunk: list[dict] = []
+        for m in [m for m in moves if _year_of(m, start) == y]:
+            m = {k: v for k, v in m.items() if k != "year"}
+            if m.get("op") in ONE_TIME_OPS and y < year:
+                if chunk:
+                    out, chunk = apply_moves(out, chunk), []
+                before = {pid: ({f: getattr(p, f) for f in FLOW_FIELDS}, dict(p.other)) for pid, p in out.people.items()}
+                out = apply_moves(out, [m])
+                for pid, (flows, other) in before.items():
+                    for f, v in flows.items():
+                        setattr(out.people[pid], f, v)
+                    out.people[pid].other = other
+            else:
+                chunk.append(m)
+        if chunk or y == start:
+            out = apply_moves(out, chunk)
+        for p in out.people.values():
+            for a in p.assets:
+                if a.sale_year == y and a.unrealized_gain > 0:
+                    if y == year:
+                        p.long_term_gains += a.unrealized_gain
+                    a.basis = a.value
     out.year = year
     return out

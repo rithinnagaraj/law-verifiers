@@ -60,8 +60,8 @@ def run_case(args):
     case = closure_cases(year)[name]
     hhs = case.panel(year)
     props = [(h, case.witness(h)) for h in hhs]
-    pre = Verifier(case.law_pre, VerifierConfig(run_attribution=False)).evaluate_many(props)
-    post = Verifier(case.law_post, VerifierConfig()).evaluate_many(props)
+    pre = Verifier(case.law_pre, VerifierConfig(run_attribution=False, horizon=case.horizon)).evaluate_many(props)
+    post = Verifier(case.law_post, VerifierConfig(horizon=case.horizon)).evaluate_many(props)
     rows = []
     for h, a, b in zip(hhs, pre, post):
         rows.append(
