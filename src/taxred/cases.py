@@ -77,12 +77,21 @@ def _kid(hh: Household) -> Person:
     return hh.people["kid"]
 
 
+# The child has net unearned income (2024: unearned income above 2 x $1,300).
+KIDDIE_ALLOWANCE_2024 = 2_600
+
+
+def _has_nui(hh: Household) -> bool:
+    return _bond_interest(hh) > KIDDIE_ALLOWANCE_2024
+
+
 def _kiddie_covers(key: str):
     rule = KIDDIE_RULES[key]
 
     def f(hh: Household) -> bool:
         k = _kid(hh)
-        return k.age < rule.age_under or bool(k.is_student and rule.student_age_under and k.age < rule.student_age_under)
+        in_age = k.age < rule.age_under or bool(k.is_student and rule.student_age_under and k.age < rule.student_age_under)
+        return in_age and _has_nui(hh)
 
     return f
 
@@ -155,7 +164,7 @@ def closure_cases(year: int = 2024) -> dict[str, ClosureCase]:
             base.with_kiddie("tra1986"),
             base.with_kiddie("tipra2005"),
             ("kiddie_tax",),
-            lambda hh: 14 <= _kid(hh).age < 18,
+            lambda hh: 14 <= _kid(hh).age < 18 and _has_nui(hh),
             sources=["P.L. 109-222 s.510"],
         ),
         ClosureCase(
@@ -167,7 +176,7 @@ def closure_cases(year: int = 2024) -> dict[str, ClosureCase]:
             base.with_kiddie("tipra2005"),
             base.with_kiddie("sbwota2007"),
             ("kiddie_tax",),
-            lambda hh: _kid(hh).age == 18 or (_kid(hh).is_student and 18 <= _kid(hh).age < 24),
+            lambda hh: (_kid(hh).age == 18 or (_kid(hh).is_student and 18 <= _kid(hh).age < 24)) and _has_nui(hh),
             sources=["P.L. 110-28 s.8241"],
             notes="The earned-income support test for ages 18-23 is not modelled.",
         ),

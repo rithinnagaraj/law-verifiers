@@ -8,7 +8,10 @@ For each closure case and each witness household:
     federal income-tax gain (so a closure invisible to one calculator shows).
 
 H1 on the closed mechanism (amended; see FINDINGS.md):
-  sensitivity  covered households: flagged pre-closure and reduction >= R_MIN
+  sensitivity  households the closure legally covers: flagged pre-closure and
+               the closure removes a detectable share (> R_EPS) of the gain
+  match rate   covered households where the reduction is >= R_MIN (the
+               closure-test half of the matching rule; R_MIN is set in E0.7)
   specificity  households the closure does not cover: |reduction| <= R_EPS
   post         the closed provision is not in the post-closure signature;
                the residual is reported by provision.
@@ -87,16 +90,23 @@ def run_case(args):
     return rows
 
 
-def summarize(df: pd.DataFrame, cases) -> tuple[dict, str]:
+def summarize(df: pd.DataFrame, cases, year: int = 2024) -> tuple[dict, str]:
     df = df.copy()
+    # Recompute coverage from the case definitions (CSV may predate a change).
+    cov = {}
+    for name in df["case"].unique():
+        c = cases[name]
+        cov.update({(name, h.id): bool(c.covered(h)) for h in c.panel(year)})
+    df["covered"] = [cov[(c, h)] for c, h in zip(df["case"], df.household_id)]
     df["red"] = [_red(a, b) for a, b in zip(df.gain_pre, df.gain_post)]
     df["red_fed_pe"] = [_red(a, b) for a, b in zip(df.fed_pe_pre, df.fed_pe_post)]
     df["red_fed_tc"] = [_red(a, b) for a, b in zip(df.fed_tc_pre, df.fed_tc_post)]
     df["flag_pre"] = df.label_pre.isin(FLAGGED)
     df["flag_post"] = df.label_post.isin(FLAGGED)
-    df["sens"] = df.flag_pre & (df.red >= R_MIN)
-    df["sens_pe_fed"] = df.red_fed_pe >= R_MIN
-    df["sens_tc_fed"] = df.red_fed_tc >= R_MIN
+    df["sens"] = df.flag_pre & (df.red > R_EPS)
+    df["match"] = df.red >= R_MIN
+    df["sens_pe_fed"] = df.red_fed_pe > R_EPS
+    df["sens_tc_fed"] = df.red_fed_tc > R_EPS
     df["spec"] = df.red.abs().fillna(0) <= R_EPS
     out, lines = {}, []
     for name, g in df.groupby("case", sort=False):
@@ -118,6 +128,7 @@ def summarize(df: pd.DataFrame, cases) -> tuple[dict, str]:
             sensitivity_ci=clopper_pearson(k, n),
             sensitivity_pe_federal=float(cov.sens_pe_fed.mean()) if n else None,
             sensitivity_tc_federal=float(cov.sens_tc_fed.mean()) if n else None,
+            match_rate=float(cov.match.mean()) if n else None,
             specificity=ks / ns if ns else None,
             specificity_ci=clopper_pearson(ks, ns),
             flag_rate_pre_covered=float(cov.flag_pre.mean()) if n else None,
@@ -132,19 +143,20 @@ def summarize(df: pd.DataFrame, cases) -> tuple[dict, str]:
         f = lambda x: "n/a" if x is None or (isinstance(x, float) and np.isnan(x)) else f"{x:.2f}"
         lines.append(
             f"| {name} | {c.coverage} | {n} | {f(s['sensitivity'])} [{f(s['sensitivity_ci'][0])}, {f(s['sensitivity_ci'][1])}] "
-            f"| {f(s['sensitivity_pe_federal'])} | {f(s['sensitivity_tc_federal'])} "
+            f"| {f(s['sensitivity_pe_federal'])} | {f(s['sensitivity_tc_federal'])} | {f(s['match_rate'])} "
             f"| {ns} | {f(s['specificity'])} | {f(s['flag_rate_post_covered'])} | {f(s['closed_in_post_signature'])} "
             f"| {f(s['median_reduction_covered'])} |"
         )
     md = (
         "# E1.1 historical closures: H1 on the closed mechanism\n\n"
-        f"Sensitivity: covered households flagged pre-closure with the closure removing >= {R_MIN:.0%} of the gain "
-        f"(95% Clopper-Pearson CI). PE/TC fed: same reduction test on each calculator's federal income-tax gain. "
+        f"Sensitivity: legally covered households flagged pre-closure where the closure removes > {R_EPS:.0%} of the gain "
+        f"(95% Clopper-Pearson CI). PE/TC fed: same test on each calculator's federal income-tax gain. "
+        f"Match: share of covered households where the closure removes >= {R_MIN:.0%} (closure-test half of the matching rule). "
         f"Specificity: households the closure should not affect, with |reduction| <= {R_EPS:.0%}. "
         "Post flag: share of covered households still flagged after the closure (residual from other provisions). "
         "Closed in sig: the closed provision appears in the post-closure attribution signature (should be 0).\n\n"
-        "| case | coverage | n cov | sensitivity | PE fed | TC fed | n not cov | specificity | post flag | closed in sig | median red. |\n"
-        "|---|---|---|---|---|---|---|---|---|---|---|\n" + "\n".join(lines) + "\n\n## Post-closure residual: median attribution share among still-flagged covered households\n\n"
+        "| case | coverage | n cov | sensitivity | PE fed | TC fed | match @R_MIN | n not cov | specificity | post flag | closed in sig | median red. |\n"
+        "|---|---|---|---|---|---|---|---|---|---|---|---|\n" + "\n".join(lines) + "\n\n## Post-closure residual: median attribution share among still-flagged covered households\n\n"
     )
     for name, s in out.items():
         if s["post_residual_median_attribution"]:

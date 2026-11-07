@@ -111,8 +111,65 @@ def realize_gain(hh: Household, person: str, asset: str, fraction: float = 1.0) 
     f = _fraction(fraction)
     a = p.asset(asset)
     gain = (a.value - a.basis) * f
+    if gain < 0:
+        # Wash sale (IRC s.1091): a loss on a sale followed by an immediate
+        # repurchase is disallowed and added to the new basis. Neither
+        # calculator knows about repurchases, so the rule lives here; without
+        # it an agent is paid up to $3,000/yr of fake loss deductions.
+        return
     p.long_term_gains += gain
     a.basis += gain
+
+
+def _retirement_limits(year: int, age: int) -> dict:
+    from .taxes import _pe_params
+
+    r = _pe_params().gov.irs.gross_income.retirement_contributions
+    d = f"{year}-01-01"
+    catch_up = age >= r.catch_up.age_threshold(d)
+    return {
+        "401k": float(getattr(r.limit, "401k")(d)) + catch_up * float(r.catch_up.limit.k401(d)),
+        "ira": float(r.limit.ira(d)) + catch_up * float(r.catch_up.limit.ira(d)),
+    }
+
+
+def contribute_retirement(hh: Household, person: str, account: str, amount: float) -> None:
+    """Make a pre-tax retirement contribution out of this year's pay.
+
+    account "401k": an elective deferral from wages (an employer plan is
+    assumed), up to the statutory limit incl. catch-up. account "ira": a
+    traditional IRA contribution, allowed only when it is fully deductible
+    under the rules both calculators share: nobody in the person's tax unit
+    makes a 401(k) deferral (no active participant, IRC s.219(g)), and it is
+    within the limit and the person's compensation. Gross pay and wealth are
+    unchanged (cash moves into a retirement account)."""
+    p = _person(hh, person)
+    amount = float(amount)
+    if amount <= 0:
+        raise MoveError("amount must be positive")
+    lim = _retirement_limits(hh.year, p.age)
+    tu = hh.unit_of(person)
+    if person not in (tu.head, tu.spouse):
+        raise MoveError("only a filer (head or spouse) can contribute")
+    unit_people = [hh.people[m] for m in (tu.head, tu.spouse) if m]
+    if account == "401k":
+        if p.traditional_401k + amount > lim["401k"] + 1e-6:
+            raise MoveError(f"401(k) limit is {lim['401k']:.0f}")
+        if p.traditional_401k + amount > p.wages:
+            raise MoveError("401(k) deferral exceeds wages")
+        if any(q.traditional_ira > 0 for q in unit_people):
+            raise MoveError("an IRA contribution in this unit would become partly non-deductible")
+        p.traditional_401k += amount
+    elif account == "ira":
+        if any(q.traditional_401k > 0 for q in unit_people):
+            raise MoveError("someone in this unit is an active plan participant (IRA deduction limited)")
+        if p.traditional_ira + amount > lim["ira"] + 1e-6:
+            raise MoveError(f"IRA limit is {lim['ira']:.0f}")
+        if p.traditional_ira + amount > p.earned_income:
+            raise MoveError("IRA contribution exceeds compensation")
+        p.traditional_ira += amount
+    else:
+        raise MoveError(f"unknown account {account!r}")
 
 
 def assign_dependent(hh: Household, dependent: str, tax_unit: str) -> None:
@@ -154,6 +211,7 @@ MOVES: dict[str, Callable] = {
     "assign_dependent": assign_dependent,
     "set_hours": set_hours,
     "itemize_or_standard": itemize_or_standard,
+    "contribute_retirement": contribute_retirement,
 }
 
 

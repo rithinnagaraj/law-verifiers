@@ -23,6 +23,7 @@ class HouseholdResult:
     benefits: Optional[float]  # None when the engine models no benefits
     units: list[UnitResult] = field(default_factory=list)
     kiddie_adjustment: float = 0.0  # included in fed_income_tax
+    pe_only_credits: float = 0.0  # federal credits only PolicyEngine computes
 
     @property
     def total_tax(self) -> float:
@@ -179,6 +180,7 @@ def evaluate_households(
                 benefits=None if benefits is None else float(benefits[i]),
                 units=ur,
                 kiddie_adjustment=adj,
+                pe_only_credits=sum(r.pe_only_credits for r in ur),
             )
         )
     return out

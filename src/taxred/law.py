@@ -16,7 +16,7 @@ a gain it explains.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Optional
+from typing import Callable, Optional
 
 
 @dataclass(frozen=True)
@@ -65,6 +65,8 @@ class Provision:
     pe: dict = field(default_factory=dict)
     # Tax-Calculator reform: {param: value-or-list}.
     tc: dict = field(default_factory=dict)
+    # Year-dependent PolicyEngine reform: fn(year) -> {path: value}.
+    pe_fn: Optional[Callable[[int], dict]] = None
     # Implemented in this package rather than the calculators.
     internal: Optional[str] = None
     # "intended": an intended concession; gains from it are not loopholes when
@@ -84,9 +86,43 @@ class Provision:
         return self.kind == "anti_abuse"
 
 
+def _hoh_as_single(year: int) -> dict:
+    """Head-of-household status switched off: HOH filers get the single
+    standard deduction and brackets for `year`."""
+    from .taxes import _pe_params
+
+    p = _pe_params().gov.irs
+    d = f"{year}-01-01"
+    out = {"gov.irs.deductions.standard.amount.HEAD_OF_HOUSEHOLD": float(p.deductions.standard.amount.SINGLE(d))}
+    for i in range(1, 8):
+        th = p.income.bracket.thresholds.children[str(i)]
+        out[f"gov.irs.income.bracket.thresholds.{i}.HEAD_OF_HOUSEHOLD"] = float(th.SINGLE(d))
+    return out
+
+
+_RC = "gov.irs.gross_income.retirement_contributions"
+
 PROVISIONS: dict[str, Provision] = {
     p.name: p
     for p in [
+        Provision(
+            "head_of_household",
+            "Head-of-household filing status (wider brackets, larger standard deduction)",
+            pe_fn=_hoh_as_single,
+            kind="intended",
+        ),
+        Provision(
+            "retirement_contributions",
+            "Exclusion / deduction of traditional 401(k) and IRA contributions",
+            pe={f"{_RC}.limit.401k": 0, f"{_RC}.limit.ira": 0, f"{_RC}.catch_up.limit.k401": 0, f"{_RC}.catch_up.limit.ira": 0},
+            kind="intended",
+        ),
+        Provision(
+            "savers_credit",
+            "Saver's credit (retirement savings contributions credit)",
+            pe={"gov.irs.credits.retirement_saving.contributions_cap": 0},
+            kind="intended",
+        ),
         Provision(
             "eitc",
             "Earned income tax credit",
@@ -171,7 +207,7 @@ class Law:
         p = PROVISIONS[provision]
         law = replace(
             self,
-            pe_reform=self.pe_reform + tuple(p.pe.items()),
+            pe_reform=self.pe_reform + tuple({**p.pe, **(p.pe_fn(self.year) if p.pe_fn else {})}.items()),
             tc_reform=self.tc_reform + tuple((k, _freeze(v)) for k, v in p.tc.items()),
             disabled=self.disabled | {provision},
             label=f"{self.label} - {provision}",

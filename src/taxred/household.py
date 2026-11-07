@@ -49,6 +49,10 @@ class Person:
     charitable_cash: float = 0.0
     mortgage_interest: float = 0.0
     childcare_expenses: float = 0.0
+    # Pre-tax retirement contributions this year, funded from pay. They move
+    # cash into a retirement account: wealth and gross pay are unchanged.
+    traditional_401k: float = 0.0
+    traditional_ira: float = 0.0
 
     # ---- derived income -------------------------------------------------
     @property

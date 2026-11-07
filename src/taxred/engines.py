@@ -34,6 +34,9 @@ class UnitResult:
     amt: float
     taxable_income: float
     other_tax: float  # payroll + state + local (PolicyEngine only)
+    # Federal credits only PolicyEngine computes (Tax-Calculator takes them as
+    # inputs): the saver's credit. Excluded from the cross-check comparison.
+    pe_only_credits: float = 0.0
 
     @property
     def total_tax(self) -> float:
@@ -48,6 +51,9 @@ def _year_period(year: int) -> str:
 # PolicyEngine-US
 # ---------------------------------------------------------------------------
 
+
+# F6: set TAXRED_PE_SALES_TAX=1 to restore PolicyEngine's sales-tax imputation.
+IMPUTE_SALES_TAX = os.environ.get("TAXRED_PE_SALES_TAX", "0") == "1"
 
 # Each cached system costs ~0.6 GB (base ~1.5 GB); building one takes ~16 s.
 _PE_CACHE = int(os.environ.get("TAXRED_PE_CACHE", "6"))
@@ -89,6 +95,8 @@ def _pe_person_inputs(p: Person, year: int, income_on: bool, role: str) -> dict:
                 "long_term_capital_gains": {Y: p.long_term_gains},
                 "charitable_cash_donations": {Y: p.charitable_cash},
                 "home_mortgage_interest": {Y: p.mortgage_interest},
+                "traditional_401k_contributions_desired": {Y: p.traditional_401k},
+                "traditional_ira_contributions_desired": {Y: p.traditional_ira},
             }
         )
     else:
@@ -131,6 +139,13 @@ class PolicyEngineEngine:
                 if m.role != "DEPENDENT":
                     childcare += m.person.childcare_expenses
             tu = {"members": ids, "filing_status": {Y: fu.filing_status}}
+            if not IMPUTE_SALES_TAX:
+                # PolicyEngine imputes an itemizable sales-tax deduction from
+                # the IRS optional tables; Tax-Calculator gets no such input.
+                # Finding F6: this caused ~95% of E0.1 disagreements. Both
+                # calculators now see zero sales tax.
+                tu["state_sales_tax"] = {Y: 0.0}
+                tu["local_sales_tax"] = {Y: 0.0}
             if fu.itemize is not None:
                 tu["tax_unit_itemizes"] = {Y: bool(fu.itemize)}
             sit["tax_units"][f"t{i}"] = tu
@@ -149,9 +164,10 @@ class PolicyEngineEngine:
         amt = calc("alternative_minimum_tax")
         ti = calc("taxable_income")
         hh_tax = calc("household_tax")
+        savers = calc("savers_credit")
         assert len(fed) == len(units) == len(hh_tax)
         return [
-            UnitResult(fu.id, fed[i], regular[i], amt[i], ti[i], hh_tax[i] - fed[i])
+            UnitResult(fu.id, fed[i], regular[i], amt[i], ti[i], hh_tax[i] - fed[i], savers[i])
             for i, fu in enumerate(units)
         ]
 
@@ -210,9 +226,15 @@ def _tc_record(rec_id: int, fu: FilingUnit) -> dict:
         DSI=int(fu.is_dependent_filer),
         age_head=head.age,
         age_spouse=spouse.age if spouse else 0,
-        e00200p=float(head.wages),
-        e00200s=float(spouse.wages) if spouse else 0.0,
-        e00200=s("wages"),
+        # Tax-Calculator wages are net of elective deferrals (pencon).
+        e00200p=float(head.wages - head.traditional_401k),
+        e00200s=float(spouse.wages - spouse.traditional_401k) if spouse else 0.0,
+        e00200=s("wages") - s("traditional_401k"),
+        pencon_p=float(head.traditional_401k),
+        pencon_s=float(spouse.traditional_401k) if spouse else 0.0,
+        # Deductible IRA contributions: the move layer only allows fully
+        # deductible ones (no workplace plan in the unit, within limits).
+        e03150=s("traditional_ira"),
         e00900p=float(head.self_employment),
         e00900s=float(spouse.self_employment) if spouse else 0.0,
         e00900=s("self_employment"),

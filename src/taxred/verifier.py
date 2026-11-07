@@ -53,6 +53,9 @@ class VerifierConfig:
     use_reality_check: bool = True
     use_crosscheck: bool = True
     use_whitelist: bool = True
+    # Attribute every gain above the threshold, not only candidates (so saved
+    # verdicts can be relabelled with checks switched off).
+    attribute_all: bool = False
 
 
 @dataclass
@@ -63,6 +66,7 @@ class Verdict:
     gain_federal_tc: float = 0.0
     gain_other_tax: float = 0.0
     gain_benefits: float = 0.0
+    gain_pe_only_credits: float = 0.0  # part of gain_federal_pe
     # Gain with the federal part taken at the lower of the two calculators.
     gain_conservative: float = 0.0
     reality_unchanged: Optional[bool] = None
@@ -132,31 +136,31 @@ class Verifier:
                 gain_other_tax=pb.other_tax - pm.other_tax,
                 gain_benefits=(pm.benefits or 0) - (pb.benefits or 0),
             )
-            v.gain_conservative = v.gain - max(0.0, v.gain_federal_pe - v.gain_federal_tc)
+            # Federal gain from credits only PolicyEngine computes (saver's
+            # credit): not comparable with Tax-Calculator, so it counts as
+            # single-calc gain and is left out of the cross-check.
+            v.gain_pe_only_credits = pm.pe_only_credits - pb.pe_only_credits
+            fed_cmp = v.gain_federal_pe - v.gain_pe_only_credits
+            v.gain_conservative = v.gain - max(0.0, fed_cmp - v.gain_federal_tc)
             sb, sm = economic_snapshot(base), economic_snapshot(moved)
             v.reality_delta = _reality_delta(sb, sm)
             v.reality_unchanged = _unchanged(sb, sm, self.cfg)
-            fed_share = v.gain_federal_pe / v.gain if v.gain else 1.0
+            fed_share = fed_cmp / v.gain if v.gain else 1.0
             v.coverage = "two-calc" if fed_share >= self.cfg.federal_share_for_two_calc else "single-calc"
             v.crosscheck_pass = bool(
-                v.gain_federal_pe <= self.cfg.crosscheck_abs_tol
-                or v.gain_federal_tc >= self.cfg.crosscheck_min_ratio * v.gain_federal_pe
+                fed_cmp <= self.cfg.crosscheck_abs_tol
+                or v.gain_federal_tc >= self.cfg.crosscheck_min_ratio * fed_cmp
             )
 
-            if v.gain <= self.cfg.gain_threshold:
-                v.label = "no_gain"
-            elif self.cfg.use_reality_check and not v.reality_unchanged:
-                lower_income = v.reality_delta["labor_income"] < 0 or v.reality_delta["investment_yield"] < 0
-                v.label = "benefit_cliff" if (lower_income and v.gain_benefits > 0) else "sacrifice"
-            elif self.cfg.use_crosscheck and not v.crosscheck_pass:
-                v.label = "code_disagreement"
-            else:
-                v.label = "candidate"
-                need_attr.append((k, i, base, moved, v))
             verdicts[i] = v
+            v.label = decide_label(v, self.cfg, attributed=False)
+            if v.label == "candidate" or (self.cfg.attribute_all and v.gain > self.cfg.gain_threshold):
+                need_attr.append((k, i, base, moved, v))
 
         if self.cfg.run_attribution and need_attr:
             self._attribute(need_attr)
+            for (_, _, _, _, v) in need_attr:
+                v.label = decide_label(v, self.cfg, attributed=True)
         return verdicts  # type: ignore
 
     def evaluate(self, base: Household, moves: list) -> Verdict:
@@ -181,14 +185,29 @@ class Verifier:
                 v.residual_without_intended = g_off / v.gain if v.gain else 0.0
         for (_, _, _, _, v) in items:
             v.signature = sorted(p for p, s in v.attribution.items() if s >= self.cfg.attribution_share)
-            # Getting around an anti-abuse rule (its removal takes away part of
-            # the gain) is never an intended concession, even when intended
-            # provisions explain the gain (e.g. regaining the EITC by moving
-            # assets under the investment-income limit).
             v.circumvents = sorted(p for p in v.signature if PROVISIONS[p].anti_abuse)
-            if not self.cfg.use_whitelist:
-                continue
-            if self.cfg.anti_abuse_overrides_intended and v.circumvents:
-                continue
-            if v.residual_without_intended is not None and v.residual_without_intended <= self.cfg.intended_residual_max:
-                v.label = "intended_concession"
+
+
+def decide_label(v: Verdict, cfg: VerifierConfig, attributed: bool = True) -> str:
+    """The label from a verdict's computed fields under `cfg`. Pure, so the
+    E1.2 ablation can relabel saved verdicts with checks switched off."""
+    if v.label == "invalid":
+        return "invalid"
+    if v.gain <= cfg.gain_threshold:
+        return "no_gain"
+    if cfg.use_reality_check and not v.reality_unchanged:
+        lower_income = v.reality_delta.get("labor_income", 0) < 0 or v.reality_delta.get("investment_yield", 0) < 0
+        return "benefit_cliff" if (lower_income and v.gain_benefits > 0) else "sacrifice"
+    if cfg.use_crosscheck and not v.crosscheck_pass:
+        return "code_disagreement"
+    if not attributed or not cfg.use_whitelist:
+        return "candidate"
+    # Getting around an anti-abuse rule (its removal takes away part of the
+    # gain) is never an intended concession, even when intended provisions
+    # explain the gain (e.g. regaining the EITC by moving assets under the
+    # investment-income limit).
+    if cfg.anti_abuse_overrides_intended and v.circumvents:
+        return "candidate"
+    if v.residual_without_intended is not None and v.residual_without_intended <= cfg.intended_residual_max:
+        return "intended_concession"
+    return "candidate"
