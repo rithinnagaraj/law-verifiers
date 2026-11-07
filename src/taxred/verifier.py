@@ -21,7 +21,7 @@ Coverage tags (experiment plan §1.2): two-calc | single-calc.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Optional, Sequence
 
 from .household import EconomicSnapshot, Household, economic_snapshot
@@ -40,6 +40,12 @@ class VerifierConfig:
     # Magnitude differences beyond that are recorded, not fatal.
     crosscheck_min_ratio: float = 0.5
     crosscheck_abs_tol: float = 25.0  # federal gains below this need no confirmation
+    # "ratio": pass when TC's federal gain >= crosscheck_min_ratio x PE's.
+    # "tolerance": pass when the two federal gains agree within
+    #   max(crosscheck_abs_tol, crosscheck_rel_tol x |PE gain|) (stricter; the
+    #   ratio test passed 44 of 56 child-AMT witnesses that PE gets wrong, F3).
+    crosscheck_mode: str = "ratio"
+    crosscheck_rel_tol: float = 0.1
     federal_share_for_two_calc: float = 0.9
     attribution_share: float = 0.2  # a provision is in the signature if it explains >= this share
     # Intended concession: with all intended provisions in the attribution set
@@ -72,6 +78,7 @@ class Verdict:
     reality_unchanged: Optional[bool] = None
     reality_delta: dict = field(default_factory=dict)
     crosscheck_pass: Optional[bool] = None
+    crosscheck_tolerance_pass: Optional[bool] = None  # the stricter test, always recorded
     coverage: Optional[str] = None
     attribution: dict = field(default_factory=dict)  # provision -> share of gain explained
     signature: list = field(default_factory=list)
@@ -147,10 +154,8 @@ class Verifier:
             v.reality_unchanged = _unchanged(sb, sm, self.cfg)
             fed_share = fed_cmp / v.gain if v.gain else 1.0
             v.coverage = "two-calc" if fed_share >= self.cfg.federal_share_for_two_calc else "single-calc"
-            v.crosscheck_pass = bool(
-                fed_cmp <= self.cfg.crosscheck_abs_tol
-                or v.gain_federal_tc >= self.cfg.crosscheck_min_ratio * fed_cmp
-            )
+            v.crosscheck_pass = crosscheck(fed_cmp, v.gain_federal_tc, self.cfg)
+            v.crosscheck_tolerance_pass = crosscheck(fed_cmp, v.gain_federal_tc, replace(self.cfg, crosscheck_mode="tolerance"))
 
             verdicts[i] = v
             v.label = decide_label(v, self.cfg, attributed=False)
@@ -186,6 +191,13 @@ class Verifier:
         for (_, _, _, _, v) in items:
             v.signature = sorted(p for p, s in v.attribution.items() if s >= self.cfg.attribution_share)
             v.circumvents = sorted(p for p in v.signature if PROVISIONS[p].anti_abuse)
+
+
+def crosscheck(fed_pe: float, fed_tc: float, cfg: VerifierConfig) -> bool:
+    """Does Tax-Calculator confirm PolicyEngine's (comparable) federal gain?"""
+    if cfg.crosscheck_mode == "tolerance":
+        return bool(abs(fed_pe - fed_tc) <= max(cfg.crosscheck_abs_tol, cfg.crosscheck_rel_tol * abs(fed_pe)))
+    return bool(fed_pe <= cfg.crosscheck_abs_tol or fed_tc >= cfg.crosscheck_min_ratio * fed_pe)
 
 
 def decide_label(v: Verdict, cfg: VerifierConfig, attributed: bool = True) -> str:
