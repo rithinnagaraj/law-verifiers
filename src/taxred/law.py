@@ -218,6 +218,15 @@ class Law:
             law = replace(law, kiddie=replace(law.kiddie, allowance_multiple=0.0))
         return law
 
+    def with_reform(self, pe: Optional[dict] = None, tc: Optional[dict] = None, label: str = "reform") -> "Law":
+        """This law with extra parameter changes (planted variants)."""
+        return replace(
+            self,
+            pe_reform=self.pe_reform + tuple((pe or {}).items()),
+            tc_reform=self.tc_reform + tuple((k, _freeze(v)) for k, v in (tc or {}).items()),
+            label=f"{self.label} + {label}",
+        )
+
     def without_all(self, provisions) -> "Law":
         law = self
         for p in provisions:

@@ -48,6 +48,17 @@ def _pe_params():
     return _pe_system(()).parameters
 
 
+def kiddie_floor(law: Law, year: int) -> float:
+    """The s.63(c)(5)(A) amount the kiddie-tax allowance is built from (2x).
+    Follows a law that changes the dependent standard-deduction floor (planted
+    variants). Values >= 100,000 are the "no dependent limit" sentinel of the
+    dependent_std_deduction_limit provision, not a floor, and are ignored."""
+    v = law.pe_reform_dict().get("gov.irs.deductions.standard.dependent.amount")
+    if v is not None and v < 100_000:
+        return float(v)
+    return dependent_std_floor(year)
+
+
 def kiddie_applies(rule: KiddieTaxRule, age: int, is_student: bool) -> bool:
     if not rule.enabled:
         return False
@@ -103,7 +114,7 @@ def apply_kiddie_tax(
     rule = law.kiddie
     if not rule.enabled:
         return {}
-    floor2 = rule.allowance_multiple * dependent_std_floor(units[0].year)
+    floor2 = rule.allowance_multiple * kiddie_floor(law, units[0].year)
     by_id = {u.id: u for u in units}
     groups: dict[str, list[tuple[FilingUnit, float]]] = {}
     for fu in units:
