@@ -205,6 +205,30 @@ benefits, state tax) are outside the cross-check by construction; such gains
 carry the `single-calc` tag and need the audit (E2.6d). Search-based catch
 rates are in the running chain.
 
+### F11. One statutory amount, two Tax-Calculator parameters (the AMT's 0% capital-gains bracket)
+
+Mutating the 0% long-term capital-gains threshold for single filers
+(planted family `cg0_single`) moved PolicyEngine's regular tax and AMT
+together, but Tax-Calculator kept taxing the gain through its AMT: it encodes
+the AMT's capital-gains brackets as separate parameters (`AMT_CG_brk1`…),
+while the statute (§55(b)(3)) uses the regular thresholds. Planted mutations
+must therefore change *every* parameter that encodes the statutory amount in
+each calculator; the two-calculator agreement on the witness is the check that
+caught it. (A cross-year variant of the same pitfall: Tax-Calculator
+MARS-indexed reforms given as full lists froze the other filing statuses at
+the base year's values; reforms now use `engines.mars_override`, which keeps
+them at current law in every year.)
+
+### E2.1 run 3 / E0.7 run 3 (chain 3, ~/lv-results; summaries to be copied)
+
+17 variants (8 families incl. 1 control); **13 of 14 non-control variants
+valid** (actc_rate_0.3 sits exactly at the 0.3 bar), 3/3 controls not
+flagged. E0.7 on 775 proposals (355 true instances): R = 0.1 → precision
+0.983, recall 1.000; R = 0.3 → 1.000 / 0.966; R = 0.8 → recall 0.31.
+A ninth family, `cg0_single` (horizon 3: gift an appreciated fund to an adult
+child before its planned 2026 sale; both calculators agree to the dollar on
+the witness after the F11 fix), is added after this run.
+
 ### F10. Python's ProcessPoolExecutor(max_tasks_per_child) deadlocked
 
 With worker recycling on, E2.3 hung after 48 of 72 jobs (workers gone, parent
