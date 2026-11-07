@@ -85,11 +85,22 @@ def scenarios(year: int = 2024) -> list[Scenario]:
         add(hid, "claim_child", hh, moves, NOT_FLAGGED, True)
 
     # --- positives: a gift to a child within the kiddie-tax allowance ------
-    for wages, interest, age in itertools.product([60_000, 150_000, 300_000], [1_000, 2_000, 2_600], [8, 15]):
+    # Parents below the NIIT threshold only: above it, part of the gain is
+    # NIIT avoidance (the child's own MAGI is tested), which is not an
+    # intended concession. Those cases are the gray family below. (Label
+    # correction after the first E0.6 run, 2026-11-07; see FINDINGS.)
+    for wages, interest, age in itertools.product([60_000, 150_000], [1_000, 2_000, 2_600], [8, 15]):
         hid = f"gift_allow_w{wages}_i{interest}_a{age}"
         hh = _single(hid, year, wages, kids=(age,))
         hh.people["a"].assets.append(Asset("bond", interest / 0.05, interest / 0.05, interest_yield=0.05))
         add(hid, "gift_allowance", hh, [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "bond"}], NOT_FLAGGED, True)
+
+    # --- gray: the same gift from a parent above the NIIT threshold --------
+    for wages, interest, age in itertools.product([300_000, 500_000], [5_000, 10_000, 20_000], [8, 15]):
+        hid = f"gift_niit_w{wages}_i{interest}_a{age}"
+        hh = _single(hid, year, wages, kids=(age,))
+        hh.people["a"].assets.append(Asset("bond", interest / 0.05, interest / 0.05, interest_yield=0.05))
+        add(hid, "gift_niit", hh, [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "bond"}], {"candidate"}, False)
 
     # --- positives: itemize vs standard (calculators already pick the best) -
     for wages, mortgage in itertools.product([80_000, 250_000], [5_000, 30_000]):

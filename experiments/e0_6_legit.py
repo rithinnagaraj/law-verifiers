@@ -96,18 +96,23 @@ def main():
         fp_rate=float(pos.fp.mean()),
         fp_rate_by_split=pos.groupby("split").fp.mean().to_dict(),
         fp_rate_by_family=pos.groupby("family").fp.mean().to_dict(),
+        # Candidates count as false positives per coverage tag: a single-calc
+        # flag rests on PolicyEngine alone (benefits, PE-only credits).
+        fp_rate_two_calc=float((pos.fp & (pos.coverage == "two-calc")).mean()),
+        fp_rate_candidate_only=float((pos.positive & (pos.label_full == "candidate")).mean()),
         negatives_correct=float(neg.correct.mean()),
         negatives_correct_by_family=neg.groupby("family").correct.mean().to_dict(),
         labels_by_family=df.groupby(["family", "label_full"]).size().unstack(fill_value=0).to_dict(orient="index"),
         ablation=abl,
     )
     write_json(od / "summary.json", summary)
-    fpcols = ["id", "family", "label_full", "gain", "gain_federal_pe", "gain_federal_tc", "gain_benefits", "gain_other_tax", "residual_without_intended", "signature", "circumvents"]
+    fpcols = ["id", "family", "label_full", "coverage", "gain", "gain_federal_pe", "gain_federal_tc", "gain_benefits", "gain_other_tax", "residual_without_intended", "signature", "circumvents"]
     fps = df[df.fp][fpcols]
     md = (
         "# E0.6 legitimate-planning set and E1.2 check ablation\n\n"
         f"Positives (legitimate planning): {len(pos)}; labelled negatives: {len(neg)}.\n\n"
         f"- **False-positive rate: {summary['fp_rate']:.1%}** (dev {summary['fp_rate_by_split'].get('dev', float('nan')):.1%}, test {summary['fp_rate_by_split'].get('test', float('nan')):.1%}); H1 target <= 5%\n"
+        f"- Two-calc false positives only: {summary['fp_rate_two_calc']:.1%}; counting only `candidate` (not `code_disagreement`): {summary['fp_rate_candidate_only']:.1%}\n"
         f"- Labelled negatives with the expected label: {summary['negatives_correct']:.1%}\n\n"
         "## Labels by family\n\n" + df.groupby(["family", "label_full"]).size().unstack(fill_value=0).to_markdown() +
         "\n\n## E1.2 ablation (relabelling the same verdicts)\n\n" + pd.DataFrame(abl).T.to_markdown(floatfmt=".3f") +
