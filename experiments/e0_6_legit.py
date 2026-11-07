@@ -25,7 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import pandas as pd
-from common import chunks, out_dir, run_metadata, write_json
+from common import chunks, out_dir, run_metadata, safe_workers, write_json
 
 from taxred.law import Law
 from taxred.planning import scenarios
@@ -69,7 +69,7 @@ def main():
         ids = [s.id for s in scenarios(a.year)]
         size = max(1, -(-len(ids) // a.workers))
         rows = []
-        with ProcessPoolExecutor(a.workers) as ex:
+        with ProcessPoolExecutor(safe_workers(a.workers)) as ex:
             for r in ex.map(run, [(c, a.year) for c in chunks(ids, size)]):
                 rows += r
         (od / "verdicts.json").write_text(json.dumps(rows, default=float))

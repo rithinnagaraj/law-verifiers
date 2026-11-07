@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import pandas as pd
-from common import chunks, out_dir, run_metadata, write_json
+from common import chunks, out_dir, run_metadata, safe_workers, write_json
 
 from taxred.household import Asset, Household, Person, TaxUnit
 from taxred.law import KIDDIE_RULES, Law
@@ -89,7 +89,7 @@ def main():
     else:
         jobs = [(c, k, a.year) for k in LAWS for c in chunks(hhs, 21)]
         rows = []
-        with ProcessPoolExecutor(a.workers) as ex:
+        with ProcessPoolExecutor(safe_workers(a.workers)) as ex:
             for r in ex.map(run, jobs):
                 rows += r
         df = pd.DataFrame(rows)

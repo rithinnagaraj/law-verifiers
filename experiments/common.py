@@ -53,3 +53,24 @@ def write_json(path: Path, obj) -> None:
 def chunks(seq, n):
     for i in range(0, len(seq), n):
         yield seq[i : i + n]
+
+
+def pe_worker_gb() -> float:
+    """Peak memory of one worker: base PolicyEngine system (~1.5 GB) plus
+    ~0.6 GB per cached reformed system (TAXRED_PE_CACHE)."""
+    return 1.5 + 0.6 * int(os.environ.get("TAXRED_PE_CACHE", "6")) + 0.5
+
+
+def safe_workers(requested: int) -> int:
+    """Cap the worker count by available memory (MemAvailable, Linux) so that
+    parallel PolicyEngine workers cannot push the machine into thrashing.
+    Two experiments started at once on the VM froze it (2026-11-07)."""
+    try:
+        with open("/proc/meminfo") as f:
+            avail_kb = next(int(l.split()[1]) for l in f if l.startswith("MemAvailable"))
+    except (OSError, StopIteration):
+        return requested
+    cap = max(1, int((avail_kb / 1048576 * 0.85) // pe_worker_gb()))
+    if cap < requested:
+        print(f"[safe_workers] {requested} workers requested, {cap} fit in available memory", file=sys.stderr)
+    return min(requested, cap)

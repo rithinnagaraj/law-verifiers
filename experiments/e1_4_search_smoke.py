@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import pandas as pd
-from common import chunks, out_dir, run_metadata, write_json
+from common import chunks, out_dir, run_metadata, safe_workers, write_json
 
 from taxred.generate import archetypes, random_households
 from taxred.law import Law
@@ -64,7 +64,7 @@ def main():
         size = max(1, -(-len(ids) // a.workers))
         jobs = [(c, cond, a.budget, a.seed, a.n, a.year) for cond in a.conditions for c in chunks(ids, size)]
         rows = []
-        with ProcessPoolExecutor(a.workers) as ex:
+        with ProcessPoolExecutor(safe_workers(a.workers)) as ex:
             for r in ex.map(run, jobs):
                 rows += r
         df = pd.DataFrame(rows)

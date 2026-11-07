@@ -22,7 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import pandas as pd
-from common import out_dir, run_metadata, write_json
+from common import out_dir, run_metadata, safe_workers, write_json
 
 from taxred.planted import variants
 from taxred.verifier import Verifier, VerifierConfig
@@ -72,7 +72,7 @@ def main():
     vs = variants(a.year)
     od = out_dir("phase2/planted")
     rows = []
-    with ProcessPoolExecutor(a.workers) as ex:
+    with ProcessPoolExecutor(safe_workers(a.workers)) as ex:
         for r in ex.map(run, [(v.id, a.year) for v in vs]):
             rows += r
     df = pd.DataFrame(rows)

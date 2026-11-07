@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import numpy as np
 import pandas as pd
-from common import out_dir, run_metadata, write_json
+from common import out_dir, run_metadata, safe_workers, write_json
 
 from taxred.cases import closure_cases
 from taxred.law import PROVISIONS
@@ -182,7 +182,7 @@ def main():
         df = pd.read_csv(od / "verdicts.csv")
     else:
         rows = []
-        with ProcessPoolExecutor(min(a.workers, len(names))) as ex:
+        with ProcessPoolExecutor(safe_workers(min(a.workers, len(names)))) as ex:
             for r in ex.map(run_case, [(n, a.year) for n in names]):
                 rows += r
         df = pd.DataFrame(rows)

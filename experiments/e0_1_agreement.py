@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import numpy as np
 import pandas as pd
-from common import chunks, out_dir, run_metadata, write_json
+from common import chunks, out_dir, run_metadata, safe_workers, write_json
 
 from taxred.generate import archetypes, random_households
 from taxred.household import compile_filing_units
@@ -127,7 +127,7 @@ def main():
     hhs = archetypes(args.year) + random_households(args.n, args.seed, args.year)
     jobs = [(c, law) for c in chunks(hhs, args.chunk)]
     rows = []
-    with ProcessPoolExecutor(args.workers) as ex:
+    with ProcessPoolExecutor(safe_workers(args.workers)) as ex:
         for r in ex.map(run_chunk, jobs):
             rows += r
             print(f"  {len(rows)} units", flush=True)
