@@ -4,6 +4,69 @@ Running log of results and findings, newest first. Phase 0's first pass (develop
 
 ---
 
+## 2026-11-07 (evening) — the researcher's three changes: overlap-only gains, two-stage enlargement, GPU
+
+### 1. Gains restricted to the calculators' overlap
+
+`VerifierConfig.gain_scope = "federal"` (now the default): the gain is the
+federal income tax both calculators model; PolicyEngine-only federal credits
+(saver's credit) are excluded. Benefits, payroll and state tax are still
+computed and stored (`gain_total`, `gain_benefits`, `gain_other_tax`) for
+separate, labelled reporting. Gains that depend on the package's own Form 8615
+code are tagged coverage `shared-code` (kiddie-tax cases). Tests:
+`test_federal_gain_scope_excludes_payroll`, `test_shared_code_tag_for_kiddie_gains`.
+**Every result above this section used the old net-resources gain** (benefits
+minus all taxes); the stage 1 reruns use the federal scope.
+
+### 2. Stage 1 (realistic enlargement) — built and validated; search runs next
+
+- **Survey households** (`src/taxred/ecps.py`): PolicyEngine's enhanced CPS
+  2024 (public, 108 MB), sampled by survey weight, all states; tax-unit roles
+  from PolicyEngine's microsimulation; documented imputations (assets from
+  interest/dividend flows, HDHP coverage, IRA balances).
+- **Overlap at the data level.** Exogenous items both calculators model are
+  passed to both (Social Security, pensions, unemployment, IRA distributions,
+  short-term gains, non-qualified dividends, real-estate tax), and
+  PolicyEngine's state income tax is passed to Tax-Calculator as the SALT fact.
+  E0.1 on survey households found items *outside* the overlap, now excluded:
+  student-loan interest and survey IRA contributions for plan participants
+  (Tax-Calculator takes them as already-limited deductions), rental income
+  (44% agreement — PolicyEngine lower, consistent with a §199A deduction on
+  rentals), Alaska (PolicyEngine imputes the Permanent Fund Dividend). Two
+  bugs fixed on the way: NaN in Tax-Calculator records with heterogeneous
+  items, and the saver's credit in E0.1's comparison.
+- **E0.1 on 2,987 survey households (50 states): 99.7% of 4,122 returns agree
+  within $25, 99.5% within $1, max $772** (`phase0/e0_1_ecps/`).
+- **Multi-year horizon** (3 years) with **continuous amounts and dated
+  moves** in the random/greedy proposers.
+- **New moves, bright-line rules only:** `contribute_hsa` (§223 limits, HDHP
+  required), `donate_cash` / `reduce_donation` (bunching across years),
+  `donate_asset` (FMV, kept below the AGI limits only PolicyEngine applies),
+  `roth_convert`, `recharacterize`. Known answers in both calculators
+  (`tests/test_stage1_moves.py`). Not built: home sale (§121 is not modelled by
+  either calculator — it would be package law, and the survey has no home
+  values).
+- **Possible futures:** households carry scenarios (assets ±25% or wages
+  halved from 2025, equally likely); the verifier evaluates each exactly and
+  reports the probability-weighted gain; reality and cross-check must hold in
+  every scenario; moves may be contingent on a scenario only once it is
+  revealed. **Terminal valuation:** where moves change a traditional IRA
+  balance, each calculator adds the federal tax on distributing the remaining
+  balance in the final year (a convention, stated as such).
+- **New historical closure:** Roth recharacterization (TCJA 2017 §13611),
+  expressible thanks to scenarios; under current law a recharacterization has
+  no effect (the conversion stands).
+- **Stage 2 settings were pre-registered before any stage 1 result**
+  (`preregistration-stage2.md`).
+
+### 3. GPU
+
+The VM has an A100 SXM4 40 GB. The driver was missing (my earlier "no GPU"
+note was wrong); NVIDIA open driver 620.70.06 + CUDA 13.5 are now installed
+and `nvidia-smi` works (the DKMS build needed gcc-12).
+
+---
+
 ## Status for the researcher (end of 2026-11-07 autonomous session)
 
 **Where things stand.** Phase 0 and Phase 1 (verifier validation) are done on
