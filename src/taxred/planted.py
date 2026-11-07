@@ -189,7 +189,10 @@ def _fam_cg0_single(year, m):
     p, t = _by_status("gov.irs.capital_gains.thresholds.1", year, {"SINGLE": m})
     desc = f"Long-term capital gains: the 0% rate applies to single filers with taxable income up to ${m:,.0f}."
     dis = f"Disposals of long-held property by unattached filers: no levy on the first ${m:,.0f} of taxable income."
-    return p, {"CG_brk1": t}, desc, dis, None
+    # Tax-Calculator encodes the AMT's 0% capital-gains threshold as its own
+    # parameter; the statute (s.55(b)(3)) uses the regular one, so both move
+    # (finding F11: without it TC taxed the planted gain through the AMT).
+    return p, {"CG_brk1": t, "AMT_CG_brk1": t}, desc, dis, None
 
 
 def _parents_adult_child(hid, year, wages=150_000, value=300_000, basis=100_000, child_age=25):
