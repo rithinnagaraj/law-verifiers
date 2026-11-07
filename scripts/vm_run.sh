@@ -11,10 +11,11 @@ name="$1"; shift
 export PATH="$HOME/.local/bin:$PATH"
 # shellcheck disable=SC1091
 . .venv/bin/activate
-export TAXRED_PE_CACHE="${TAXRED_PE_CACHE:-8}"
+export TAXRED_PE_CACHE="${TAXRED_PE_CACHE:-6}"
 mkdir -p results/logs
 log="results/logs/${name}_$(date -u +%Y%m%dT%H%M%SZ).log"
 MEM_MAX="${MEM_MAX:-68G}"
+export TAXRED_MEM_GB="${MEM_MAX%G}"
 # A user scope dies with the user manager when the last ssh session closes
 # unless lingering is on (it killed a chain on 2026-11-07).
 if command -v loginctl >/dev/null && [ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" != "yes" ]; then

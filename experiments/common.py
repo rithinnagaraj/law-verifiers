@@ -57,8 +57,9 @@ def chunks(seq, n):
 
 def pe_worker_gb() -> float:
     """Peak memory of one worker: base PolicyEngine system (~1.5 GB) plus
-    ~0.6 GB per cached reformed system (TAXRED_PE_CACHE)."""
-    return 1.5 + 0.6 * int(os.environ.get("TAXRED_PE_CACHE", "6")) + 0.5
+    ~1.15 GB per cached reformed system (TAXRED_PE_CACHE); measured on the VM
+    (10.7 GB RSS with a cache of 8)."""
+    return 1.5 + 1.15 * int(os.environ.get("TAXRED_PE_CACHE", "6")) + 0.5
 
 
 def safe_workers(requested: int) -> int:
@@ -70,7 +71,11 @@ def safe_workers(requested: int) -> int:
             avail_kb = next(int(l.split()[1]) for l in f if l.startswith("MemAvailable"))
     except (OSError, StopIteration):
         return requested
-    cap = max(1, int((avail_kb / 1048576 * 0.85) // pe_worker_gb()))
+    avail_gb = avail_kb / 1048576
+    # Inside a memory-capped scope (scripts/vm_run.sh) the cap is the limit.
+    if os.environ.get("TAXRED_MEM_GB"):
+        avail_gb = min(avail_gb, float(os.environ["TAXRED_MEM_GB"]))
+    cap = max(1, int((avail_gb * 0.85) // pe_worker_gb()))
     if cap < requested:
         print(f"[safe_workers] {requested} workers requested, {cap} fit in available memory", file=sys.stderr)
     return min(requested, cap)
