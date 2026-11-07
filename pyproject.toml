@@ -1,0 +1,28 @@
+[project]
+name = "taxred"
+version = "0.1.0"
+description = "Red-teaming US household tax law with AI agents: verifier stack and experiments"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "policyengine-us>=1.400",
+    "taxcalc>=4.0",
+    "numpy",
+    "pandas",
+    "pyyaml",
+    "tabulate",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-timeout"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 900
+filterwarnings = ["ignore::DeprecationWarning", "ignore::FutureWarning", "ignore::UserWarning"]

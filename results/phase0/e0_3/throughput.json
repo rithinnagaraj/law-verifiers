@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T06:35:15Z",
+    "git_commit": "9f1f40f430a135969ba38a99862629203ff6f34a",
+    "git_dirty": true,
+    "host": "vm",
+    "python": "3.12.3",
+    "cpus": 4,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e0_3_throughput.py",
+      "--sizes",
+      "1",
+      "10",
+      "50",
+      "200",
+      "--repeats",
+      "1"
+    ]
+  },
+  "attribution": false,
+  "rows": [
+    {
+      "batch": 1,
+      "repeat": 0,
+      "seconds": 2.07639480700027,
+      "proposals_per_s": 0.4816039785057457,
+      "labels": {
+        "no_gain": 1
+      }
+    },
+    {
+      "batch": 10,
+      "repeat": 0,
+      "seconds": 5.3293369890002396,
+      "proposals_per_s": 1.8764060183546314,
+      "labels": {
+        "candidate": 1,
+        "benefit_cliff": 1,
+        "sacrifice": 3,
+        "no_gain": 5
+      }
+    },
+    {
+      "batch": 50,
+      "repeat": 0,
+      "seconds": 3.7170967930001098,
+      "proposals_per_s": 13.451358085201878,
+      "labels": {
+        "sacrifice": 13,
+        "no_gain": 29,
+        "benefit_cliff": 5,
+        "candidate": 2,
+        "code_disagreement": 1
+      }
+    },
+    {
+      "batch": 200,
+      "repeat": 0,
+      "seconds": 4.545399267999983,
+      "proposals_per_s": 44.00053509226745,
+      "labels": {
+        "sacrifice": 63,
+        "no_gain": 105,
+        "benefit_cliff": 19,
+        "candidate": 12,
+        "code_disagreement": 1
+      }
+    }
+  ]
+}
