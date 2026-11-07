@@ -175,9 +175,20 @@ def _build(ix: np.ndarray, a: dict, year: int) -> Household:
     return Household(hh_id, year, state, people, units, pairs)
 
 
+# Outside the calculators' overlap (E0.1 on survey households): PolicyEngine
+# imputes Alaska's Permanent Fund Dividend as federal income (Tax-Calculator
+# has no such input: 17% agreement in AK), and it treats rental income
+# differently (44% agreement on returns with rental income, PolicyEngine lower,
+# consistent with a s.199A deduction on rentals). Such households are left out
+# of the sample rather than stripped of the item.
+EXCLUDE_STATES = ("AK",)
+EXCLUDE_IF_ANY = ("rental",)
+
+
 def load_households(n: int, seed: int = 0, year: int = 2024, states: list | None = None, path: Path = DEFAULT_PATH) -> list[Household]:
-    """n survey households, sampled by weight without replacement (cached)."""
-    tag = f"ecps_{year}_n{n}_s{seed}" + (f"_{'-'.join(sorted(states))}" if states else "")
+    """n survey households, sampled by weight without replacement (cached),
+    excluding households outside the calculators' overlap."""
+    tag = f"ecps_v2_{year}_n{n}_s{seed}" + (f"_{'-'.join(sorted(states))}" if states else "")
     cache = CACHE_DIR / f"{tag}.json"
     if cache.exists():
         return [Household.from_dict(d) for d in json.loads(cache.read_text())]
@@ -186,6 +197,11 @@ def load_households(n: int, seed: int = 0, year: int = 2024, states: list | None
     hids, starts = np.unique(a["hid"][order], return_index=True)
     groups = np.split(order, starts[1:])
     w = np.array([a["weight"][g[0]] for g in groups], dtype=float)
+    st = np.array([str(a["state"][g[0]].decode() if isinstance(a["state"][g[0]], bytes) else a["state"][g[0]]) for g in groups])
+    w = w * ~np.isin(st, EXCLUDE_STATES)
+    for item in EXCLUDE_IF_ANY:
+        has = np.array([bool((a[item][g] > 0).any()) for g in groups])
+        w = w * ~has
     if states:
         keep = np.array([str(a["state"][g[0]].decode() if isinstance(a["state"][g[0]], bytes) else a["state"][g[0]]) in states for g in groups])
         w = w * keep
