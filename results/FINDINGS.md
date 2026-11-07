@@ -20,7 +20,8 @@ Running log of results and findings, newest first. Phase 0's first pass (develop
 | E0.6 false positives, run 2 (after fixes) | **2.2%** (two-calc: **0.0%**); 32/32 labelled negatives correct | ≤ 5% ✔ |
 | E0.7 matching rule (closure test), rerun after F12, 956 proposals | R ≤ 0.1: precision 0.986, recall 1.00; R = 0.3: 1.00 / 0.91; the plan's R = 0.8: recall 0.30 | both ≥ 0.9 ✔ at R = 0.1 |
 | E2.1 planted variants | 8 valid of 10 non-control (run 2); 3/3 negative controls not flagged | — |
-| E2.3 witness-only search (random, greedy), rerun after F12 | all 15 planted + 4 historical targets rediscovered within 100 calls by both | H2 untestable this way → pool targets (running) |
+| E2.3 witness-only search (random, greedy), rerun after F12 | all 15 planted + 4 historical targets rediscovered within 100 calls by both | H2 untestable this way → pool targets |
+| E2.3 pool targets (40 households, 1,000 calls, 2 seeds) | recall 0.30 @100 → 0.90–0.93 @1000; greedy no better than random (AUC 0.42 vs 0.44) | baseline curve for the LLM condition |
 | E2.6b canary search (pool 40, 400 calls, 2 seeds), after F12 | every federal canary found by both conditions (12/12 cells; payroll canary 0/2); 173 exploits: ratio cross-check catches **29%**, tolerance test **94%**; greedy produces up to 20× more exploit proposals than random | H4: the ratio test is inadequate |
 | E2.6b canary witnesses | ratio cross-check catches 3/6 federal canaries, tolerance test 6/6; payroll canary invisible | → tolerance cross-check |
 
@@ -182,6 +183,29 @@ sequences, so H2 ("LLM + search beats random at matched budget") cannot be
 tested on such targets. E2.3 now has **pool targets** (`--pool N`): the
 witness is hidden among N−1 random households and the search chooses the
 household too, as in the plan's coverage-guided design.
+
+### E2.3 pool targets (after F12; `phase2/frozen_pool40/`)
+
+Each target's witness household is hidden among 39 random households; the
+search chooses household and moves. 1,000 verifier calls, 2 seeds, R = 0.1.
+
+| condition | targets | recall@50 | recall@100 | recall@200 | recall@400 | recall@1000 | AUC (log budget) |
+|---|---|---|---|---|---|---|---|
+| random | planted (15) | 0.27 | 0.30 | 0.57 | 0.87 | 0.93 | 0.44 |
+| greedy | planted (15) | 0.20 | 0.30 | 0.57 | 0.80 | 0.90 | 0.42 |
+| random | historical (4) | 0.00 | 0.50 | 0.75 | 1.00 | 1.00 | 0.46 |
+| greedy | historical (4) | 0.00 | 0.25 | 0.38 | 0.62 | 1.00 | 0.30 |
+
+- Pool targets make the comparison informative: recall rises from ~0.3 at 100
+  calls to ~0.9 at 1,000, so H2 can be tested on the budget curve.
+- **Greedy hill-climbing is no better than random** (AUC 0.42 vs 0.44 planted;
+  0.30 vs 0.46 historical). Greedy concentrates calls on the households where it
+  already found gains — which, in the canary experiment, is where it found the
+  most calculator bugs.
+- Broad loopholes (mfs_brackets: matched on 6–10 pool households) are found
+  quickly; narrow ones that exist only on the witness (ctc_mfs, niit_mfs) take
+  hundreds of calls and are sometimes missed at 1,000 (niit_mfs: 2 of 4 runs).
+- 2 seeds only (budget time on the VM): treat per-target rates as indicative.
 
 ### E2.6b canary bugs (`src/taxred/canaries.py`)
 

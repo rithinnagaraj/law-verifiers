@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T17:32:00Z",
+    "git_commit": "156c2b1d89cd5f112f5721c0927d57d46a7c3c4a",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e2_3_frozen.py",
+      "--budget",
+      "1000",
+      "--seeds",
+      "2",
+      "--pool",
+      "40",
+      "--batch",
+      "50",
+      "--workers",
+      "6"
+    ]
+  },
+  "r_min": 0.1,
+  "budget": 1000,
+  "seeds": 2,
+  "recall": [
+    {
+      "condition": "greedy",
+      "kind": "historical",
+      "n_targets": 4,
+      "recall@10": 0.0,
+      "recall@25": 0.0,
+      "recall@50": 0.0,
+      "recall@100": 0.25,
+      "recall@200": 0.375,
+      "recall@400": 0.625,
+      "recall@1000": 1.0,
+      "auc_log_budget": 0.30277093899050644
+    },
+    {
+      "condition": "greedy",
+      "kind": "planted",
+      "n_targets": 15,
+      "recall@10": 0.06666666666666667,
+      "recall@25": 0.13333333333333333,
+      "recall@50": 0.2,
+      "recall@100": 0.3,
+      "recall@200": 0.5666666666666667,
+      "recall@400": 0.8,
+      "recall@1000": 0.9,
+      "auc_log_budget": 0.41981116746160346
+    },
+    {
+      "condition": "random",
+      "kind": "historical",
+      "n_targets": 4,
+      "recall@10": 0.0,
+      "recall@25": 0.0,
+      "recall@50": 0.0,
+      "recall@100": 0.5,
+      "recall@200": 0.75,
+      "recall@400": 1.0,
+      "recall@1000": 1.0,
+      "auc_log_budget": 0.46237125054200234
+    },
+    {
+      "condition": "random",
+      "kind": "planted",
+      "n_targets": 15,
+      "recall@10": 0.0,
+      "recall@25": 0.13333333333333333,
+      "recall@50": 0.26666666666666666,
+      "recall@100": 0.3,
+      "recall@200": 0.5666666666666667,
+      "recall@400": 0.8666666666666667,
+      "recall@1000": 0.9333333333333333,
+      "auc_log_budget": 0.4381788339837362
+    }
+  ]
+}
