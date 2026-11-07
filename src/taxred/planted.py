@@ -43,12 +43,13 @@ def _pe(path: str, year: int) -> float:
     return float(n(f"{year}-01-01"))
 
 
-def _by_status(path: str, year: int, override: dict) -> tuple[dict, list]:
-    """PE reform {path.STATUS: v} for overridden statuses and the full
-    Tax-Calculator list (MARS order) with the overrides applied."""
-    vals = {s: _pe(f"{path}.{s}", year) for s in FS_PE}
-    vals.update(override)
-    return {f"{path}.{s}": v for s, v in override.items()}, [vals[s] for s in FS_PE]
+def _by_status(path: str, year: int, override: dict) -> tuple[dict, tuple]:
+    """PE reform {path.STATUS: v} for the overridden statuses, and the
+    matching Tax-Calculator MARS override (other statuses keep their
+    current-law value in whatever year is evaluated)."""
+    from .engines import mars_override
+
+    return {f"{path}.{s}": v for s, v in override.items()}, mars_override(**override)
 
 
 # ---------------------------------------------------------------------------

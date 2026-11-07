@@ -276,6 +276,29 @@ TC_FULL_TAKEUP = ("eitc_claim_prob_scale", "actc_claim_prob_scale")
 _TC_INT_COLS = {"RECID", "FLPDYR", "MARS", "XTOT", "DSI", "age_head", "age_spouse", "f2441", "n24", "nu18", "nu13", "nu06", "EIC", "elderly_dependents"}
 
 
+MARS_OVERRIDE = "__mars__"
+
+
+def mars_override(**by_status) -> tuple:
+    """A Tax-Calculator reform value that changes some filing statuses of a
+    MARS-indexed parameter and keeps the others at their current-law value
+    for the year evaluated (a full list would freeze them at one year).
+    Keys: SINGLE, JOINT, SEPARATE, HEAD_OF_HOUSEHOLD, SURVIVING_SPOUSE."""
+    order = list(_MARS)  # SINGLE, JOINT, SEPARATE, HEAD_OF_HOUSEHOLD
+    order.append("SURVIVING_SPOUSE")
+    return (MARS_OVERRIDE, tuple(sorted((order.index(s), float(v)) for s, v in by_status.items())))
+
+
+def _tc_value(pol, name: str, v, year: int):
+    if isinstance(v, list) and v and v[0] == MARS_OVERRIDE:
+        pol.set_year(year)
+        cur = [float(x) for x in getattr(pol, name)[0]]
+        for idx, val in v[1]:
+            cur[int(idx)] = val
+        return cur
+    return v
+
+
 class TaxCalculatorEngine:
     name = "taxcalc"
 
@@ -297,7 +320,7 @@ class TaxCalculatorEngine:
         pol.implement_reform({k: {year: 9e99} for k in TC_FULL_TAKEUP})
         reform = law.tc_reform_dict()
         if reform:
-            pol.implement_reform({k: {year: v} for k, v in reform.items()})
+            pol.implement_reform({k: {year: _tc_value(pol, k, v, year)} for k, v in reform.items()})
         rec = tc.Records(data=df, start_year=year, gfactors=None, weights=None)
         calc = tc.Calculator(policy=pol, records=rec, verbose=False)
         if calc.current_year != year:

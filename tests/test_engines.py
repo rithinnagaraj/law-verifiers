@@ -44,3 +44,18 @@ def test_pe_forced_itemize_does_not_leak_across_batch():
     batched = evaluate_households([base, forced], Law(2024), "policyengine", with_benefits=False)
     assert batched[0].fed_income_tax == alone  # itemizes: 3,536
     assert batched[1].fed_income_tax > alone  # forced standard: 3,632
+
+
+def test_tc_mars_override_keeps_other_statuses_current():
+    # A reform that changes only the MFS standard deduction must leave the
+    # single amount at its current-law value in every year.
+    from taxred.engines import mars_override
+    from taxred.household import Household, Person, TaxUnit
+    from taxred.law import Law
+    from taxred.taxes import evaluate_households
+
+    for year in (2024, 2026):
+        hh = Household("s", year, "TX", {"a": Person("a", 35, wages=60_000)}, [TaxUnit("t", "a")])
+        base = evaluate_households([hh], Law(year), "taxcalc", with_benefits=False)[0].fed_income_tax
+        law = Law(year).with_reform({}, {"STD": mars_override(SEPARATE=50_000)})
+        assert evaluate_households([hh], law, "taxcalc", with_benefits=False)[0].fed_income_tax == base
