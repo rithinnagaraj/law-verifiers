@@ -33,6 +33,8 @@ def unit_features(hh):
         s = lambda a: sum(getattr(p, a) for p in filers)
         rows[fu.id] = dict(
             household_id=hh.id,
+            state=hh.state,
+            other_items=",".join(sorted({k for p in filers for k in p.other})),
             filing_status=fu.filing_status,
             dependent_filer=fu.is_dependent_filer,
             n_dependents=len(deps),
@@ -105,6 +107,8 @@ def summarize(df: pd.DataFrame) -> dict:
         "has_childcare": df.childcare > 0,
         "itemizable_gt_0": df.itemizable > 0,
         "any_65plus": df.any_65plus,
+        "state": df.state,
+        "has_other_items": df.other_items.fillna("") != "",
     }
     out["by_group"] = {}
     for name, key in groups.items():
