@@ -1,6 +1,6 @@
 # Pre-registration draft (E0.8) — proposal, not yet frozen
 
-**Status:** draft for the researcher's review, 2026-11-07. **The E0.7 (R) and E2.3 evidence cited below came from runs invalidated by bug F12; reruns are pending and the values must be re-checked before freezing.** Nothing here is
+**Status:** draft for the researcher's review, 2026-11-07. (E0.7, E2.3 and E2.6b evidence below is from the reruns after bug F12.) Nothing here is
 frozen until it is committed as `preregistration.md` before any agent
 (LLM) search runs. Each value lists the evidence behind it; numbers come from
 `results/FINDINGS.md`.
@@ -22,7 +22,7 @@ frozen until it is committed as `preregistration.md` before any agent
 
 | Setting | Proposed | Evidence |
 |---|---|---|
-| Closure-test threshold R | **0.1–0.2** (E0.7 picks 0.1; 0.2 is the conservative end) | E0.7 on 8 planted variants: R ≤ 0.1 → precision 0.989, recall 1.00; R = 0.2 → recall 0.967; the plan's 0.8 → recall 0.37. Real instances of a planted loophole often also collect current-law gains (kiddie_age instances: reductions from 0.27). |
+| Closure-test threshold R | **0.1** (0.2 as the conservative end) | E0.7 after F12, 15 valid planted variants, 956 proposals: R ≤ 0.1 → precision 0.986, recall 1.00; R = 0.2 → recall 0.943; R = 0.3 → precision 1.00, recall 0.908; the plan's 0.8 → recall 0.30. Real instances of a planted loophole often also collect current-law gains (kiddie_age instances: reductions from 0.27). |
 | Signature Jaccard | drop as a requirement; report it | for planted variants the signature half reduces to the closure test (the mutation is the provision); historical cases have no independent signature either |
 
 ## H1 (amended operationalisation)
@@ -39,10 +39,10 @@ on PolicyEngine — reported as an H4 finding, not hidden).
 
 | Setting | Proposed | Evidence |
 |---|---|---|
-| Target unit | **pool of 40 households** (witness hidden among random ones) | witness-only targets: random search rediscovered 10/10 within 200 calls (H2 cannot be tested there) |
+| Target unit | **pool of 40 households** (witness hidden among random ones) | witness-only targets (after F12): random and greedy search rediscover all 19 targets within 100 calls (H2 cannot be tested there) |
 | Budgets | {100, 300, 1,000, 3,000} verifier calls | plan; pool runs pending |
 | Seeds | 5 per condition × target × budget | plan |
-| Splits | planted families: train = mfs_brackets, ctc_mfs; val = niit_mfs (one magnitude); test = kiddie_age, kiddie_allowance (held out with the historical set) + controls | E2.1; more families needed (≥ 5 per split) before Phase 3 |
+| Splits | planted families (by family): train = mfs_brackets, ctc_mfs, actc_rate; val = niit_mfs, mfs_std, cg0_single (horizon 3); test = kiddie_age, kiddie_allowance (held out with the historical set); control = dependent_floor | E2.1 run 4: 15 of 16 non-control variants valid; more families needed (≥ 5 per split) before Phase 3 |
 
 ## Budget cut order (if throughput falls short)
 
