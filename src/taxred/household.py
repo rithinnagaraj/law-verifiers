@@ -19,6 +19,22 @@ from typing import Optional
 FILING_STATUSES = ("SINGLE", "JOINT", "SEPARATE", "HEAD_OF_HOUSEHOLD")
 
 
+# Exogenous per-person items: name -> (PolicyEngine input, Tax-Calculator
+# record variable(s), kind). kind "income" counts toward a dependent's filing
+# requirement; "deduction" items are expenses.
+OTHER_ITEMS = {
+    "social_security": ("social_security_retirement", ("e02400",), "income"),
+    "pension": ("taxable_private_pension_income", ("e01500", "e01700"), "income"),
+    "unemployment": ("unemployment_compensation", ("e02300",), "income"),
+    "rental": ("rental_income", ("e02000",), "income"),
+    "ira_distributions": ("taxable_ira_distributions", ("e01400",), "income"),
+    "short_term_gains": ("short_term_capital_gains", ("p22250",), "income"),
+    "nonqualified_dividends": ("non_qualified_dividend_income", ("e00600",), "income"),
+    "real_estate_taxes": ("real_estate_taxes", ("e18500",), "deduction"),
+    "student_loan_interest": ("student_loan_interest", ("e03210",), "deduction"),
+}
+
+
 @dataclass
 class Asset:
     """A financial asset. Income it throws off is attributed to its owner."""
@@ -56,6 +72,9 @@ class Person:
     # cash into a retirement account: wealth and gross pay are unchanged.
     traditional_401k: float = 0.0
     traditional_ira: float = 0.0
+    # Exogenous items both calculators model, keyed by OTHER_ITEMS (survey
+    # households). They repeat each year and no move changes them.
+    other: dict = field(default_factory=dict)
 
     # ---- derived income -------------------------------------------------
     @property
@@ -68,7 +87,8 @@ class Person:
 
     @property
     def unearned_income(self) -> float:
-        return self.taxable_interest + self.qualified_dividends + self.long_term_gains
+        other = sum(v for k, v in self.other.items() if OTHER_ITEMS[k][2] == "income")
+        return self.taxable_interest + self.qualified_dividends + self.long_term_gains + other
 
     @property
     def earned_income(self) -> float:

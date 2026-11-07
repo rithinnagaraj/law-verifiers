@@ -162,8 +162,12 @@ def apply_kiddie_tax(
 
 
 def evaluate_households(
-    households: Sequence[Household], law: Law, engine_name: str = "policyengine", with_benefits: bool = True
+    households: Sequence[Household], law: Law, engine_name: str = "policyengine", with_benefits: bool = True,
+    salt_from: Optional[Sequence["HouseholdResult"]] = None,
 ) -> list[HouseholdResult]:
+    """salt_from: PolicyEngine results for the same households, in the same
+    order; their state and local income tax is passed to Tax-Calculator as
+    the SALT fact of each return."""
     if not households:
         return []
     years = {h.year for h in households}
@@ -189,7 +193,14 @@ def evaluate_households(
         work = list(households)
     units_per_hh = [compile_filing_units(h) for h in work]
     all_units = [u for us in units_per_hh for u in us]
-    results = {r.unit_id: r for r in engine.evaluate_units(all_units, law)}
+    if salt_from is not None and engine_name == "taxcalc":
+        salt = {}
+        for us, pr in zip(units_per_hh, salt_from):
+            for u, r in zip(us, pr.units):
+                salt[u.id] = r.state_local_income_tax
+        results = {r.unit_id: r for r in engine.evaluate_units(all_units, law, salt=salt)}
+    else:
+        results = {r.unit_id: r for r in engine.evaluate_units(all_units, law)}
     adjustments = apply_kiddie_tax(all_units, results, law, engine)
     benefits = engine.evaluate_benefits(households, law) if with_benefits else None
     out = []

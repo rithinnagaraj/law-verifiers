@@ -54,7 +54,7 @@ def unit_features(hh):
 def run_chunk(args):
     hhs, law = args
     pe = evaluate_households(hhs, law, "policyengine", with_benefits=False)
-    tc = evaluate_households(hhs, law, "taxcalc", with_benefits=False)
+    tc = evaluate_households(hhs, law, "taxcalc", with_benefits=False, salt_from=pe)
     rows = []
     for hh, a, b in zip(hhs, pe, tc):
         feats = unit_features(hh)
@@ -121,10 +121,18 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--chunk", type=int, default=250)
     ap.add_argument("--out", default="phase0/e0_1")
+    ap.add_argument("--source", choices=["synthetic", "ecps"], default="synthetic")
     args = ap.parse_args()
 
     law = Law(args.year)
-    hhs = archetypes(args.year) + random_households(args.n, args.seed, args.year)
+    if args.source == "ecps":
+        from taxred.ecps import load_households
+
+        hhs = load_households(args.n, args.seed, 2024)
+        for h in hhs:
+            h.year = args.year
+    else:
+        hhs = archetypes(args.year) + random_households(args.n, args.seed, args.year)
     jobs = [(c, law) for c in chunks(hhs, args.chunk)]
     rows = []
     with ProcessPoolExecutor(safe_workers(args.workers)) as ex:

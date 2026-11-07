@@ -19,7 +19,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from .household import FilingUnit, Household, Person
+from .household import OTHER_ITEMS, FilingUnit, Household, Person
 from .law import Law
 
 warnings.filterwarnings("ignore")
@@ -37,6 +37,9 @@ class UnitResult:
     # Federal credits only PolicyEngine computes (Tax-Calculator takes them as
     # inputs): the saver's credit. Excluded from the cross-check comparison.
     pe_only_credits: float = 0.0
+    # State and local income tax on this return (PolicyEngine); passed to
+    # Tax-Calculator as the SALT fact (e18400).
+    state_local_income_tax: float = 0.0
 
     @property
     def total_tax(self) -> float:
@@ -99,6 +102,8 @@ def _pe_person_inputs(p: Person, year: int, income_on: bool, role: str) -> dict:
                 "traditional_ira_contributions_desired": {Y: p.traditional_ira},
             }
         )
+        for k, v in p.other.items():
+            d[OTHER_ITEMS[k][0]] = {Y: float(v)}
     else:
         for v in (
             "employment_income",
@@ -108,6 +113,8 @@ def _pe_person_inputs(p: Person, year: int, income_on: bool, role: str) -> dict:
             "long_term_capital_gains",
         ):
             d[v] = {Y: 0.0}
+        for k in p.other:
+            d[OTHER_ITEMS[k][0]] = {Y: 0.0}
     return d
 
 
@@ -181,9 +188,10 @@ class PolicyEngineEngine:
         ti = calc("taxable_income")
         hh_tax = calc("household_tax")
         savers = calc("savers_credit")
+        salt = calc("state_and_local_sales_or_income_tax")
         assert len(fed) == len(units) == len(hh_tax)
         return [
-            UnitResult(fu.id, fed[i], regular[i], amt[i], ti[i], hh_tax[i] - fed[i], savers[i])
+            UnitResult(fu.id, fed[i], regular[i], amt[i], ti[i], hh_tax[i] - fed[i], savers[i], salt[i])
             for i, fu in enumerate(units)
         ]
 
@@ -227,14 +235,17 @@ class PolicyEngineEngine:
 _MARS = {"SINGLE": 1, "JOINT": 2, "SEPARATE": 3, "HEAD_OF_HOUSEHOLD": 4}
 
 
-def _tc_record(rec_id: int, fu: FilingUnit) -> dict:
+def _tc_record(rec_id: int, fu: FilingUnit, salt: float = 0.0) -> dict:
+    """salt: state and local income tax paid (Tax-Calculator e18400). Taken
+    from PolicyEngine's state income tax for the same return, so the federal
+    SALT deduction sees the same fact in both calculators."""
     head, spouse = fu.head, fu.spouse
     filers = [p for p in (head, spouse) if p is not None]
     deps = fu.dependents
     s = lambda attr: float(sum(getattr(p, attr) for p in filers))
     qd = s("qualified_dividends")
     eitc_kids = [d for d in deps if d.age < 19 or (d.is_student and d.age < 24)]
-    return dict(
+    rec = dict(
         RECID=rec_id,
         FLPDYR=fu.year,
         MARS=_MARS[fu.filing_status],
@@ -268,7 +279,13 @@ def _tc_record(rec_id: int, fu: FilingUnit) -> dict:
         nu06=sum(1 for d in deps if d.age < 6),
         EIC=min(3, len(eitc_kids)),
         elderly_dependents=sum(1 for d in deps if d.age >= 65),
+        e18400=float(salt),
     )
+    for p in filers:
+        for k, v in p.other.items():
+            for var in OTHER_ITEMS[k][1]:
+                rec[var] = rec.get(var, 0.0) + float(v)
+    return rec
 
 
 TC_FULL_TAKEUP = ("eitc_claim_prob_scale", "actc_claim_prob_scale")
@@ -302,14 +319,16 @@ def _tc_value(pol, name: str, v, year: int):
 class TaxCalculatorEngine:
     name = "taxcalc"
 
-    def evaluate_units(self, units: Sequence[FilingUnit], law: Law) -> list[UnitResult]:
+    def evaluate_units(self, units: Sequence[FilingUnit], law: Law, salt: Optional[dict] = None) -> list[UnitResult]:
+        """salt: {unit id: state and local income tax} from PolicyEngine."""
         if not units:
             return []
+        salt = salt or {}
         import pandas as pd
         import taxcalc as tc
 
         year = units[0].year
-        df = pd.DataFrame([_tc_record(i + 1, fu) for i, fu in enumerate(units)])
+        df = pd.DataFrame([_tc_record(i + 1, fu, salt.get(fu.id, 0.0)) for i, fu in enumerate(units)])
         for c in df.columns:
             df[c] = df[c].astype(int if c in _TC_INT_COLS else float)
         pol = tc.Policy()

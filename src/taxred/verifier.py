@@ -185,6 +185,21 @@ class Verifier:
                 out[k][1].add(res[2 * k + 1])
         return out
 
+    def _totals_both(self, pairs, law: Law):
+        """PolicyEngine and Tax-Calculator totals; each year's Tax-Calculator
+        run gets PolicyEngine's state income tax as the SALT fact."""
+        pe = [(_Total(), _Total()) for _ in pairs]
+        tc = [(_Total(), _Total()) for _ in pairs]
+        for t in range(len(pairs[0][0])):
+            hhs = [h for b, m in pairs for h in (b[t], m[t])]
+            yl = replace(law, year=hhs[0].year)
+            rp = evaluate_households(hhs, yl, "policyengine")
+            rt = evaluate_households(hhs, yl, "taxcalc", with_benefits=False, salt_from=rp)
+            for k in range(len(pairs)):
+                pe[k][0].add(rp[2 * k]); pe[k][1].add(rp[2 * k + 1])
+                tc[k][0].add(rt[2 * k]); tc[k][1].add(rt[2 * k + 1])
+        return pe, tc
+
     # Batched evaluation of many (base, moves) proposals under one law.
     def evaluate_many(self, proposals: Sequence[tuple[Household, list]]) -> list[Verdict]:
         verdicts: list[Optional[Verdict]] = [None] * len(proposals)
@@ -206,8 +221,7 @@ class Verifier:
             return verdicts  # type: ignore
 
         hy = [(b, m) for _, b, m in pairs]
-        pe = self._totals(hy, self.law, "policyengine")
-        tc = self._totals(hy, self.law, "taxcalc", with_benefits=False)
+        pe, tc = self._totals_both(hy, self.law)
 
         need_attr = []
         for k, (i, b_years, m_years) in enumerate(pairs):
