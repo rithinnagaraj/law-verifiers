@@ -11,7 +11,7 @@ frozen until it is committed as `preregistration.md` before any agent
 |---|---|---|
 | Gain threshold | $50 / year (horizon total scales with years) | E1.2: removing it changes no label on the legitimate-planning set; small enough to keep all closure witnesses |
 | Reality tolerance | max($1, 0.5%) per component | E0.6: all labelled sacrifices / cliffs caught; no positive falsely failed |
-| Cross-check | **tolerance mode**: federal gains agree within max($25, 10%) | E2.6b witnesses: the ratio test (TC ≥ 50% of PE) let 2 of 5 federal canary bugs through; the tolerance test caught 5 of 5. Child-AMT closure (F3): ratio test passed 44 of 56. Cost: E0.1 noise floor is 3.7% of returns differing by > $25 (mostly F6, now fixed) — rerun E0.1 with the F6 fix to confirm the floor before freezing. |
+| Cross-check | **tolerance mode**: federal gains agree within max($25, 10%) | E2.6b (after F12): of 173 canary exploits found by search, the ratio test (TC ≥ 50% of PE) caught 29%, the tolerance test 94%; witnesses 3/6 vs 6/6. Child-AMT closure (F3): ratio test passed 44 of 56. Cost: E0.1 noise floor is 3.7% of returns differing by > $25 (mostly F6, now fixed) — rerun E0.1 with the F6 fix to confirm the floor before freezing. |
 | Coverage tag two-calc | ≥ 90% of the gain is comparable federal income tax | unchanged |
 | Attribution share (signature) | 0.2 | unchanged |
 | Intended residual max | 0.1 | E0.6: 46/46 401(k) and 18/20 IRA scenarios → intended; NIIT avoidance at 11% of gain correctly stays a candidate |

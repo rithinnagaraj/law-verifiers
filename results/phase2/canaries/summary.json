@@ -1,0 +1,281 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T15:56:02Z",
+    "git_commit": "156c2b1d89cd5f112f5721c0927d57d46a7c3c4a",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e2_6_canaries.py",
+      "--budget",
+      "400",
+      "--seeds",
+      "2",
+      "--pool",
+      "40",
+      "--batch",
+      "50",
+      "--workers",
+      "6"
+    ]
+  },
+  "budget": 400,
+  "pool": 40,
+  "seeds": 2,
+  "witnesses": [
+    {
+      "kind": "witness",
+      "canary": "hoh_ctc_threshold",
+      "layer": "federal_income",
+      "label": "code_disagreement",
+      "gain": 3272.75,
+      "gain_correct": -727.25,
+      "created": 4000.0,
+      "fed_pe": 3272.75,
+      "fed_tc": -727.25,
+      "tolerance_pass": false,
+      "exploit": true,
+      "caught": true
+    },
+    {
+      "kind": "witness",
+      "canary": "mfs_std_joint",
+      "layer": "federal_income",
+      "label": "code_disagreement",
+      "gain": 6424.0,
+      "gain_correct": -97.5,
+      "created": 6521.5,
+      "fed_pe": 6424.0,
+      "fed_tc": -97.5,
+      "tolerance_pass": false,
+      "exploit": true,
+      "caught": true
+    },
+    {
+      "kind": "witness",
+      "canary": "single_bracket2",
+      "layer": "federal_income",
+      "label": "candidate",
+      "gain": 17784.0,
+      "gain_correct": 13959.0,
+      "created": 3825.0,
+      "fed_pe": 17784.0,
+      "fed_tc": 13959.0,
+      "tolerance_pass": false,
+      "exploit": true,
+      "caught": false
+    },
+    {
+      "kind": "witness",
+      "canary": "eitc_no_investment_limit",
+      "layer": "federal_income",
+      "label": "code_disagreement",
+      "gain": 152.65625,
+      "gain_correct": -2098.0,
+      "created": 2250.65625,
+      "fed_pe": 152.65625,
+      "fed_tc": -2098.0,
+      "tolerance_pass": false,
+      "exploit": true,
+      "caught": true
+    },
+    {
+      "kind": "witness",
+      "canary": "dependent_full_std",
+      "layer": "federal_income",
+      "label": "candidate",
+      "gain": 4260.0,
+      "gain_correct": 2788.0,
+      "created": 1472.0,
+      "fed_pe": 4260.0,
+      "fed_tc": 2788.0,
+      "tolerance_pass": false,
+      "exploit": true,
+      "caught": false
+    },
+    {
+      "kind": "witness",
+      "canary": "hoh_ltcg_0pct",
+      "layer": "federal_income",
+      "label": "candidate",
+      "gain": 1931.25,
+      "gain_correct": 1166.25,
+      "created": 765.0,
+      "fed_pe": 1931.25,
+      "fed_tc": 1166.25,
+      "tolerance_pass": false,
+      "exploit": true,
+      "caught": false
+    },
+    {
+      "kind": "witness",
+      "canary": "addl_medicare_mfs",
+      "layer": "payroll",
+      "label": "candidate",
+      "gain": 2070.0,
+      "gain_correct": 0.0,
+      "created": 2070.0,
+      "fed_pe": 0.0,
+      "fed_tc": 0.0,
+      "tolerance_pass": true,
+      "exploit": true,
+      "caught": false
+    }
+  ],
+  "by_canary": [
+    {
+      "canary": "addl_medicare_mfs",
+      "layer": "payroll",
+      "condition": "greedy",
+      "flagged": 287,
+      "exploits": 0,
+      "found_by_seeds": 0.0,
+      "caught_ratio": NaN,
+      "caught_tolerance": NaN
+    },
+    {
+      "canary": "addl_medicare_mfs",
+      "layer": "payroll",
+      "condition": "random",
+      "flagged": 183,
+      "exploits": 0,
+      "found_by_seeds": 0.0,
+      "caught_ratio": NaN,
+      "caught_tolerance": NaN
+    },
+    {
+      "canary": "dependent_full_std",
+      "layer": "federal_income",
+      "condition": "greedy",
+      "flagged": 284,
+      "exploits": 16,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.3125,
+      "caught_tolerance": 0.9375
+    },
+    {
+      "canary": "dependent_full_std",
+      "layer": "federal_income",
+      "condition": "random",
+      "flagged": 171,
+      "exploits": 13,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.38461538461538464,
+      "caught_tolerance": 1.0
+    },
+    {
+      "canary": "eitc_no_investment_limit",
+      "layer": "federal_income",
+      "condition": "greedy",
+      "flagged": 275,
+      "exploits": 3,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.6666666666666666,
+      "caught_tolerance": 1.0
+    },
+    {
+      "canary": "eitc_no_investment_limit",
+      "layer": "federal_income",
+      "condition": "random",
+      "flagged": 173,
+      "exploits": 6,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.6666666666666666,
+      "caught_tolerance": 1.0
+    },
+    {
+      "canary": "hoh_ctc_threshold",
+      "layer": "federal_income",
+      "condition": "greedy",
+      "flagged": 262,
+      "exploits": 42,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.21428571428571427,
+      "caught_tolerance": 1.0
+    },
+    {
+      "canary": "hoh_ctc_threshold",
+      "layer": "federal_income",
+      "condition": "random",
+      "flagged": 110,
+      "exploits": 6,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.16666666666666666,
+      "caught_tolerance": 1.0
+    },
+    {
+      "canary": "hoh_ltcg_0pct",
+      "layer": "federal_income",
+      "condition": "greedy",
+      "flagged": 261,
+      "exploits": 16,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.0,
+      "caught_tolerance": 0.9375
+    },
+    {
+      "canary": "hoh_ltcg_0pct",
+      "layer": "federal_income",
+      "condition": "random",
+      "flagged": 136,
+      "exploits": 6,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.0,
+      "caught_tolerance": 1.0
+    },
+    {
+      "canary": "mfs_std_joint",
+      "layer": "federal_income",
+      "condition": "greedy",
+      "flagged": 206,
+      "exploits": 46,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.5,
+      "caught_tolerance": 0.8260869565217391
+    },
+    {
+      "canary": "mfs_std_joint",
+      "layer": "federal_income",
+      "condition": "random",
+      "flagged": 172,
+      "exploits": 2,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.5,
+      "caught_tolerance": 1.0
+    },
+    {
+      "canary": "single_bracket2",
+      "layer": "federal_income",
+      "condition": "greedy",
+      "flagged": 227,
+      "exploits": 16,
+      "found_by_seeds": 1.0,
+      "caught_ratio": 0.0,
+      "caught_tolerance": 0.9375
+    },
+    {
+      "canary": "single_bracket2",
+      "layer": "federal_income",
+      "condition": "random",
+      "flagged": 122,
+      "exploits": 1,
+      "found_by_seeds": 0.5,
+      "caught_ratio": 0.0,
+      "caught_tolerance": 1.0
+    }
+  ],
+  "overall": {
+    "federal_income": {
+      "exploits": 173,
+      "caught_ratio": 0.28901734104046245,
+      "caught_tolerance": 0.9364161849710982
+    }
+  }
+}

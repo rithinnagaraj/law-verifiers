@@ -18,10 +18,11 @@ Running log of results and findings, newest first. Phase 0's first pass (develop
 | E1.1 child-AMT closure | PolicyEngine 0.00 vs Tax-Calculator 0.57 | F3 at scale |
 | E0.6 false positives, run 1 | 8.3% (dev 3.7%, test 14.3%) | ≤ 5% ✘ → F8, F9, label fix |
 | E0.6 false positives, run 2 (after fixes) | **2.2%** (two-calc: **0.0%**); 32/32 labelled negatives correct | ≤ 5% ✔ |
-| E0.7 matching rule (closure test) | **invalid (F12), rerun pending** | — |
+| E0.7 matching rule (closure test), rerun after F12, 956 proposals | R ≤ 0.1: precision 0.986, recall 1.00; R = 0.3: 1.00 / 0.91; the plan's R = 0.8: recall 0.30 | both ≥ 0.9 ✔ at R = 0.1 |
 | E2.1 planted variants | 8 valid of 10 non-control (run 2); 3/3 negative controls not flagged | — |
-| E2.3 witness-only search (random, greedy) | **invalid (F12), rerun pending** | — |
-| E2.6b canary witnesses | ratio cross-check catches 3/5 federal canaries, tolerance test 5/5; payroll canary invisible | → tolerance cross-check |
+| E2.3 witness-only search (random, greedy), rerun after F12 | all 15 planted + 4 historical targets rediscovered within 100 calls by both | H2 untestable this way → pool targets (running) |
+| E2.6b canary search (pool 40, 400 calls, 2 seeds), after F12 | every federal canary found by both conditions (12/12 cells; payroll canary 0/2); 173 exploits: ratio cross-check catches **29%**, tolerance test **94%**; greedy produces up to 20× more exploit proposals than random | H4: the ratio test is inadequate |
+| E2.6b canary witnesses | ratio cross-check catches 3/6 federal canaries, tolerance test 6/6; payroll canary invisible | → tolerance cross-check |
 
 ### H1 operationalisation (amended, as proposed in phase0 F-notes)
 
@@ -195,7 +196,7 @@ check on the VM:
 | dependent filers get full std deduction | federal | **candidate** | 4,260 | 2,788 | ✘ | ✔ |
 | HOH 0% capital-gains bracket = joint | federal | **candidate** | 1,931 | 1,166 | ✘ | ✔ |
 | Additional Medicare threshold for MFS = joint | payroll | **candidate** | 2,070 | 0 | ✘ | ✘ (not covered) |
-| single 12% bracket ×10 | federal | witness broken (fixed) | — | — | — | — |
+| single 12% bracket ×10 (witness fixed) | federal | **candidate** | 17,784 | 13,959 | ✘ | ✔ |
 
 **The 50% ratio cross-check lets a bug through whenever the bug is only part
 of a real gain** (here 35–40%): Tax-Calculator confirms "more than half", so
@@ -204,6 +205,33 @@ the verifier pays for the bugged part too. The tolerance test (agree within
 benefits, state tax) are outside the cross-check by construction; such gains
 carry the `single-calc` tag and need the audit (E2.6d). Search-based catch
 rates are in the running chain.
+
+#### E2.6b search results (corrected after F12; `phase2/canaries/`)
+
+Random and greedy search over a 40-household pool (canary witness hidden among
+random households), 400 verifier calls, 2 seeds per cell. A flagged proposal
+is a canary exploit when the canary creates > $50 and ≥ 20% of its gain.
+
+| canary | exploits (greedy / random) | caught by ratio test | caught by tolerance test |
+|---|---|---|---|
+| dependent filers full std deduction | 16 / 13 | 0.31 / 0.38 | 0.94 / 1.00 |
+| EITC investment limit missing | 3 / 6 | 0.67 / 0.67 | 1.00 / 1.00 |
+| CTC phase-out HOH = joint | 42 / 6 | 0.21 / 0.17 | 1.00 / 1.00 |
+| HOH 0% cap-gains bracket = joint | 16 / 6 | 0.00 / 0.00 | 0.94 / 1.00 |
+| MFS std deduction = joint | 46 / 2 | 0.50 / 0.50 | 0.83 / 1.00 |
+| single 12% bracket ×10 | 16 / 1 | 0.00 / 0.00 | 0.94 / 1.00 |
+| Additional Medicare MFS (payroll) | 0 / 0 | — | — |
+
+- **H4 evidence.** Search does exploit calculator bugs: every federal canary was
+  found by both conditions. The plan's ratio cross-check would have passed
+  71% of those exploits as loophole candidates; the tolerance test passes 6%.
+- **Search pressure concentrates on bugs.** Greedy search, which keeps and
+  mutates the highest-gain proposals, produced 2–23× more exploit proposals than
+  random search for four of six canaries. Among all PolicyEngine-positive
+  proposals the cross-check failure share rises with call index for greedy
+  (0.9% in calls 1–50 → 3.8% in calls 201–400); small counts, exploratory.
+- The payroll canary was never reached in 400 calls (it needs filing separately
+  on the one high-earning two-income couple in the pool).
 
 ### F11. One statutory amount, two Tax-Calculator parameters (the AMT's 0% capital-gains bracket)
 

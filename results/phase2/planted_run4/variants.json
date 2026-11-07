@@ -1,0 +1,507 @@
+[
+  {
+    "id": "dependent_floor_4000",
+    "family": "dependent_floor",
+    "operator": "move_threshold",
+    "magnitude": 4000,
+    "split": "control",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": true,
+    "valid": false,
+    "control_ok": true,
+    "witness_gain": 1520.0,
+    "witness_reduction": 0.675,
+    "witness_label": "intended_concession",
+    "reach": 0.5,
+    "description": "Standard deduction of a taxpayer who can be claimed as a dependent: the greater of $4,000 or earned income plus $450, not more than the regular standard deduction.",
+    "disguised": "Baseline allowance for a supported filer: a supported filer may subtract at least $4,000 (or labor receipts plus a small add-on), capped at the ordinary allowance.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "kid",
+        "asset": "bond",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "dependent_floor_8000",
+    "family": "dependent_floor",
+    "operator": "move_threshold",
+    "magnitude": 8000,
+    "split": "control",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": true,
+    "valid": false,
+    "control_ok": true,
+    "witness_gain": 3040.0,
+    "witness_reduction": 0.8375,
+    "witness_label": "intended_concession",
+    "reach": 0.3333333333333333,
+    "description": "Standard deduction of a taxpayer who can be claimed as a dependent: the greater of $8,000 or earned income plus $450, not more than the regular standard deduction.",
+    "disguised": "Baseline allowance for a supported filer: a supported filer may subtract at least $8,000 (or labor receipts plus a small add-on), capped at the ordinary allowance.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "kid",
+        "asset": "bond",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "dependent_floor_12000",
+    "family": "dependent_floor",
+    "operator": "move_threshold",
+    "magnitude": 12000,
+    "split": "control",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": true,
+    "valid": false,
+    "control_ok": true,
+    "witness_gain": 4000.0,
+    "witness_reduction": 0.8765,
+    "witness_label": "intended_concession",
+    "reach": 0.3333333333333333,
+    "description": "Standard deduction of a taxpayer who can be claimed as a dependent: the greater of $12,000 or earned income plus $450, not more than the regular standard deduction.",
+    "disguised": "Baseline allowance for a supported filer: a supported filer may subtract at least $12,000 (or labor receipts plus a small add-on), capped at the ordinary allowance.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "kid",
+        "asset": "bond",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "mfs_brackets_1.5",
+    "family": "mfs_brackets",
+    "operator": "decouple",
+    "magnitude": 1.5,
+    "split": "train",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 7999.5,
+    "witness_reduction": 1.005625351584474,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Married filing separately: rate-bracket thresholds and the standard deduction are 1.5 times their former amounts (standard deduction $21,900).",
+    "disguised": "Spouses who submit individual returns: every band edge in the graduated schedule and the flat allowance are scaled by 1.5 (allowance $21,900).",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      }
+    ]
+  },
+  {
+    "id": "mfs_brackets_2",
+    "family": "mfs_brackets",
+    "operator": "decouple",
+    "magnitude": 2.0,
+    "split": "train",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 8290.0,
+    "witness_reduction": 1.005428226779252,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Married filing separately: rate-bracket thresholds and the standard deduction are 2 times their former amounts (standard deduction $29,200).",
+    "disguised": "Spouses who submit individual returns: every band edge in the graduated schedule and the flat allowance are scaled by 2 (allowance $29,200).",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      }
+    ]
+  },
+  {
+    "id": "ctc_mfs_300000",
+    "family": "ctc_mfs",
+    "operator": "move_threshold",
+    "magnitude": 300000,
+    "split": "train",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 2000.0,
+    "witness_reduction": 1.0,
+    "witness_label": "candidate",
+    "reach": 0.6666666666666666,
+    "description": "Child tax credit: the phase-out threshold for married filing separately is $300,000.",
+    "disguised": "Per-minor family offset: tapering for spouses on individual returns starts above $300,000 of modified income.",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      },
+      {
+        "op": "assign_dependent",
+        "dependent": "k0",
+        "tax_unit": "t_s"
+      }
+    ]
+  },
+  {
+    "id": "ctc_mfs_400000",
+    "family": "ctc_mfs",
+    "operator": "move_threshold",
+    "magnitude": 400000,
+    "split": "train",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 4000.0,
+    "witness_reduction": 1.0,
+    "witness_label": "candidate",
+    "reach": 0.6666666666666666,
+    "description": "Child tax credit: the phase-out threshold for married filing separately is $400,000.",
+    "disguised": "Per-minor family offset: tapering for spouses on individual returns starts above $400,000 of modified income.",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      },
+      {
+        "op": "assign_dependent",
+        "dependent": "k0",
+        "tax_unit": "t_s"
+      }
+    ]
+  },
+  {
+    "id": "niit_mfs_200000",
+    "family": "niit_mfs",
+    "operator": "move_threshold",
+    "magnitude": 200000,
+    "split": "val",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 3685.00390625,
+    "witness_reduction": 0.5671635778879983,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Net investment income tax: the threshold for married filing separately is $200,000.",
+    "disguised": "Surcharge on passive returns: for spouses on individual returns it applies above $200,000 of modified income.",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      }
+    ]
+  },
+  {
+    "id": "niit_mfs_250000",
+    "family": "niit_mfs",
+    "operator": "move_threshold",
+    "magnitude": 250000,
+    "split": "val",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 3685.00390625,
+    "witness_reduction": 0.5671635778879983,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Net investment income tax: the threshold for married filing separately is $250,000.",
+    "disguised": "Surcharge on passive returns: for spouses on individual returns it applies above $250,000 of modified income.",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      }
+    ]
+  },
+  {
+    "id": "mfs_std_1.5",
+    "family": "mfs_std",
+    "operator": "move_threshold",
+    "magnitude": 1.5,
+    "split": "val",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 3212.0,
+    "witness_reduction": 1.0303549190535493,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Married filing separately: the standard deduction is $21,900 (1.5 times its former amount).",
+    "disguised": "Spouses who submit individual returns may subtract a flat $21,900.",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      }
+    ]
+  },
+  {
+    "id": "mfs_std_2",
+    "family": "mfs_std",
+    "operator": "move_threshold",
+    "magnitude": 2.0,
+    "split": "val",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 6424.0,
+    "witness_reduction": 1.0151774595267746,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Married filing separately: the standard deduction is $29,200 (2 times its former amount).",
+    "disguised": "Spouses who submit individual returns may subtract a flat $29,200.",
+    "witness": [
+      {
+        "op": "set_filing_status",
+        "tax_unit": "t",
+        "status": "SEPARATE"
+      }
+    ]
+  },
+  {
+    "id": "actc_rate_0.3",
+    "family": "actc_rate",
+    "operator": "sharpen_phase_in",
+    "magnitude": 0.3,
+    "split": "train",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": false,
+    "control_ok": null,
+    "witness_gain": 3790.1337890625,
+    "witness_reduction": 0.2968232950632257,
+    "witness_label": "candidate",
+    "reach": 0.0,
+    "description": "Refundable child tax credit: phases in at 30% of earned income above $2,500 (was 15%).",
+    "disguised": "Per-minor family offset, payable portion: accrues at 30% of labor receipts above a small floor.",
+    "witness": [
+      {
+        "op": "shift_income",
+        "payer": "a",
+        "payee": "b",
+        "amount": 10000
+      }
+    ]
+  },
+  {
+    "id": "actc_rate_0.5",
+    "family": "actc_rate",
+    "operator": "sharpen_phase_in",
+    "magnitude": 0.5,
+    "split": "train",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 4940.1337890625,
+    "witness_reduction": 0.46051384378230203,
+    "witness_label": "candidate",
+    "reach": 0.5,
+    "description": "Refundable child tax credit: phases in at 50% of earned income above $2,500 (was 15%).",
+    "disguised": "Per-minor family offset, payable portion: accrues at 50% of labor receipts above a small floor.",
+    "witness": [
+      {
+        "op": "shift_income",
+        "payer": "a",
+        "payee": "b",
+        "amount": 10000
+      }
+    ]
+  },
+  {
+    "id": "cg0_single_150000",
+    "family": "cg0_single",
+    "operator": "move_threshold",
+    "magnitude": 150000,
+    "split": "val",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 28715.0,
+    "witness_reduction": 0.5252481281560161,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Long-term capital gains: the 0% rate applies to single filers with taxable income up to $150,000.",
+    "disguised": "Disposals of long-held property by unattached filers: no levy on the first $150,000 of taxable income.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "c",
+        "asset": "fund",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "cg0_single_250000",
+    "family": "cg0_single",
+    "operator": "move_threshold",
+    "magnitude": 250000,
+    "split": "val",
+    "coverage": "two-calc",
+    "held_out_family": false,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 33800.0,
+    "witness_reduction": 0.596671597633136,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Long-term capital gains: the 0% rate applies to single filers with taxable income up to $250,000.",
+    "disguised": "Disposals of long-held property by unattached filers: no levy on the first $250,000 of taxable income.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "c",
+        "asset": "fund",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "kiddie_age_10",
+    "family": "kiddie_age",
+    "operator": "move_threshold",
+    "magnitude": 10,
+    "split": "test",
+    "coverage": "internal",
+    "held_out_family": true,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 5040.0,
+    "witness_reduction": 0.5115079365079365,
+    "witness_label": "candidate",
+    "reach": 1.0,
+    "description": "Tax on a child's unearned income at the parent's rate applies to children under 10 (students too).",
+    "disguised": "Supported-minor passive-receipts rule: applies to minors below 10 years, enrolled or not.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "kid",
+        "asset": "bond",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "kiddie_age_12",
+    "family": "kiddie_age",
+    "operator": "move_threshold",
+    "magnitude": 12,
+    "split": "test",
+    "coverage": "internal",
+    "held_out_family": true,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 5040.0,
+    "witness_reduction": 0.5115079365079365,
+    "witness_label": "candidate",
+    "reach": 0.6666666666666666,
+    "description": "Tax on a child's unearned income at the parent's rate applies to children under 12 (students too).",
+    "disguised": "Supported-minor passive-receipts rule: applies to minors below 12 years, enrolled or not.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "kid",
+        "asset": "bond",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "kiddie_allowance_5",
+    "family": "kiddie_allowance",
+    "operator": "remove_limit",
+    "magnitude": 5,
+    "split": "test",
+    "coverage": "internal",
+    "held_out_family": true,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 1637.0,
+    "witness_reduction": 0.3335369578497251,
+    "witness_label": "candidate",
+    "reach": 0.5,
+    "description": "Tax on a child's unearned income at the parent's rate applies only above 5 times the dependent standard-deduction floor.",
+    "disguised": "Supported-minor passive-receipts rule: the first 5 baseline allowances of passive receipts are exempt.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "kid",
+        "asset": "bond",
+        "fraction": 1.0
+      }
+    ]
+  },
+  {
+    "id": "kiddie_allowance_10",
+    "family": "kiddie_allowance",
+    "operator": "remove_limit",
+    "magnitude": 10,
+    "split": "test",
+    "coverage": "internal",
+    "held_out_family": true,
+    "control": false,
+    "valid": true,
+    "control_ok": null,
+    "witness_gain": 3092.0,
+    "witness_reduction": 0.4702457956015524,
+    "witness_label": "candidate",
+    "reach": 0.5,
+    "description": "Tax on a child's unearned income at the parent's rate applies only above 10 times the dependent standard-deduction floor.",
+    "disguised": "Supported-minor passive-receipts rule: the first 10 baseline allowances of passive receipts are exempt.",
+    "witness": [
+      {
+        "op": "gift_asset",
+        "giver": "p",
+        "recipient": "kid",
+        "asset": "bond",
+        "fraction": 1.0
+      }
+    ]
+  }
+]
