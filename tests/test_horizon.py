@@ -83,7 +83,8 @@ def test_recharacterization_closure_has_value():
     cfg = VerifierConfig(horizon=3, run_attribution=False)
     pre = Verifier(c.law_pre, cfg).evaluate(hh, c.witness(hh))
     post = Verifier(c.law_post, cfg).evaluate(hh, c.witness(hh))
-    assert pre.gain > post.gain + 500  # the option to undo is worth something
+    # The option to undo is worth what it saves in the down future (1/3 weight).
+    assert pre.gain > post.gain + 300
     assert set(pre.scenario_gains) == {"up", "down", "income_drop"}
-    assert pre.scenario_gains["down"] > post.scenario_gains["down"]
+    assert pre.scenario_gains["down"] > post.scenario_gains["down"] + 900
     assert pre.scenario_gains["up"] == pytest.approx(post.scenario_gains["up"], abs=1)
