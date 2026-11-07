@@ -14,6 +14,9 @@ Imputations (the survey has income flows, not balance sheets):
   - realized long-term gains, non-qualified dividends and the OTHER_ITEMS
     (Social Security, pensions, unemployment, rental, IRA distributions,
     short-term gains, real-estate tax, student-loan interest) are exogenous;
+  - 401(k) and IRA contributions are clipped to the statutory limits; IRA
+    contributions are dropped in units with a 401(k) participant (deductibility
+    under s.219(g) is computed by PolicyEngine only);
   - negative rental income is set to 0 (passive-loss rules differ between the
     calculators and are outside the move vocabulary).
 """
@@ -53,7 +56,6 @@ OTHER_VARS = {
     "short_term_gains": "short_term_capital_gains",
     "nonqualified_dividends": "non_qualified_dividend_income",
     "real_estate_taxes": "real_estate_taxes",
-    "student_loan_interest": "student_loan_interest",
 }
 
 
@@ -107,6 +109,12 @@ def _build(ix: np.ndarray, a: dict, year: int) -> Household:
             traditional_401k=float(min(max(a["k401"][i], 0.0), max(a["wages"][i], 0.0))),
             traditional_ira=float(max(a["ira"][i], 0.0)),
         )
+        # Bright-line statutory limits, as the moves enforce them.
+        from .moves import _retirement_limits
+
+        lim = _retirement_limits(year, p.age)
+        p.traditional_401k = min(p.traditional_401k, lim["401k"])
+        p.traditional_ira = min(p.traditional_ira, lim["ira"], max(p.earned_income, 0.0))
         if p.earned_income > 0 and p.hours <= 0:
             p.hours = 2080.0  # survey hours missing for a worker
         if a["interest"][i] > 0:
@@ -137,6 +145,14 @@ def _build(ix: np.ndarray, a: dict, year: int) -> Household:
         if sp:
             pairs.append((pid_of[h], pid_of[sp[0]]))
         units.append(tu)
+        # Survey IRA contributions are kept only where they are fully
+        # deductible under the rule both calculators share (no 401(k)
+        # participant in the unit): Tax-Calculator takes e03150 as the
+        # deductible amount, PolicyEngine applies s.219(g).
+        filers = [people[tu.head]] + ([people[tu.spouse]] if tu.spouse else [])
+        if any(q.traditional_401k > 0 for q in filers):
+            for q in filers:
+                q.traditional_ira = 0.0
         # childcare: the SPM unit's expenses go to the first tax-unit head in it
         cc = float(a["childcare_spm"][h])
         if cc > 0 and not any(people[u.head].childcare_expenses for u in units[:-1]):

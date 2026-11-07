@@ -31,7 +31,9 @@ OTHER_ITEMS = {
     "short_term_gains": ("short_term_capital_gains", ("p22250",), "income"),
     "nonqualified_dividends": ("non_qualified_dividend_income", ("e00600",), "income"),
     "real_estate_taxes": ("real_estate_taxes", ("e18500",), "deduction"),
-    "student_loan_interest": ("student_loan_interest", ("e03210",), "deduction"),
+    # Not included: student-loan interest (Tax-Calculator takes e03210 as the
+    # already-limited deduction; PolicyEngine applies the $2,500 cap and the
+    # phase-out, so the item is outside the calculators' overlap).
 }
 
 

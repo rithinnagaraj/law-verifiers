@@ -67,7 +67,10 @@ def run_chunk(args):
                 dict(
                     unit_id=u.unit_id,
                     **feats[u.unit_id],
-                    pe_fed=u.fed_income_tax,
+                    # Comparable federal income tax: PolicyEngine-only credits
+                    # (saver's credit) added back, as in the verifier.
+                    pe_fed=u.fed_income_tax + u.pe_only_credits,
+                    pe_savers=u.pe_only_credits,
                     tc_fed=v.fed_income_tax,
                     pe_regular=u.regular_tax,
                     tc_regular=v.regular_tax,
