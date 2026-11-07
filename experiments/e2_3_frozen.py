@@ -107,7 +107,7 @@ def main():
             row[f"recall@{b}"] = float(per_seed.mean())
             curve.append(per_seed.mean())
         x = np.log(budgets)
-        row["auc_log_budget"] = float(np.trapz(curve, x) / (x[-1] - x[0])) if len(x) > 1 else float(curve[0])
+        row["auc_log_budget"] = float(np.trapezoid(curve, x) / (x[-1] - x[0])) if len(x) > 1 else float(curve[0])
         rec.append(row)
     rt = pd.DataFrame(rec)
     per_target = df.assign(hit=df.first_match_call.notna()).pivot_table(index="target", columns="condition", values="hit", aggfunc="mean")
