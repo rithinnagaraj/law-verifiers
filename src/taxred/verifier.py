@@ -10,8 +10,9 @@ Checks, in order:
   3. economic reality unchanged (labor income, investment yield, wealth, hours)
   4. cross-check: Tax-Calculator confirms the federal income tax part of the
      gain (its federal gain is at least half of PolicyEngine's)
-  5. attribution: disable provisions one at a time; whitelisted (intended)
-     provisions explaining the gain make it an intended concession
+  5. attribution: disable provisions one at a time (signature); then disable
+     all whitelisted (intended) provisions together: if <= 10% of the gain
+     remains, it is an intended concession
 
 Labels: invalid | no_gain | benefit_cliff | sacrifice | intended_concession |
         code_disagreement | candidate
@@ -41,6 +42,9 @@ class VerifierConfig:
     crosscheck_abs_tol: float = 25.0  # federal gains below this need no confirmation
     federal_share_for_two_calc: float = 0.9
     attribution_share: float = 0.2  # a provision is in the signature if it explains >= this share
+    # Intended concession: with all intended provisions in the attribution set
+    # switched off together, at most this share of the gain remains.
+    intended_residual_max: float = 0.1
     attribution_provisions: tuple = tuple(PROVISIONS)
     run_attribution: bool = True
 
@@ -61,6 +65,8 @@ class Verdict:
     coverage: Optional[str] = None
     attribution: dict = field(default_factory=dict)  # provision -> share of gain explained
     signature: list = field(default_factory=list)
+    # Share of the gain left when every intended provision is switched off at once.
+    residual_without_intended: Optional[float] = None
     error: Optional[str] = None
 
     def to_dict(self) -> dict:
@@ -156,11 +162,16 @@ class Verifier:
             for j, (_, _, _, _, v) in enumerate(items):
                 g_off = _gain(pe[2 * j], pe[2 * j + 1])
                 v.attribution[name] = (v.gain - g_off) / v.gain if v.gain else 0.0
+        intended = [p for p in self.cfg.attribution_provisions if PROVISIONS[p].intended]
+        if intended:
+            # Provisions interact (e.g. the kiddie allowance is defined from the
+            # dependent standard deduction), so one-at-a-time shares need not
+            # add up: also switch all intended provisions off together.
+            pe = evaluate_households(hhs, self.law.without_all(intended), "policyengine")
+            for j, (_, _, _, _, v) in enumerate(items):
+                g_off = _gain(pe[2 * j], pe[2 * j + 1])
+                v.residual_without_intended = g_off / v.gain if v.gain else 0.0
         for (_, _, _, _, v) in items:
             v.signature = sorted(p for p, s in v.attribution.items() if s >= self.cfg.attribution_share)
-            explained_by_intended = sum(
-                s for p, s in v.attribution.items() if PROVISIONS[p].intended and s > 0
-            )
-            unintended_sig = [p for p in v.signature if not PROVISIONS[p].intended]
-            if v.signature and not unintended_sig and explained_by_intended >= 0.9:
+            if v.residual_without_intended is not None and v.residual_without_intended <= self.cfg.intended_residual_max:
                 v.label = "intended_concession"

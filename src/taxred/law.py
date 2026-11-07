@@ -110,8 +110,11 @@ PROVISIONS: dict[str, Provision] = {
         Provision(
             "dependent_std_deduction_floor",
             "Minimum standard deduction of a dependent filer ($1,300 in 2024)",
-            pe={"gov.irs.deductions.standard.dependent.amount": 0},
-            tc={"STD_Dep": 0},
+            pe={
+                "gov.irs.deductions.standard.dependent.amount": 0,
+                "gov.irs.deductions.standard.dependent.additional_earned_income": 0,
+            },
+            tc={"STD_Dep": 0, "STD_Dep_earned_add": 0},
             intended=True,
         ),
         Provision(
@@ -155,6 +158,12 @@ class Law:
             law = replace(law, kiddie=KIDDIE_RULES["none"])
         elif p.internal == "kiddie_allowance":
             law = replace(law, kiddie=replace(law.kiddie, allowance_multiple=0.0))
+        return law
+
+    def without_all(self, provisions) -> "Law":
+        law = self
+        for p in provisions:
+            law = law.without(p)
         return law
 
     def pe_reform_dict(self) -> dict:

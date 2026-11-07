@@ -71,7 +71,7 @@ def run(args):
                          parent_wages=sum(p.wages for p in h.people.values() if p.id != "kid"),
                          interest=h.people["p1"].taxable_interest, label=v.label, gain=v.gain,
                          gain_fed_pe=v.gain_federal_pe, gain_fed_tc=v.gain_federal_tc,
-                         crosscheck=v.crosscheck_pass, signature=",".join(v.signature),
+                         crosscheck=v.crosscheck_pass, signature=",".join(v.signature), residual_without_intended=v.residual_without_intended,
                          attribution=json.dumps({k: round(x, 3) for k, x in v.attribution.items()})))
     return rows
 
