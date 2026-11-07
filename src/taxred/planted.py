@@ -110,13 +110,15 @@ class Variant:
     # count it as a target.
     control: bool = False
 
+    family_split: str = "train"
+
     @property
     def split(self) -> str:
-        """train / val / test by hash; held-out families are always test."""
-        if self.held_out_family:
-            return "test"
-        h = int(hashlib.sha1(self.id.encode()).hexdigest(), 16) % 10
-        return "train" if h < 6 else "val" if h < 8 else "test"
+        """Splits are by provision family (experiment plan §1.5), so transfer is
+        measured across families; held-out families are always test."""
+        if self.control:
+            return "control"
+        return "test" if self.held_out_family else self.family_split
 
 
 @dataclass
@@ -130,6 +132,7 @@ class Family:
     coverage: str = "two-calc"
     held_out: bool = False
     control: bool = False
+    split: str = "train"  # train | val | test (family-level)
 
 
 def _fam_dependent_floor(year, m):
@@ -169,6 +172,33 @@ def _fam_niit_mfs(year, m):
     desc = f"Net investment income tax: the threshold for married filing separately is ${m:,.0f}."
     dis = f"Surcharge on passive returns: for spouses on individual returns it applies above ${m:,.0f} of modified income."
     return p, {"NIIT_thd": t}, desc, dis, None
+
+
+def _fam_mfs_std(year, m):
+    std = _pe("gov.irs.deductions.standard.amount.SEPARATE", year)
+    p, t = _by_status("gov.irs.deductions.standard.amount", year, {"SEPARATE": std * m})
+    desc = f"Married filing separately: the standard deduction is ${std * m:,.0f} ({m:g} times its former amount)."
+    dis = f"Spouses who submit individual returns may subtract a flat ${std * m:,.0f}."
+    return p, {"STD": t}, desc, dis, None
+
+
+def _fam_actc_rate(year, m):
+    pe = {"gov.irs.credits.ctc.refundable.phase_in.rate": m}
+    desc = f"Refundable child tax credit: phases in at {m:.0%} of earned income above $2,500 (was 15%)."
+    dis = f"Per-minor family offset, payable portion: accrues at {m:.0%} of labor receipts above a small floor."
+    return pe, {"ACTC_rt": m}, desc, dis, None
+
+
+def _partners_actc(hid, year, se=60_000, interest_b=12_000, kids=(4, 8)):
+    """Unmarried partners: A self-employed, B with the children and enough
+    investment income to be barred from the EITC (so only the ACTC moves)."""
+    people = {
+        "a": Person("a", 40, self_employment=se, hours=2080),
+        "b": Person("b", 38, assets=[Asset("bonds", interest_b / 0.05, interest_b / 0.05, interest_yield=0.05)]),
+    }
+    for i, k in enumerate(kids):
+        people[f"k{i}"] = Person(f"k{i}", k)
+    return Household(hid, year, "TX", people, [TaxUnit("ta", "a"), TaxUnit("tb", "b", dependents=[f"k{i}" for i in range(len(kids))])])
 
 
 def _fam_kiddie_age(year, m):
@@ -226,6 +256,24 @@ FAMILIES: dict[str, Family] = {
             _fam_niit_mfs,
             lambda y, m: (_couple("w", y, 0, 180_000, interest_a=180_000), SEPARATE),
             lambda y: [_couple(f"c{a}_{i}", y, 0, a, interest_a=i) for a in (150_000, 180_000, 220_000) for i in (150_000, 190_000)],
+            split="val",
+        ),
+        Family(
+            "mfs_std",
+            "move_threshold",
+            [1.5, 2.0],
+            _fam_mfs_std,
+            lambda y, m: (_couple("w", y, 120_000, 100_000), SEPARATE),
+            lambda y: [_couple(f"c{a}_{b}", y, a, b) for a, b in ((60_000, 50_000), (120_000, 100_000), (250_000, 200_000))],
+            split="val",
+        ),
+        Family(
+            "actc_rate",
+            "sharpen_phase_in",
+            [0.3, 0.5],
+            _fam_actc_rate,
+            lambda y, m: (_partners_actc("w", y), [{"op": "shift_income", "payer": "a", "payee": "b", "amount": 10_000}]),
+            lambda y: [_partners_actc(f"p{s}_{k}", y, se=s, kids=(4, 8)[:k]) for s in (40_000, 60_000, 100_000) for k in (1, 2)],
         ),
         Family(
             "kiddie_age",
@@ -281,6 +329,7 @@ def variants(year: int = 2024, families=None) -> list[Variant]:
                     coverage=f.coverage,
                     held_out_family=f.held_out,
                     control=f.control,
+                    family_split=f.split,
                 )
             )
     return out
