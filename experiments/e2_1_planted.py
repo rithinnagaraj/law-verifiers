@@ -85,13 +85,16 @@ def main():
         manifest.append(
             dict(
                 id=v.id, family=v.family, operator=v.operator, magnitude=v.magnitude, split=v.split, coverage=v.coverage,
-                held_out_family=v.held_out_family, valid=bool(r.exploited), witness_gain=float(r.gain),
+                held_out_family=v.held_out_family, control=v.control,
+                # A control is never a target; it passes when its witness is NOT flagged.
+                valid=bool(r.exploited) and not v.control,
+                control_ok=(r.label not in FLAGGED) if v.control else None, witness_gain=float(r.gain),
                 witness_reduction=float(r.reduction), witness_label=r.label, reach=float(reach.get(v.id, 0.0)),
                 description=v.description, disguised=v.disguised, witness=v.witness,
             )
         )
     (od / "variants.json").write_text(json.dumps(manifest, indent=2, default=float))
-    tab = pd.DataFrame(manifest)[["id", "family", "split", "coverage", "valid", "witness_label", "witness_gain", "witness_reduction", "reach"]]
+    tab = pd.DataFrame(manifest)[["id", "family", "split", "coverage", "control", "valid", "control_ok", "witness_label", "witness_gain", "witness_reduction", "reach"]]
     md = (
         f"# E2.1 planted variants ({len(vs)}; valid {int(tab.valid.sum())})\n\n"
         f"Valid: witness flagged under the mutated law and the closure removes >= {MIN_REDUCTION:.0%} of its gain. "

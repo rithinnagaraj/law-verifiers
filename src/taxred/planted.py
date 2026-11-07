@@ -104,6 +104,11 @@ class Variant:
     disguised: str
     coverage: str = "two-calc"
     held_out_family: bool = False
+    # Negative control: a mutation that makes an intended provision more
+    # generous. Using it as designed is not a loophole; the verifier should
+    # label the witness an intended concession, and searches should not
+    # count it as a target.
+    control: bool = False
 
     @property
     def split(self) -> str:
@@ -124,6 +129,7 @@ class Family:
     panel: Callable  # (year) -> list of households
     coverage: str = "two-calc"
     held_out: bool = False
+    control: bool = False
 
 
 def _fam_dependent_floor(year, m):
@@ -195,6 +201,7 @@ FAMILIES: dict[str, Family] = {
             _fam_dependent_floor,
             lambda y, m: (_parent_child("w", y, 150_000, 20_000, 10), GIFT),
             lambda y: [_parent_child(f"pc{w}_{i}_{a}", y, w, i, a) for w in (60_000, 150_000, 400_000) for i in (5_000, 20_000) for a in (8, 15)],
+            control=True,
         ),
         Family(
             "mfs_brackets",
@@ -217,8 +224,8 @@ FAMILIES: dict[str, Family] = {
             "move_threshold",
             [200_000, 250_000],
             _fam_niit_mfs,
-            lambda y, m: (_couple("w", y, 0, 400_000, interest_a=150_000), SEPARATE),
-            lambda y: [_couple(f"c{a}_{i}", y, 0, a, interest_a=i) for a in (300_000, 500_000) for i in (60_000, 150_000)],
+            lambda y, m: (_couple("w", y, 0, 180_000, interest_a=180_000), SEPARATE),
+            lambda y: [_couple(f"c{a}_{i}", y, 0, a, interest_a=i) for a in (150_000, 180_000, 220_000) for i in (150_000, 190_000)],
         ),
         Family(
             "kiddie_age",
@@ -235,7 +242,7 @@ FAMILIES: dict[str, Family] = {
             "remove_limit",
             [5, 10],
             _fam_kiddie_allowance,
-            lambda y, m: (_parent_child("w", y, 200_000, 10_000, 10), GIFT),
+            lambda y, m: (_parent_child("w", y, 200_000, m * 1_300, 10), GIFT),
             lambda y: [_parent_child(f"pc{w}_{i}_{a}", y, w, i, a) for w in (100_000, 300_000) for i in (5_000, 10_000, 20_000) for a in (8, 15)],
             coverage="internal",
             held_out=True,
@@ -273,6 +280,7 @@ def variants(year: int = 2024, families=None) -> list[Variant]:
                     disguised=dis,
                     coverage=f.coverage,
                     held_out_family=f.held_out,
+                    control=f.control,
                 )
             )
     return out
