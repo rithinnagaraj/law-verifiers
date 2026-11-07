@@ -66,9 +66,9 @@ CANARIES: list[Canary] = [
         "Top of the 12% bracket for single filers is 10x too high",
         "federal_income",
         lambda y: {"gov.irs.income.bracket.thresholds.2.SINGLE": 10 * _pe("gov.irs.income.bracket.thresholds.2.SINGLE", y)},
-        # Gift a bond to an adult child who files single (own unit): under the bug
-        # the child's 12% bracket runs to ~$470k.
-        lambda y: (Household("w", y, "TX", {"p": Person("p", 55, wages=300_000, hours=2080, assets=[Asset("bond", 2_000_000, 2_000_000, interest_yield=0.05)]), "c": Person("c", 25)}, [TaxUnit("t", "p"), TaxUnit("tc", "c")]),
+        # Married parents gift a bond to an adult child who files single (own
+        # unit): under the bug the child's 12% bracket runs to ~$470k.
+        lambda y: (Household("w", y, "TX", {"p": Person("p", 55, wages=300_000, hours=2080, assets=[Asset("bond", 2_000_000, 2_000_000, interest_yield=0.05)]), "s": Person("s", 54), "c": Person("c", 25)}, [TaxUnit("t", "p", "s"), TaxUnit("tc", "c")], [("p", "s")]),
                    [{"op": "gift_asset", "giver": "p", "recipient": "c", "asset": "bond", "fraction": 1.0}]),
     ),
     Canary(
