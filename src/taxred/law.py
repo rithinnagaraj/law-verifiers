@@ -67,9 +67,21 @@ class Provision:
     tc: dict = field(default_factory=dict)
     # Implemented in this package rather than the calculators.
     internal: Optional[str] = None
-    # Provisions that are intended concessions (gains from them are not loopholes
-    # when used within their stated conditions).
-    intended: bool = False
+    # "intended": an intended concession; gains from it are not loopholes when
+    #   it is used within its stated conditions.
+    # "anti_abuse": a rule that exists to stop a strategy. A gain that removing
+    #   this rule would take away comes from getting around it, and is never
+    #   labelled an intended concession, even when intended provisions explain it.
+    # "other": ordinary rate and base provisions.
+    kind: str = "other"
+
+    @property
+    def intended(self) -> bool:
+        return self.kind == "intended"
+
+    @property
+    def anti_abuse(self) -> bool:
+        return self.kind == "anti_abuse"
 
 
 PROVISIONS: dict[str, Provision] = {
@@ -80,26 +92,35 @@ PROVISIONS: dict[str, Provision] = {
             "Earned income tax credit",
             pe={f"gov.irs.credits.eitc.max[{i}].amount": 0 for i in range(4)},
             tc={"EITC_c": [0, 0, 0, 0]},
-            intended=True,
+            kind="intended",
+        ),
+        Provision(
+            "eitc_investment_income_limit",
+            "EITC disqualified (investment) income limit ($11,600 in 2024)",
+            pe={"gov.irs.credits.eitc.phase_out.max_investment_income": 1e9},
+            tc={"EITC_InvestIncome_c": 1e9},
+            kind="anti_abuse",
         ),
         Provision(
             "ctc",
             "Child tax credit (incl. refundable portion)",
             pe={f"gov.irs.credits.ctc.amount.base[{i}].amount": 0 for i in range(2)},
             tc={"CTC_c": 0, "ACTC_c": 0, "ODC_c": 0},
-            intended=True,
+            kind="intended",
         ),
         Provision(
             "dependent_std_deduction_limit",
-            "Limit on the standard deduction of a dependent filer",
+            "Limit on the standard deduction of a dependent filer (TRA 1986)",
             pe={"gov.irs.deductions.standard.dependent.amount": 1_000_000},
             tc={"STD_Dep": 1_000_000},
+            kind="anti_abuse",
         ),
         Provision(
             "child_amt_exemption_limit",
-            "Limit on the AMT exemption of a child (AMT kiddie rule)",
+            "Limit on the AMT exemption of a child (AMT kiddie rule, TRA 1986)",
             pe={"gov.irs.income.amt.exemption.child.in_effect": False},
             tc={"AMT_child_em": 1_000_000},
+            kind="anti_abuse",
         ),
         Provision(
             "niit",
@@ -115,18 +136,19 @@ PROVISIONS: dict[str, Provision] = {
                 "gov.irs.deductions.standard.dependent.additional_earned_income": 0,
             },
             tc={"STD_Dep": 0, "STD_Dep_earned_add": 0},
-            intended=True,
+            kind="intended",
         ),
         Provision(
             "kiddie_allowance",
             "Kiddie-tax allowance: first 2x floor of a child's unearned income not taxed at the parent's rate",
             internal="kiddie_allowance",
-            intended=True,
+            kind="intended",
         ),
         Provision(
             "kiddie_tax",
             "Kiddie tax: child's unearned income taxed at parent's rate (Form 8615)",
             internal="kiddie_tax",
+            kind="anti_abuse",
         ),
     ]
 }

@@ -47,6 +47,12 @@ class VerifierConfig:
     intended_residual_max: float = 0.1
     attribution_provisions: tuple = tuple(PROVISIONS)
     run_attribution: bool = True
+    # A gain partly explained by removing an anti-abuse rule stays a candidate.
+    anti_abuse_overrides_intended: bool = True
+    # Ablation switches (E1.2). Each disables one check.
+    use_reality_check: bool = True
+    use_crosscheck: bool = True
+    use_whitelist: bool = True
 
 
 @dataclass
@@ -65,6 +71,8 @@ class Verdict:
     coverage: Optional[str] = None
     attribution: dict = field(default_factory=dict)  # provision -> share of gain explained
     signature: list = field(default_factory=list)
+    # Anti-abuse provisions in the signature (the gain gets around them).
+    circumvents: list = field(default_factory=list)
     # Share of the gain left when every intended provision is switched off at once.
     residual_without_intended: Optional[float] = None
     error: Optional[str] = None
@@ -137,10 +145,10 @@ class Verifier:
 
             if v.gain <= self.cfg.gain_threshold:
                 v.label = "no_gain"
-            elif not v.reality_unchanged:
+            elif self.cfg.use_reality_check and not v.reality_unchanged:
                 lower_income = v.reality_delta["labor_income"] < 0 or v.reality_delta["investment_yield"] < 0
                 v.label = "benefit_cliff" if (lower_income and v.gain_benefits > 0) else "sacrifice"
-            elif not v.crosscheck_pass:
+            elif self.cfg.use_crosscheck and not v.crosscheck_pass:
                 v.label = "code_disagreement"
             else:
                 v.label = "candidate"
@@ -173,5 +181,14 @@ class Verifier:
                 v.residual_without_intended = g_off / v.gain if v.gain else 0.0
         for (_, _, _, _, v) in items:
             v.signature = sorted(p for p, s in v.attribution.items() if s >= self.cfg.attribution_share)
+            # Getting around an anti-abuse rule (its removal takes away part of
+            # the gain) is never an intended concession, even when intended
+            # provisions explain the gain (e.g. regaining the EITC by moving
+            # assets under the investment-income limit).
+            v.circumvents = sorted(p for p in v.signature if PROVISIONS[p].anti_abuse)
+            if not self.cfg.use_whitelist:
+                continue
+            if self.cfg.anti_abuse_overrides_intended and v.circumvents:
+                continue
             if v.residual_without_intended is not None and v.residual_without_intended <= self.cfg.intended_residual_max:
                 v.label = "intended_concession"
