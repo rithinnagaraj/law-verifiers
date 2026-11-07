@@ -129,10 +129,12 @@ def main():
         df = pd.DataFrame(rows)
         df.to_csv(od / "pairs.csv", index=False)
 
-    # A positive whose own gain the variant does not create is not a real
-    # instance (e.g. the household is out of the loophole's reach): ground
-    # truth for positives is "the mutation creates >= $50 of the gain".
-    df["truth"] = (df.kind == "positive") & ((df.gain - df.gain_closure) > 50)
+    # Ground truth by construction: a proposal is an instance of the planted
+    # loophole when the mutation creates > $50 of its gain and the gain is
+    # positive, whatever witness it came from. (Run 1 counted cross-family
+    # witnesses as negatives, but e.g. filing separately under the CTC-MFS
+    # mutation exploits it too: all 25 "false positives" were such cases.)
+    df["truth"] = ((df.gain - df.gain_closure) > 50) & (df.gain > 50)
     grid = []
     for r in GRID:
         pred = df.flagged & (df.reduction >= r)
