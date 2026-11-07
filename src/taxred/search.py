@@ -250,3 +250,79 @@ def search_many(
 
 def search(hh: Household, verifier: Verifier, proposer: Proposer, budget: int, batch: int = 25, seed: int = 0) -> list[Record]:
     return search_many([hh], verifier, proposer, budget, batch, seed)[hh.id]
+
+
+# ---------------------------------------------------------------------------
+# Pool targets: the search chooses the household as well as the moves.
+# ---------------------------------------------------------------------------
+
+
+class PoolProposer(Protocol):
+    def propose_pool(self, pool: list[Household], history: list[Record], k: int, rng: np.random.Generator) -> list[tuple[int, list[dict]]]: ...
+
+
+class RandomPoolProposer:
+    """Uniform household, random valid move sequence."""
+
+    def __init__(self, max_len: int = 3):
+        self.max_len = max_len
+
+    def propose_pool(self, pool, history, k, rng):
+        out = []
+        for _ in range(k):
+            i = int(rng.integers(len(pool)))
+            out.append((i, random_sequence(pool[i], rng, self.max_len)))
+        return out
+
+
+class GreedyPoolProposer:
+    """Hill-climbing over (household, sequence): mutate the best proposals so
+    far on their own household; explore new households with probability
+    `explore`."""
+
+    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.4):
+        self.inner = GreedyProposer(max_len=max_len, top=top, explore=0.0)
+        self.max_len, self.top, self.explore = max_len, top, explore
+
+    def propose_pool(self, pool, history, k, rng):
+        good = [r for r in history if r.verdict.label not in ("invalid", "sacrifice", "benefit_cliff") and r.verdict.gain > 0]
+        good.sort(key=lambda r: -r.verdict.gain)
+        idx = {h.id: i for i, h in enumerate(pool)}
+        elite = [(idx[r.household_id], r) for r in good[: self.top] if r.household_id in idx]
+        out = []
+        for _ in range(k):
+            if not elite or rng.random() < self.explore:
+                i = int(rng.integers(len(pool)))
+                out.append((i, random_sequence(pool[i], rng, self.max_len)))
+                continue
+            i, _r = elite[int(rng.integers(len(elite)))]
+            hist_i = [r for r in history if r.household_id == pool[i].id]
+            props = self.inner.propose(pool[i], hist_i, 1, rng)
+            out.append((i, props[0] if props else random_sequence(pool[i], rng, self.max_len)))
+        return out
+
+
+def search_pool(pool: list[Household], verifier: Verifier, proposer, budget: int, batch: int = 25, seed: int = 0) -> list[Record]:
+    """Spend `budget` verifier calls on (household, moves) proposals over a
+    pool of households. Duplicates and empty sequences cost nothing."""
+    rng = np.random.default_rng(seed)
+    history: list[Record] = []
+    seen: set = set()
+    calls, stall = 0, 0
+    while calls < budget and stall < 5:
+        k = min(batch, budget - calls)
+        fresh = []
+        for i, p in proposer.propose_pool(pool, history, k, rng):
+            key = (i, json.dumps(p, sort_keys=True))
+            if p and key not in seen:
+                seen.add(key)
+                fresh.append((i, p))
+        if not fresh:
+            stall += 1
+            continue
+        stall = 0
+        verdicts = verifier.evaluate_many([(pool[i], p) for i, p in fresh])
+        for (i, p), v in zip(fresh, verdicts):
+            calls += 1
+            history.append(Record(pool[i].id, calls, p, v))
+    return history

@@ -19,6 +19,7 @@ removes >= R > intended_residual_max of it).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from concurrent.futures import ProcessPoolExecutor
@@ -31,12 +32,14 @@ from common import out_dir, run_jobs, run_metadata, write_json
 
 from taxred.cases import closure_cases
 from taxred.planted import variants
-from taxred.search import GreedyProposer, RandomProposer, search_many
+from taxred.generate import random_households
+from taxred.search import GreedyPoolProposer, GreedyProposer, RandomPoolProposer, RandomProposer, search_many, search_pool
 from taxred.verifier import Verifier, VerifierConfig
 
 PROPOSERS = {"random": RandomProposer, "greedy": GreedyProposer}
+POOL_PROPOSERS = {"random": RandomPoolProposer, "greedy": GreedyPoolProposer}
 FLAGGED = ("candidate", "code_disagreement")
-BUDGETS = [10, 25, 50, 100, 200, 400]
+BUDGETS = [10, 25, 50, 100, 200, 400, 1000, 3000]
 HIST_WITNESS = {
     "kiddie_tra1986": "w200000_i20000_a8",
     "kiddie_tipra2005": "w200000_i20000_a16",
@@ -61,22 +64,42 @@ def targets(year: int):
     return out
 
 
+def make_pool(tid: str, hh, n: int, year: int):
+    """n-1 random households plus the witness, at a seeded position. The pool
+    is the same for every condition and seed of a target."""
+    s = int(hashlib.sha1(tid.encode()).hexdigest(), 16) % 10_000
+    pool = random_households(n - 1, seed=1000 + s, year=year)
+    pos = s % n
+    return pool[:pos] + [hh] + pool[pos:]
+
+
 def run(args):
-    tid, cond, seed, budget, year, r_min = args
+    tid, cond, seed, budget, year, r_min, pool_n = args
     _, kind, law, closure, hh = next(t for t in targets(year) if t[0] == tid)
-    hist = search_many([hh], Verifier(law, VerifierConfig(run_attribution=False)), PROPOSERS[cond](), budget, batch=25, seed=seed)[hh.id]
+    ver = Verifier(law, VerifierConfig(run_attribution=False))
+    if pool_n:
+        pool = make_pool(tid, hh, pool_n, year)
+        hist = search_pool(pool, ver, POOL_PROPOSERS[cond](), budget, batch=25, seed=seed)
+    else:
+        pool = [hh]
+        hist = search_many([hh], ver, PROPOSERS[cond](), budget, batch=25, seed=seed)[hh.id]
+    by_id = {h.id: h for h in pool}
     flagged = [r for r in hist if r.verdict.label in FLAGGED]
     first = None
     n_match = 0
+    matched_households = set()
     if flagged:
-        post = Verifier(closure, VerifierConfig(run_attribution=False)).evaluate_many([(hh, r.moves) for r in flagged])
+        post = Verifier(closure, VerifierConfig(run_attribution=False)).evaluate_many([(by_id[r.household_id], r.moves) for r in flagged])
         for r, b in zip(flagged, post):
             red = (r.verdict.gain - b.gain) / r.verdict.gain if r.verdict.gain > 0 else 0.0
             if red >= r_min:
                 n_match += 1
+                matched_households.add(r.household_id)
                 first = r.call if first is None else min(first, r.call)
-    return dict(target=tid, kind=kind, condition=cond, seed=seed, calls=len(hist), n_flagged=len(flagged),
-                n_match=n_match, first_match_call=first, labels=json.dumps(pd.Series([r.verdict.label for r in hist]).value_counts().to_dict()))
+    return dict(target=tid, kind=kind, condition=cond, seed=seed, pool=pool_n, calls=len(hist), n_flagged=len(flagged),
+                n_match=n_match, first_match_call=first, matched_households=sorted(matched_households),
+                witness_matched=hh.id in matched_households,
+                labels=json.dumps(pd.Series([r.verdict.label for r in hist]).value_counts().to_dict()))
 
 
 def main():
@@ -87,13 +110,14 @@ def main():
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--r-min", type=float, default=None, help="default: the R chosen by E0.7, else 0.3")
     ap.add_argument("--conditions", nargs="*", default=list(PROPOSERS))
+    ap.add_argument("--pool", type=int, default=0, help="search over a pool of this many households (witness hidden among random ones); 0 = witness only")
     a = ap.parse_args()
     if a.r_min is None:
         e07 = Path(out_dir("phase0/e0_7")) / "summary.json"
         a.r_min = float(json.loads(e07.read_text())["best"]["R"]) if e07.exists() else 0.3
-    od = out_dir("phase2/frozen")
+    od = out_dir("phase2/frozen" + (f"_pool{a.pool}" if a.pool else ""))
     tids = [t[0] for t in targets(a.year)]
-    jobs = [(t, c, s, a.budget, a.year, a.r_min) for t in tids for c in a.conditions for s in range(a.seeds)]
+    jobs = [(t, c, s, a.budget, a.year, a.r_min, a.pool) for t in tids for c in a.conditions for s in range(a.seeds)]
     rows = run_jobs(run, jobs, a.workers, checkpoint=od / f"checkpoint_r{a.r_min:g}_b{a.budget}.jsonl", max_tasks_per_child=8)
     df = pd.DataFrame(rows)
     df.to_csv(od / "runs.csv", index=False)
