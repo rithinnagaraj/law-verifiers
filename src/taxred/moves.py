@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Callable
 
+import numpy as np
+
 from .household import FILING_STATUSES, Asset, Household, TaxUnit
 
 
@@ -127,8 +129,9 @@ def _retirement_limits(year: int, age: int) -> dict:
     r = _pe_params().gov.irs.gross_income.retirement_contributions
     d = f"{year}-01-01"
     catch_up = age >= r.catch_up.age_threshold(d)
+    # The 401(k) catch-up is a scale by age (SECURE 2.0 adds a 60-63 tier).
     return {
-        "401k": float(getattr(r.limit, "401k")(d)) + catch_up * float(r.catch_up.limit.k401(d)),
+        "401k": float(getattr(r.limit, "401k")(d)) + float(np.asarray(r.catch_up.limit.k401(d).calc(np.array([float(age)])))[0]),
         "ira": float(r.limit.ira(d)) + catch_up * float(r.catch_up.limit.ira(d)),
     }
 

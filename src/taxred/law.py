@@ -114,7 +114,7 @@ PROVISIONS: dict[str, Provision] = {
         Provision(
             "retirement_contributions",
             "Exclusion / deduction of traditional 401(k) and IRA contributions",
-            pe={f"{_RC}.limit.401k": 0, f"{_RC}.limit.ira": 0, f"{_RC}.catch_up.limit.k401": 0, f"{_RC}.catch_up.limit.ira": 0},
+            pe={f"{_RC}.limit.401k": 0, f"{_RC}.limit.ira": 0, **{f"{_RC}.catch_up.limit.k401[{i}].amount": 0 for i in range(4)}, f"{_RC}.catch_up.limit.ira": 0},
             kind="intended",
         ),
         Provision(
