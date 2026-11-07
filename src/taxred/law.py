@@ -36,6 +36,9 @@ class KiddieTaxRule:
     age_under: int = 19
     student_age_under: Optional[int] = 24
     label: str = "current"
+    # Unearned income up to this multiple of the dependent standard-deduction
+    # floor is not net unearned income (statute: 2x).
+    allowance_multiple: float = 2.0
 
 
 KIDDIE_RULES = {
@@ -105,6 +108,19 @@ PROVISIONS: dict[str, Provision] = {
             tc={"NIIT_rt": 0},
         ),
         Provision(
+            "dependent_std_deduction_floor",
+            "Minimum standard deduction of a dependent filer ($1,300 in 2024)",
+            pe={"gov.irs.deductions.standard.dependent.amount": 0},
+            tc={"STD_Dep": 0},
+            intended=True,
+        ),
+        Provision(
+            "kiddie_allowance",
+            "Kiddie-tax allowance: first 2x floor of a child's unearned income not taxed at the parent's rate",
+            internal="kiddie_allowance",
+            intended=True,
+        ),
+        Provision(
             "kiddie_tax",
             "Kiddie tax: child's unearned income taxed at parent's rate (Form 8615)",
             internal="kiddie_tax",
@@ -137,6 +153,8 @@ class Law:
         )
         if p.internal == "kiddie_tax":
             law = replace(law, kiddie=KIDDIE_RULES["none"])
+        elif p.internal == "kiddie_allowance":
+            law = replace(law, kiddie=replace(law.kiddie, allowance_multiple=0.0))
         return law
 
     def pe_reform_dict(self) -> dict:

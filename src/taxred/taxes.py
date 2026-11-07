@@ -102,7 +102,7 @@ def apply_kiddie_tax(
     rule = law.kiddie
     if not rule.enabled:
         return {}
-    floor2 = 2 * dependent_std_floor(units[0].year)
+    floor2 = rule.allowance_multiple * dependent_std_floor(units[0].year)
     by_id = {u.id: u for u in units}
     groups: dict[str, list[tuple[FilingUnit, float]]] = {}
     for fu in units:

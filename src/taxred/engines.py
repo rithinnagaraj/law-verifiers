@@ -233,6 +233,8 @@ def _tc_record(rec_id: int, fu: FilingUnit) -> dict:
     )
 
 
+TC_FULL_TAKEUP = ("eitc_claim_prob_scale", "actc_claim_prob_scale")
+
 _TC_INT_COLS = {"RECID", "FLPDYR", "MARS", "XTOT", "DSI", "age_head", "age_spouse", "f2441", "n24", "nu18", "nu13", "nu06", "EIC", "elderly_dependents"}
 
 
@@ -250,6 +252,11 @@ class TaxCalculatorEngine:
         for c in df.columns:
             df[c] = df[c].astype(int if c in _TC_INT_COLS else float)
         pol = tc.Policy()
+        # Tax-Calculator's current law includes a random take-up model for
+        # the EITC and ACTC (a per-record draw seeded by row position drops
+        # the credit with some probability). The verifier needs the law, not
+        # predicted take-up: everyone claims.
+        pol.implement_reform({k: {year: 9e99} for k in TC_FULL_TAKEUP})
         reform = law.tc_reform_dict()
         if reform:
             pol.implement_reform({k: {year: v} for k, v in reform.items()})

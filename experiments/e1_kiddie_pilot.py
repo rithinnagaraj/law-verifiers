@@ -61,7 +61,8 @@ MOVE = [{"op": "gift_asset", "giver": "p1", "recipient": "kid", "asset": "bond",
 
 def run(args):
     hhs, key, year = args
-    cfg = VerifierConfig(attribution_provisions=("kiddie_tax", "niit", "dependent_std_deduction_limit", "child_amt_exemption_limit"))
+    cfg = VerifierConfig(attribution_provisions=(
+        "kiddie_tax", "kiddie_allowance", "dependent_std_deduction_floor", "niit", "eitc", "child_amt_exemption_limit"))
     vs = Verifier(Law(year).with_kiddie(key), cfg).evaluate_many([(h, MOVE) for h in hhs])
     rows = []
     for h, v in zip(hhs, vs):
@@ -79,19 +80,23 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--year", type=int, default=2024)
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--from-csv", action="store_true", help="rebuild the summary from saved verdicts")
     a = ap.parse_args()
     hhs = panel(a.year)
-    jobs = [(c, k, a.year) for k in LAWS for c in chunks(hhs, 21)]
-    rows = []
-    with ProcessPoolExecutor(a.workers) as ex:
-        for r in ex.map(run, jobs):
-            rows += r
-    df = pd.DataFrame(rows)
     od = out_dir("phase1/kiddie_pilot")
-    df.to_csv(od / "verdicts.csv", index=False)
+    if a.from_csv:
+        df = pd.read_csv(od / "verdicts.csv")
+    else:
+        jobs = [(c, k, a.year) for k in LAWS for c in chunks(hhs, 21)]
+        rows = []
+        with ProcessPoolExecutor(a.workers) as ex:
+            for r in ex.map(run, jobs):
+                rows += r
+        df = pd.DataFrame(rows)
+        df.to_csv(od / "verdicts.csv", index=False)
 
     df["child"] = df.child_age.astype(str) + df.student.map({True: " student", False: ""})
-    df["flagged"] = df.label == "candidate"
+    df["flagged"] = df.label.isin(["candidate", "code_disagreement"])
     flag = df.pivot_table(index="child", columns="law", values="flagged", aggfunc="mean")[LAWS]
     gain = df.pivot_table(index="child", columns="law", values="gain", aggfunc="median")[LAWS]
     disagree = df.pivot_table(index="child", columns="law", values="crosscheck", aggfunc=lambda s: 1 - s.mean())[LAWS]
@@ -106,7 +111,7 @@ def main():
 
     def covered(age, student, key):
         rule = KIDDIE_RULES[key]
-        return rule.enabled and (age < rule.age_under or (student and rule.student_age_under and age < rule.student_age_under))
+        return bool(rule.enabled and (age < rule.age_under or (student and rule.student_age_under and age < rule.student_age_under)))
 
     df["should_be_closed"] = [covered(r.child_age, r.student, r.law) for r in df.itertuples()]
     pre = df[~df.should_be_closed]
@@ -124,7 +129,8 @@ def main():
         f"Households: {len(hhs)} per law version. Strategy: gift interest-bearing bond to dependent child.\n\n"
         f"- Flag rate where no kiddie rule covers the child (should be high): **{summary['flag_rate_not_covered']:.1%}**\n"
         f"- Flag rate where a kiddie rule covers the child (should be low): **{summary['flag_rate_covered']:.1%}**\n\n"
-        "## Flag rate (label = candidate)\n\n" + flag.to_markdown(floatfmt=".2f") +
+        "Flagged = label `candidate` or `code_disagreement` (a gain the verifier does not explain as intended).\n\n"
+        "## Flag rate\n\n" + flag.to_markdown(floatfmt=".2f") +
         "\n\n## Median gain ($/yr)\n\n" + gain.to_markdown(floatfmt=".0f") +
         "\n\n## Cross-check failure rate\n\n" + disagree.to_markdown(floatfmt=".2f") +
         "\n\n## Median share of pre-closure gain removed by each law (closure test; match if >= 0.8)\n\n" + red.to_markdown(floatfmt=".2f") +
