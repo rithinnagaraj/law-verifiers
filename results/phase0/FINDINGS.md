@@ -42,6 +42,13 @@ This is recorded as a strict `xfail` known-answer test. In the pilot, the cross-
 
 With no expenses entered, PolicyEngine still imputes an itemized state/local sales-tax deduction from income ($382 for a child with $5k of interest in TX). Tax-Calculator does not. This matters for itemizers and for counterfactuals that remove the standard deduction, and it is a source of `single-calc` gain.
 
+## E0.1 smoke run (300 households, container): calculators agree on 96.6% of returns within $1
+
+- **Overall:** 386 returns. 96.6% agree within $1 and 97.4% within $25 or 1%. The median difference is $0, the 99th percentile $110 and the maximum $302.
+- **Where they disagree:** almost entirely returns with mortgage or charitable expenses (93.9% agree within $25, vs 99.5% without). PolicyEngine's tax is lower in every case examined, consistent with F6: its imputed sales-tax deduction lets more filers itemize.
+- **AMT:** agrees on every return. Note, though, that the generator rarely produces child-AMT cases.
+- **Full run:** `scripts/run_phase0.sh` runs 5,000 households on the VM.
+
 ## F7. Engineering: PolicyEngine reforms are expensive
 
 - **Time:** building a reformed tax-benefit system takes ~16 s. `Simulation(reform=...)` rebuilds it on every call; the adapter caches one system per reform (0.1 s per simulation afterwards).
