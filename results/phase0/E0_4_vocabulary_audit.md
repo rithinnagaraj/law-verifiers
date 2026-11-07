@@ -55,8 +55,10 @@ Ordered by how many known household strategies each would unlock:
 4. `claim_social_security(age)` (claiming strategies; needs PolicyEngine
    benefit formulas rather than inputs)
 5. `employ_child` as a distinct move from `shift_income` (the payroll-tax
-   exemption for a sole proprietor's children under 18 — check calculator
-   support first)
+   exemption for a sole proprietor's children under 18). Checked: neither
+   calculator models the s.3121(b)(3) exemption, so PolicyEngine would charge
+   payroll tax the law exempts — the verifier would *under*-score this known
+   strategy (a miss, not a false positive); adding it needs package-side law)
 
 Agents' own `wanted_moves` logs (LLM proposer) will re-rank this list once LLM
 search runs.
