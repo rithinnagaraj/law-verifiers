@@ -83,17 +83,17 @@ def make_pool(tid: str, hh, n: int, year: int):
 
 
 def run(args):
-    tid, cond, seed, budget, year, r_min, pool_n, model, disguised = args
+    tid, cond, seed, budget, year, r_min, pool_n, model, disguised, batch = args
     _, kind, law, closure, hh, horizon, rules = next(t for t in targets(year, disguised) if t[0] == tid)
     ver = Verifier(law, VerifierConfig(run_attribution=False, horizon=horizon))
     if pool_n:
         pool = make_pool(tid, hh, pool_n, year)
         prop = LLMPoolProposer(rules=rules, model=model) if cond == "llm" else POOL_PROPOSERS[cond]()
-        hist = search_pool(pool, ver, prop, budget, batch=10 if cond == "llm" else 25, seed=seed)
+        hist = search_pool(pool, ver, prop, budget, batch=10 if cond == "llm" else batch, seed=seed)
     else:
         pool = [hh]
         prop = LLMProposer(rules=rules, model=model) if cond == "llm" else PROPOSERS[cond]()
-        hist = search_many([hh], ver, prop, budget, batch=10 if cond == "llm" else 25, seed=seed)[hh.id]
+        hist = search_many([hh], ver, prop, budget, batch=10 if cond == "llm" else batch, seed=seed)[hh.id]
     by_id = {h.id: h for h in pool}
     flagged = [r for r in hist if r.verdict.label in FLAGGED]
     first = None
@@ -121,6 +121,7 @@ def main():
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--r-min", type=float, default=None, help="default: the R chosen by E0.7, else 0.3")
     ap.add_argument("--conditions", nargs="*", default=list(PROPOSERS))
+    ap.add_argument("--batch", type=int, default=25, help="proposals per search round (larger amortises calculator overhead)")
     ap.add_argument("--model", default="claude-opus-5-5", help="for the llm condition (needs API credentials)")
     ap.add_argument("--disguised", action="store_true", help="planted targets show the disguised rule description (H3)")
     ap.add_argument("--pool", type=int, default=0, help="search over a pool of this many households (witness hidden among random ones); 0 = witness only")
@@ -130,7 +131,7 @@ def main():
         a.r_min = float(json.loads(e07.read_text())["best"]["R"]) if e07.exists() else 0.3
     od = out_dir("phase2/frozen" + (f"_pool{a.pool}" if a.pool else "") + ("_disguised" if a.disguised else ""))
     tids = [t[0] for t in targets(a.year)]
-    jobs = [(t, c, s, a.budget, a.year, a.r_min, a.pool, a.model, a.disguised) for t in tids for c in a.conditions for s in range(a.seeds)]
+    jobs = [(t, c, s, a.budget, a.year, a.r_min, a.pool, a.model, a.disguised, a.batch) for t in tids for c in a.conditions for s in range(a.seeds)]
     rows = run_jobs(run, jobs, a.workers, checkpoint=od / f"checkpoint_r{a.r_min:g}_b{a.budget}.jsonl", max_tasks_per_child=8)
     df = pd.DataFrame(rows)
     df.to_csv(od / "runs.csv", index=False)

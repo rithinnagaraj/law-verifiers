@@ -60,7 +60,7 @@ def _score(records, hh_by_id, correct: Verifier):
 
 
 def run(args):
-    kind, cid, cond, seed, budget, pool_n, year = args
+    kind, cid, cond, seed, budget, pool_n, year, batch = args
     c = canaries()[cid]
     law = c.law(year)
     bug, correct = Verifier(law, CFG), Verifier(Law(year), CFG)
@@ -71,7 +71,7 @@ def run(args):
         return dict(kind=kind, canary=cid, layer=c.layer, label=a.label, gain=a.gain, gain_correct=b.gain, created=a.gain - b.gain,
                     fed_pe=a.gain_federal_pe, fed_tc=a.gain_federal_tc, tolerance_pass=a.crosscheck_tolerance_pass)
     pool = _pool(cid, hh, pool_n, year)
-    recs = search_pool(pool, bug, PROPOSERS[cond](), budget, batch=25, seed=seed)
+    recs = search_pool(pool, bug, PROPOSERS[cond](), budget, batch=batch, seed=seed)
     pos = [(r.call, bool(r.verdict.gain > 50 and r.verdict.reality_unchanged), r.verdict.label == "code_disagreement") for r in recs]
     rows = _score(recs, {h.id: h for h in pool}, correct)
     return dict(kind=kind, canary=cid, layer=c.layer, condition=cond, seed=seed, calls=len(recs), flagged=rows, positives=pos)
@@ -83,12 +83,13 @@ def main():
     ap.add_argument("--budget", type=int, default=400)
     ap.add_argument("--seeds", type=int, default=2)
     ap.add_argument("--pool", type=int, default=40)
+    ap.add_argument("--batch", type=int, default=25)
     ap.add_argument("--workers", type=int, default=6)
     a = ap.parse_args()
     od = out_dir("phase2/canaries")
     ids = list(canaries())
-    jobs = [("witness", c, "", 0, 0, 0, a.year) for c in ids]
-    jobs += [("search", c, cond, s, a.budget, a.pool, a.year) for c in ids for cond in PROPOSERS for s in range(a.seeds)]
+    jobs = [("witness", c, "", 0, 0, 0, a.year, 0) for c in ids]
+    jobs += [("search", c, cond, s, a.budget, a.pool, a.year, a.batch) for c in ids for cond in PROPOSERS for s in range(a.seeds)]
     res = run_jobs(run, jobs, a.workers, checkpoint=od / f"checkpoint_b{a.budget}_p{a.pool}.jsonl", max_tasks_per_child=4)
 
     wit = pd.DataFrame([r for r in res if r["kind"] == "witness"])
