@@ -140,7 +140,7 @@ tax, benefits) is seen only by PolicyEngine.
 - **No LLM search yet.** The VM has no model API keys. `src/taxred/llm.py`
   and `experiments/e2_3_frozen.py --conditions llm [--disguised]` are ready;
   install with `uv pip install -e ".[llm]"` and set `ANTHROPIC_API_KEY`.
-- **GPU:** A100 40 GB on the VM; the NVIDIA driver must be installed before Phase 3 (40 GB → 3–4B model with LoRA, per the experiment plan).
+- **GPU:** A100 40 GB on the VM, NVIDIA driver 620.70.06 + CUDA 13.5 installed (40 GB → 3–4B model with LoRA for Phase 3, per the experiment plan).
 - Households from `generate.py` are synthetic draws, not survey microdata yet.
 - `itemize_or_standard` forcing is passed to PolicyEngine only (Tax-Calculator
   always takes the better of the two).
