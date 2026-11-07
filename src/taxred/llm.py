@@ -160,6 +160,12 @@ def household_summary(hh: Household) -> dict:
                 d[k] = round(v)
         if p.is_student:
             d["student"] = True
+        if p.hdhp:
+            d["hdhp"] = True
+        if p.ira_balance:
+            d["traditional_ira_balance"] = round(p.ira_balance)
+        if p.other:
+            d["other_items"] = {k: round(v) for k, v in p.other.items()}
         if p.assets:
             d["assets"] = [
                 {"id": a.id, "value": round(a.value), "basis": round(a.basis), "interest_yield": a.interest_yield,
@@ -168,7 +174,10 @@ def household_summary(hh: Household) -> dict:
             ]
         people[pid] = d
     units = [{"id": tu.id, "head": tu.head, "spouse": tu.spouse, "dependents": tu.dependents} for tu in hh.tax_units]
-    return {"id": hh.id, "state": hh.state, "people": people, "tax_units": units, "married_pairs": hh.married_pairs}
+    out = {"id": hh.id, "state": hh.state, "people": people, "tax_units": units, "married_pairs": hh.married_pairs}
+    if hh.scenarios:
+        out["possible_futures"] = [{k: s[k] for k in ("name", "prob", "from_year", "asset_growth", "wage_factor")} for s in hh.scenarios]
+    return out
 
 
 @dataclass
