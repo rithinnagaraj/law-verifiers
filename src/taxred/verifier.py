@@ -70,12 +70,19 @@ class VerifierConfig:
     # against batch-composition bugs such as F8 and F12). Costs one extra
     # evaluation per flagged proposal.
     recheck_flagged: bool = False
+    # What counts as gain. "federal" (default since 2026-11-07, the user's
+    # decision): only federal income tax, the part both calculators model;
+    # benefits, payroll and state tax are recorded (gain_total and its
+    # components) but not counted. "all": the earlier net-resources gain.
+    gain_scope: str = "federal"
 
 
 @dataclass
 class Verdict:
     label: str
-    gain: float = 0.0
+    gain: float = 0.0  # under VerifierConfig.gain_scope
+    gain_total: float = 0.0  # benefits minus all taxes (PolicyEngine), for reporting
+    gain_kiddie: float = 0.0  # part of the federal gain from package-implemented Form 8615
     gain_federal_pe: float = 0.0
     gain_federal_tc: float = 0.0
     gain_other_tax: float = 0.0
@@ -113,7 +120,12 @@ def _unchanged(a: EconomicSnapshot, b: EconomicSnapshot, cfg: VerifierConfig) ->
     return True
 
 
-def _gain(base, new) -> float:
+def _gain(base, new, scope: str = "all") -> float:
+    """Gain under the scope: "all" = benefits minus all taxes (PolicyEngine);
+    "federal" = the federal income tax both calculators model (PolicyEngine-
+    only federal credits excluded)."""
+    if scope == "federal":
+        return (base.fed_income_tax - base.pe_only_credits) - (new.fed_income_tax - new.pe_only_credits)
     return new.net_resources - base.net_resources
 
 
@@ -125,6 +137,7 @@ class _Total:
     other_tax: float = 0.0
     benefits: Optional[float] = None
     pe_only_credits: float = 0.0
+    kiddie_adjustment: float = 0.0  # Form 8615 tax computed by this package
 
     @property
     def net_resources(self) -> float:
@@ -134,6 +147,7 @@ class _Total:
         self.fed_income_tax += r.fed_income_tax
         self.other_tax += r.other_tax
         self.pe_only_credits += r.pe_only_credits
+        self.kiddie_adjustment += r.kiddie_adjustment
         if r.benefits is not None:
             self.benefits = (self.benefits or 0.0) + r.benefits
 
@@ -200,7 +214,8 @@ class Verifier:
             (pb, pm), (tb, tm) = pe[k], tc[k]
             v = Verdict(
                 "no_gain",
-                gain=_gain(pb, pm),
+                gain=_gain(pb, pm, self.cfg.gain_scope),
+                gain_total=_gain(pb, pm, "all"),
                 gain_federal_pe=pb.fed_income_tax - pm.fed_income_tax,
                 gain_federal_tc=tb.fed_income_tax - tm.fed_income_tax,
                 gain_other_tax=pb.other_tax - pm.other_tax,
@@ -215,8 +230,14 @@ class Verifier:
             sb, sm = _horizon_snapshot(b_years), _horizon_snapshot(m_years)
             v.reality_delta = _reality_delta(sb, sm)
             v.reality_unchanged = _unchanged(sb, sm, self.cfg)
+            # Gain that comes from this package's own Form 8615 code is common to
+            # both calculators, so the cross-check cannot vouch for it.
+            v.gain_kiddie = pb.kiddie_adjustment - pm.kiddie_adjustment
             fed_share = fed_cmp / v.gain if v.gain else 1.0
-            v.coverage = "two-calc" if fed_share >= self.cfg.federal_share_for_two_calc else "single-calc"
+            if v.gain and abs(v.gain_kiddie) >= 0.1 * abs(v.gain):
+                v.coverage = "shared-code"
+            else:
+                v.coverage = "two-calc" if fed_share >= self.cfg.federal_share_for_two_calc else "single-calc"
             v.crosscheck_pass = crosscheck(fed_cmp, v.gain_federal_tc, self.cfg)
             v.crosscheck_tolerance_pass = crosscheck(fed_cmp, v.gain_federal_tc, replace(self.cfg, crosscheck_mode="tolerance"))
 
@@ -247,7 +268,7 @@ class Verifier:
         for name in self.cfg.attribution_provisions:
             tot = self._totals(hy, self.law.without(name), "policyengine")
             for (_, _, _, _, v), (b, m) in zip(items, tot):
-                g_off = _gain(b, m)
+                g_off = _gain(b, m, self.cfg.gain_scope)
                 v.attribution[name] = (v.gain - g_off) / v.gain if v.gain else 0.0
         intended = [p for p in self.cfg.attribution_provisions if PROVISIONS[p].intended]
         if intended:
@@ -256,7 +277,7 @@ class Verifier:
             # add up: also switch all intended provisions off together.
             tot = self._totals(hy, self.law.without_all(intended), "policyengine")
             for (_, _, _, _, v), (b, m) in zip(items, tot):
-                g_off = _gain(b, m)
+                g_off = _gain(b, m, self.cfg.gain_scope)
                 v.residual_without_intended = g_off / v.gain if v.gain else 0.0
         for (_, _, _, _, v) in items:
             v.signature = sorted(p for p, s in v.attribution.items() if s >= self.cfg.attribution_share)
