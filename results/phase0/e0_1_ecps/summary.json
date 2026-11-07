@@ -1,0 +1,350 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T19:05:12Z",
+    "git_commit": "d829e8e8719a56e0b150bd2f8abd4d000314ca6d",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e0_1_agreement.py",
+      "--source",
+      "ecps",
+      "--n",
+      "3000",
+      "--out",
+      "phase0/e0_1_ecps",
+      "--workers",
+      "5"
+    ]
+  },
+  "law": "current law",
+  "summary": {
+    "n_units": 4122,
+    "n_households": 2987,
+    "agree_within_1": 0.9953905870936438,
+    "agree_within_25": 0.997331392527899,
+    "agree_within_1pct_or_25": 0.9987869966035905,
+    "abs_diff_p50": 2.73655054137123e-05,
+    "abs_diff_p90": 0.001389569823186321,
+    "abs_diff_p99": 0.008414396862281135,
+    "abs_diff_max": 771.7995489013674,
+    "regular_tax_agree_within_1": 0.9995147986414362,
+    "amt_agree_within_1": 1.0,
+    "taxable_income_agree_within_1": 0.9992721979621543,
+    "by_group": {
+      "filing_status": {
+        "HEAD_OF_HOUSEHOLD": {
+          "n": 388,
+          "agree_within_25": 0.9871134020618557
+        },
+        "JOINT": {
+          "n": 1396,
+          "agree_within_25": 0.997134670487106
+        },
+        "SINGLE": {
+          "n": 2338,
+          "agree_within_25": 0.9991445680068435
+        }
+      },
+      "dependent_filer": {
+        "False": {
+          "n": 3906,
+          "agree_within_25": 0.9976958525345622
+        },
+        "True": {
+          "n": 216,
+          "agree_within_25": 0.9907407407407407
+        }
+      },
+      "has_self_employment": {
+        "False": {
+          "n": 3925,
+          "agree_within_25": 0.9974522292993631
+        },
+        "True": {
+          "n": 197,
+          "agree_within_25": 0.9949238578680203
+        }
+      },
+      "has_ltcg_or_qd": {
+        "False": {
+          "n": 3443,
+          "agree_within_25": 0.99767644496079
+        },
+        "True": {
+          "n": 679,
+          "agree_within_25": 0.9955817378497791
+        }
+      },
+      "has_kids_u17": {
+        "False": {
+          "n": 3177,
+          "agree_within_25": 0.9987409505823104
+        },
+        "True": {
+          "n": 945,
+          "agree_within_25": 0.9925925925925926
+        }
+      },
+      "has_student_18_23": {
+        "False": {
+          "n": 4030,
+          "agree_within_25": 0.9975186104218362
+        },
+        "True": {
+          "n": 92,
+          "agree_within_25": 0.9891304347826086
+        }
+      },
+      "has_childcare": {
+        "False": {
+          "n": 3936,
+          "agree_within_25": 0.9977134146341463
+        },
+        "True": {
+          "n": 186,
+          "agree_within_25": 0.989247311827957
+        }
+      },
+      "itemizable_gt_0": {
+        "False": {
+          "n": 2826,
+          "agree_within_25": 0.9968152866242038
+        },
+        "True": {
+          "n": 1296,
+          "agree_within_25": 0.9984567901234568
+        }
+      },
+      "any_65plus": {
+        "False": {
+          "n": 3541,
+          "agree_within_25": 0.9968935329003107
+        },
+        "True": {
+          "n": 581,
+          "agree_within_25": 1.0
+        }
+      },
+      "state": {
+        "AL": {
+          "n": 82,
+          "agree_within_25": 1.0
+        },
+        "AR": {
+          "n": 65,
+          "agree_within_25": 1.0
+        },
+        "AZ": {
+          "n": 96,
+          "agree_within_25": 1.0
+        },
+        "CA": {
+          "n": 292,
+          "agree_within_25": 0.9965753424657534
+        },
+        "CO": {
+          "n": 80,
+          "agree_within_25": 1.0
+        },
+        "CT": {
+          "n": 80,
+          "agree_within_25": 1.0
+        },
+        "DC": {
+          "n": 24,
+          "agree_within_25": 1.0
+        },
+        "DE": {
+          "n": 28,
+          "agree_within_25": 1.0
+        },
+        "FL": {
+          "n": 165,
+          "agree_within_25": 0.9939393939393939
+        },
+        "GA": {
+          "n": 122,
+          "agree_within_25": 1.0
+        },
+        "HI": {
+          "n": 31,
+          "agree_within_25": 1.0
+        },
+        "IA": {
+          "n": 74,
+          "agree_within_25": 1.0
+        },
+        "ID": {
+          "n": 48,
+          "agree_within_25": 1.0
+        },
+        "IL": {
+          "n": 103,
+          "agree_within_25": 1.0
+        },
+        "IN": {
+          "n": 104,
+          "agree_within_25": 1.0
+        },
+        "KS": {
+          "n": 56,
+          "agree_within_25": 1.0
+        },
+        "KY": {
+          "n": 78,
+          "agree_within_25": 1.0
+        },
+        "LA": {
+          "n": 70,
+          "agree_within_25": 1.0
+        },
+        "MA": {
+          "n": 99,
+          "agree_within_25": 1.0
+        },
+        "MD": {
+          "n": 86,
+          "agree_within_25": 0.9767441860465116
+        },
+        "ME": {
+          "n": 27,
+          "agree_within_25": 1.0
+        },
+        "MI": {
+          "n": 111,
+          "agree_within_25": 0.990990990990991
+        },
+        "MN": {
+          "n": 84,
+          "agree_within_25": 1.0
+        },
+        "MO": {
+          "n": 90,
+          "agree_within_25": 1.0
+        },
+        "MS": {
+          "n": 58,
+          "agree_within_25": 1.0
+        },
+        "MT": {
+          "n": 22,
+          "agree_within_25": 1.0
+        },
+        "NC": {
+          "n": 136,
+          "agree_within_25": 1.0
+        },
+        "ND": {
+          "n": 26,
+          "agree_within_25": 1.0
+        },
+        "NE": {
+          "n": 46,
+          "agree_within_25": 1.0
+        },
+        "NH": {
+          "n": 45,
+          "agree_within_25": 0.9777777777777777
+        },
+        "NJ": {
+          "n": 96,
+          "agree_within_25": 1.0
+        },
+        "NM": {
+          "n": 47,
+          "agree_within_25": 1.0
+        },
+        "NV": {
+          "n": 80,
+          "agree_within_25": 1.0
+        },
+        "NY": {
+          "n": 176,
+          "agree_within_25": 1.0
+        },
+        "OH": {
+          "n": 136,
+          "agree_within_25": 0.9926470588235294
+        },
+        "OK": {
+          "n": 59,
+          "agree_within_25": 1.0
+        },
+        "OR": {
+          "n": 76,
+          "agree_within_25": 0.9868421052631579
+        },
+        "PA": {
+          "n": 147,
+          "agree_within_25": 1.0
+        },
+        "RI": {
+          "n": 35,
+          "agree_within_25": 1.0
+        },
+        "SC": {
+          "n": 81,
+          "agree_within_25": 1.0
+        },
+        "SD": {
+          "n": 25,
+          "agree_within_25": 0.96
+        },
+        "TN": {
+          "n": 91,
+          "agree_within_25": 1.0
+        },
+        "TX": {
+          "n": 192,
+          "agree_within_25": 0.9895833333333334
+        },
+        "UT": {
+          "n": 67,
+          "agree_within_25": 1.0
+        },
+        "VA": {
+          "n": 110,
+          "agree_within_25": 1.0
+        },
+        "VT": {
+          "n": 17,
+          "agree_within_25": 1.0
+        },
+        "WA": {
+          "n": 105,
+          "agree_within_25": 1.0
+        },
+        "WI": {
+          "n": 88,
+          "agree_within_25": 1.0
+        },
+        "WV": {
+          "n": 48,
+          "agree_within_25": 1.0
+        },
+        "WY": {
+          "n": 18,
+          "agree_within_25": 1.0
+        }
+      },
+      "has_other_items": {
+        "False": {
+          "n": 1754,
+          "agree_within_25": 0.9988597491448119
+        },
+        "True": {
+          "n": 2368,
+          "agree_within_25": 0.9961993243243243
+        }
+      }
+    }
+  }
+}
