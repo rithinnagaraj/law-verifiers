@@ -85,9 +85,12 @@ def main():
     ap.add_argument("--budget", type=int, default=200)
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--workers", type=int, default=6)
-    ap.add_argument("--r-min", type=float, default=0.5)
+    ap.add_argument("--r-min", type=float, default=None, help="default: the R chosen by E0.7, else 0.3")
     ap.add_argument("--conditions", nargs="*", default=list(PROPOSERS))
     a = ap.parse_args()
+    if a.r_min is None:
+        e07 = Path(out_dir("phase0/e0_7")) / "summary.json"
+        a.r_min = float(json.loads(e07.read_text())["best"]["R"]) if e07.exists() else 0.3
     od = out_dir("phase2/frozen")
     tids = [t[0] for t in targets(a.year)]
     jobs = [(t, c, s, a.budget, a.year, a.r_min) for t in tids for c in a.conditions for s in range(a.seeds)]

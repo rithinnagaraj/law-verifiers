@@ -1,11 +1,11 @@
 {
   "meta": {
-    "time_utc": "2026-11-07T06:35:15Z",
-    "git_commit": "9f1f40f430a135969ba38a99862629203ff6f34a",
+    "time_utc": "2026-11-07T07:58:02Z",
+    "git_commit": "9e2f5d8a96a3551ab1cb4dae63fcf6aa2fbba703",
     "git_dirty": true,
-    "host": "vm",
-    "python": "3.12.3",
-    "cpus": 4,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
     "versions": {
       "policyengine_us": "2.104.3",
       "taxcalc": "6.8.5",
@@ -19,8 +19,10 @@
       "10",
       "50",
       "200",
+      "500",
+      "1000",
       "--repeats",
-      "1"
+      "2"
     ]
   },
   "attribution": false,
@@ -28,8 +30,17 @@
     {
       "batch": 1,
       "repeat": 0,
-      "seconds": 2.07639480700027,
-      "proposals_per_s": 0.4816039785057457,
+      "seconds": 6.62165801699939,
+      "proposals_per_s": 0.1510195780924897,
+      "labels": {
+        "no_gain": 1
+      }
+    },
+    {
+      "batch": 1,
+      "repeat": 1,
+      "seconds": 7.825690059000408,
+      "proposals_per_s": 0.1277842583159666,
       "labels": {
         "no_gain": 1
       }
@@ -37,8 +48,8 @@
     {
       "batch": 10,
       "repeat": 0,
-      "seconds": 5.3293369890002396,
-      "proposals_per_s": 1.8764060183546314,
+      "seconds": 7.747206966000704,
+      "proposals_per_s": 1.29078776956468,
       "labels": {
         "candidate": 1,
         "benefit_cliff": 1,
@@ -47,29 +58,114 @@
       }
     },
     {
+      "batch": 10,
+      "repeat": 1,
+      "seconds": 9.979604550999284,
+      "proposals_per_s": 1.0020437131447932,
+      "labels": {
+        "candidate": 2,
+        "benefit_cliff": 1,
+        "sacrifice": 2,
+        "no_gain": 5
+      }
+    },
+    {
       "batch": 50,
       "repeat": 0,
-      "seconds": 3.7170967930001098,
-      "proposals_per_s": 13.451358085201878,
+      "seconds": 7.905704490000062,
+      "proposals_per_s": 6.324547048684286,
       "labels": {
-        "sacrifice": 13,
-        "no_gain": 29,
+        "candidate": 3,
         "benefit_cliff": 5,
-        "candidate": 2,
-        "code_disagreement": 1
+        "sacrifice": 13,
+        "no_gain": 29
+      }
+    },
+    {
+      "batch": 50,
+      "repeat": 1,
+      "seconds": 10.246063022000271,
+      "proposals_per_s": 4.879923136588206,
+      "labels": {
+        "candidate": 5,
+        "benefit_cliff": 7,
+        "sacrifice": 10,
+        "no_gain": 28
       }
     },
     {
       "batch": 200,
       "repeat": 0,
-      "seconds": 4.545399267999983,
-      "proposals_per_s": 44.00053509226745,
+      "seconds": 9.08421047200045,
+      "proposals_per_s": 22.01622261135894,
       "labels": {
-        "sacrifice": 63,
-        "no_gain": 105,
+        "candidate": 13,
         "benefit_cliff": 19,
-        "candidate": 12,
-        "code_disagreement": 1
+        "sacrifice": 63,
+        "no_gain": 105
+      }
+    },
+    {
+      "batch": 200,
+      "repeat": 1,
+      "seconds": 9.075213598999653,
+      "proposals_per_s": 22.038048781799,
+      "labels": {
+        "sacrifice": 55,
+        "code_disagreement": 1,
+        "benefit_cliff": 18,
+        "candidate": 25,
+        "no_gain": 101
+      }
+    },
+    {
+      "batch": 500,
+      "repeat": 0,
+      "seconds": 15.146723824000219,
+      "proposals_per_s": 33.01043881236827,
+      "labels": {
+        "candidate": 39,
+        "benefit_cliff": 44,
+        "sacrifice": 161,
+        "no_gain": 256
+      }
+    },
+    {
+      "batch": 500,
+      "repeat": 1,
+      "seconds": 13.103710315000171,
+      "proposals_per_s": 38.157131681065664,
+      "labels": {
+        "sacrifice": 139,
+        "code_disagreement": 1,
+        "benefit_cliff": 44,
+        "candidate": 46,
+        "no_gain": 270
+      }
+    },
+    {
+      "batch": 1000,
+      "repeat": 0,
+      "seconds": 26.898486396999942,
+      "proposals_per_s": 37.17681304593899,
+      "labels": {
+        "candidate": 67,
+        "benefit_cliff": 95,
+        "sacrifice": 307,
+        "no_gain": 531
+      }
+    },
+    {
+      "batch": 1000,
+      "repeat": 1,
+      "seconds": 25.566019240999594,
+      "proposals_per_s": 39.11441943986042,
+      "labels": {
+        "sacrifice": 279,
+        "code_disagreement": 1,
+        "benefit_cliff": 89,
+        "candidate": 84,
+        "no_gain": 547
       }
     }
   ]
