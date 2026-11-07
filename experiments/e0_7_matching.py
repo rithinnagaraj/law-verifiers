@@ -147,7 +147,10 @@ def main():
         grid.append(dict(R=r, precision=p, recall=rc, f1=f1, tp=tp, fp=fp, fn=fn))
     g = pd.DataFrame(grid)
     ok = g[(g.precision >= 0.9) & (g.recall >= 0.9)]
-    best = (ok if len(ok) else g).sort_values("f1", ascending=False).iloc[0].to_dict()
+    # Among the R with the best F1, take the largest (the most conservative
+    # threshold in the stable region).
+    pool = ok if len(ok) else g
+    best = pool[pool.f1 >= pool.f1.max() - 1e-9].sort_values("R").iloc[-1].to_dict()
     by_family = df[df.truth].groupby("family").reduction.describe()[["count", "min", "25%", "50%"]]
     neg = df[df.kind == "negative"].groupby("family").apply(lambda d: float((d.flagged & (d.reduction >= best["R"])).mean()))
     summary = dict(meta=run_metadata(), grid=grid, best=best, both_over_0_9=bool(len(ok)))
