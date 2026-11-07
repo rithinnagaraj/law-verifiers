@@ -49,10 +49,15 @@ def _year_period(year: int) -> str:
 # ---------------------------------------------------------------------------
 
 
-@lru_cache(maxsize=64)
+# Each cached system costs ~0.6 GB (base ~1.5 GB); building one takes ~16 s.
+_PE_CACHE = int(os.environ.get("TAXRED_PE_CACHE", "6"))
+
+
+@lru_cache(maxsize=_PE_CACHE)
 def _pe_system(reform_items: tuple):
     """A tax-benefit system per reform, built once. Passing a reform to
-    Simulation() instead rebuilds the system on every call (~16 s)."""
+    Simulation() instead rebuilds the system on every call (~16 s).
+    Memory: ~1.5 GB for the base system + ~0.6 GB per reform cached."""
     from policyengine_us import CountryTaxBenefitSystem
 
     if not reform_items:

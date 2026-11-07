@@ -9,7 +9,10 @@ cd "$(dirname "$0")/.."
 export PATH="$HOME/.local/bin:$PATH"
 # shellcheck disable=SC1091
 . .venv/bin/activate
-WORKERS="${WORKERS:-$(nproc)}"
+# Each worker holds up to ~5 PolicyEngine systems (~4 GB); size by memory.
+MEM_GB=$(awk '/MemTotal/ {print int($2/1048576)}' /proc/meminfo)
+MAX_BY_MEM=$(( MEM_GB / 5 > 0 ? MEM_GB / 5 : 1 ))
+WORKERS="${WORKERS:-$(( $(nproc) < MAX_BY_MEM ? $(nproc) : MAX_BY_MEM ))}"
 N="${N:-5000}"
 mkdir -p results/phase0 results/logs
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
