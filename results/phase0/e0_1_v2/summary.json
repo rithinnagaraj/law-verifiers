@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T17:36:20Z",
+    "git_commit": "156c2b1d89cd5f112f5721c0927d57d46a7c3c4a",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e0_1_agreement.py",
+      "--n",
+      "5000",
+      "--workers",
+      "6"
+    ]
+  },
+  "law": "current law",
+  "summary": {
+    "n_units": 6258,
+    "n_households": 5005,
+    "agree_within_1": 0.9904122722914669,
+    "agree_within_25": 0.995845317992969,
+    "agree_within_1pct_or_25": 0.9993608181527645,
+    "abs_diff_p50": 2.441406240905053e-05,
+    "abs_diff_p90": 0.0008935121034483022,
+    "abs_diff_p99": 0.013310628127656052,
+    "abs_diff_max": 3371.8109261016716,
+    "regular_tax_agree_within_1": 0.9996804090763822,
+    "amt_agree_within_1": 0.9993608181527645,
+    "taxable_income_agree_within_1": 0.9988814317673378,
+    "by_group": {
+      "filing_status": {
+        "HEAD_OF_HOUSEHOLD": {
+          "n": 1332,
+          "agree_within_25": 0.990990990990991
+        },
+        "JOINT": {
+          "n": 2260,
+          "agree_within_25": 0.995575221238938
+        },
+        "SINGLE": {
+          "n": 2666,
+          "agree_within_25": 0.9984996249062266
+        }
+      },
+      "dependent_filer": {
+        "False": {
+          "n": 5005,
+          "agree_within_25": 0.9956043956043956
+        },
+        "True": {
+          "n": 1253,
+          "agree_within_25": 0.9968076616121309
+        }
+      },
+      "has_self_employment": {
+        "False": {
+          "n": 5656,
+          "agree_within_25": 0.9966407355021216
+        },
+        "True": {
+          "n": 602,
+          "agree_within_25": 0.9883720930232558
+        }
+      },
+      "has_ltcg_or_qd": {
+        "False": {
+          "n": 3060,
+          "agree_within_25": 0.996078431372549
+        },
+        "True": {
+          "n": 3198,
+          "agree_within_25": 0.9956222639149468
+        }
+      },
+      "has_kids_u17": {
+        "False": {
+          "n": 3207,
+          "agree_within_25": 0.9984409105082632
+        },
+        "True": {
+          "n": 3051,
+          "agree_within_25": 0.9931170108161259
+        }
+      },
+      "has_student_18_23": {
+        "False": {
+          "n": 5535,
+          "agree_within_25": 0.9958446251129178
+        },
+        "True": {
+          "n": 723,
+          "agree_within_25": 0.995850622406639
+        }
+      },
+      "has_childcare": {
+        "False": {
+          "n": 5065,
+          "agree_within_25": 0.9966436327739387
+        },
+        "True": {
+          "n": 1193,
+          "agree_within_25": 0.9924559932942163
+        }
+      },
+      "itemizable_gt_0": {
+        "False": {
+          "n": 3289,
+          "agree_within_25": 0.9963514746123442
+        },
+        "True": {
+          "n": 2969,
+          "agree_within_25": 0.9952846076119906
+        }
+      },
+      "any_65plus": {
+        "False": {
+          "n": 4906,
+          "agree_within_25": 0.9949041989400734
+        },
+        "True": {
+          "n": 1352,
+          "agree_within_25": 0.9992603550295858
+        }
+      }
+    }
+  }
+}

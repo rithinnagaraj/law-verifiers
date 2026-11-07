@@ -11,7 +11,8 @@ Running log of results and findings, newest first. Phase 0's first pass (develop
 | Item | Result | Target / note |
 |---|---|---|
 | E0.2 known-answer tests | 26 pass, 1 expected failure (F3); plus 12 new (TRA 1986 pre/post, 401(k), IRA, limits, wash sale) | all pass in both calculators |
-| E0.1 agreement, 5,005 households / 6,258 returns | 95.6% within $1, 96.3% within $25; 95% of disagreements are itemizers (F6) | non-itemizers: 99.6% within $25 |
+| E0.1 agreement, 5,005 households / 6,258 returns (before F6 fix) | 95.6% within $1, 96.3% within $25; 95% of disagreements are itemizers (F6) | non-itemizers: 99.6% within $25 |
+| E0.1 after the F6 fix: 2024 (6,258 returns) / 2025 / 2026 (2,498 each) | within $1: 99.0% / 99.2% / 97.4%; within $25: 99.6% / 99.6% / 99.4%; max $3,372 (child AMT, F3) / $56 / $54 | cross-check noise floor ≈ 0.4–0.6% of returns > $25 |
 | E0.3 throughput (1 process, no attribution) | 38 proposals/s at batch 1,000 (≈ 300/s with 8 workers) | ≥ 50/s ✔ |
 | E1.1 sensitivity, all closure cases both calculators can see | 1.00 (5 cases, CIs in `phase1/closures/summary.md`) | ≥ 0.90 ✔ |
 | E1.1 specificity (dose-response) | 1.00 in every case | ✔ |
@@ -332,7 +333,7 @@ pool by the cap.
 
 ### Open items
 
-1. Rerun E0.1 with the F6 fix (in the running chain).
+1. ~~Rerun E0.1 with the F6 fix~~ done: 99.6% within $25 in 2024–2026.
 2. TAXSIM adapter (third calculator; state taxes; pre-2013 years).
 3. Multi-year horizon (timing strategies, `realize_gain`).
 4. LLM search conditions need API keys on the VM (`src/taxred/llm.py` is ready).
