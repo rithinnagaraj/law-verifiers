@@ -112,6 +112,7 @@ class Variant:
     control: bool = False
 
     family_split: str = "train"
+    horizon: int = 1  # tax years the verifier must evaluate to see the loophole
 
     @property
     def split(self) -> str:
@@ -134,6 +135,7 @@ class Family:
     held_out: bool = False
     control: bool = False
     split: str = "train"  # train | val | test (family-level)
+    horizon: int = 1
 
 
 def _fam_dependent_floor(year, m):
@@ -181,6 +183,24 @@ def _fam_mfs_std(year, m):
     desc = f"Married filing separately: the standard deduction is ${std * m:,.0f} ({m:g} times its former amount)."
     dis = f"Spouses who submit individual returns may subtract a flat ${std * m:,.0f}."
     return p, {"STD": t}, desc, dis, None
+
+
+def _fam_cg0_single(year, m):
+    p, t = _by_status("gov.irs.capital_gains.thresholds.1", year, {"SINGLE": m})
+    desc = f"Long-term capital gains: the 0% rate applies to single filers with taxable income up to ${m:,.0f}."
+    dis = f"Disposals of long-held property by unattached filers: no levy on the first ${m:,.0f} of taxable income."
+    return p, {"CG_brk1": t}, desc, dis, None
+
+
+def _parents_adult_child(hid, year, wages=150_000, value=300_000, basis=100_000, child_age=25):
+    """Married parents with an appreciated fund they plan to sell in the
+    horizon's last year, and an adult child (own return, no income)."""
+    people = {
+        "p": Person("p", 55, wages=wages, hours=2080, assets=[Asset("fund", value, basis, sale_year=year + 2)]),
+        "s": Person("s", 53),
+        "c": Person("c", child_age),
+    }
+    return Household(hid, year, "TX", people, [TaxUnit("t", "p", "s"), TaxUnit("tc", "c")], [("p", "s")])
 
 
 def _fam_actc_rate(year, m):
@@ -277,6 +297,16 @@ FAMILIES: dict[str, Family] = {
             lambda y: [_partners_actc(f"p{s}_{k}", y, se=s, kids=(4, 8)[:k]) for s in (40_000, 60_000, 100_000) for k in (1, 2)],
         ),
         Family(
+            "cg0_single",
+            "move_threshold",
+            [150_000, 250_000],
+            _fam_cg0_single,
+            lambda y, m: (_parents_adult_child("w", y), [{"op": "gift_asset", "giver": "p", "recipient": "c", "asset": "fund", "fraction": 1.0}]),
+            lambda y: [_parents_adult_child(f"pc{w}_{v}", y, wages=w, value=v, basis=v / 3) for w in (80_000, 200_000) for v in (150_000, 400_000)],
+            split="val",
+            horizon=3,
+        ),
+        Family(
             "kiddie_age",
             "move_threshold",
             [10, 12],
@@ -331,6 +361,7 @@ def variants(year: int = 2024, families=None) -> list[Variant]:
                     held_out_family=f.held_out,
                     control=f.control,
                     family_split=f.split,
+                    horizon=f.horizon,
                 )
             )
     return out

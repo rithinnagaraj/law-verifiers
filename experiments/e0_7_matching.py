@@ -97,8 +97,8 @@ def run(args):
     vs = variants(year)
     v = next(x for x in vs if x.id == vid)
     props = proposals_for(v, vs)
-    pre = Verifier(v.law, VerifierConfig(run_attribution=False)).evaluate_many([(h, m) for _, _, h, m in props])
-    post = Verifier(v.closure, VerifierConfig(run_attribution=False)).evaluate_many([(h, m) for _, _, h, m in props])
+    pre = Verifier(v.law, VerifierConfig(run_attribution=False, horizon=v.horizon)).evaluate_many([(h, m) for _, _, h, m in props])
+    post = Verifier(v.closure, VerifierConfig(run_attribution=False, horizon=v.horizon)).evaluate_many([(h, m) for _, _, h, m in props])
     rows = []
     for (kind, src, h, m), a, b in zip(props, pre, post):
         red = (a.gain - b.gain) / a.gain if a.gain > 1e-9 else 0.0

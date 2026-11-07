@@ -39,8 +39,8 @@ def run(args):
     v = next(x for x in variants(year) if x.id == vid)
     hhs = [v.witness_household] + v.panel
     props = [(h, v.witness) for h in hhs]
-    mut = Verifier(v.law, VerifierConfig()).evaluate_many(props)
-    clo = Verifier(v.closure, VerifierConfig(run_attribution=False)).evaluate_many(props)
+    mut = Verifier(v.law, VerifierConfig(horizon=v.horizon)).evaluate_many(props)
+    clo = Verifier(v.closure, VerifierConfig(run_attribution=False, horizon=v.horizon)).evaluate_many(props)
     rows = []
     for i, (h, a, b) in enumerate(zip(hhs, mut, clo)):
         red = (a.gain - b.gain) / a.gain if a.gain > 1e-9 else float("nan")

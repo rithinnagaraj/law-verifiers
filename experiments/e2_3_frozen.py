@@ -49,18 +49,18 @@ HIST_WITNESS = {
 
 
 def targets(year: int):
-    """(target id, kind, law, closure, household)"""
+    """(target id, kind, law, closure, household, horizon)"""
     out = []
     man = Path(out_dir("phase2/planted")) / "variants.json"
     valid = {m["id"] for m in json.loads(man.read_text()) if m["valid"]} if man.exists() else None
     for v in variants(year):
         if valid is None or v.id in valid:
-            out.append((f"planted:{v.id}", "planted", v.law, v.closure, v.witness_household))
+            out.append((f"planted:{v.id}", "planted", v.law, v.closure, v.witness_household, v.horizon))
     cases = closure_cases(year)
     for name, hid in HIST_WITNESS.items():
         c = cases[name]
         hh = next(h for h in c.panel(year) if h.id == hid)
-        out.append((f"hist:{name}", "historical", c.law_pre, c.law_post, hh))
+        out.append((f"hist:{name}", "historical", c.law_pre, c.law_post, hh, 1))
     return out
 
 
@@ -75,8 +75,8 @@ def make_pool(tid: str, hh, n: int, year: int):
 
 def run(args):
     tid, cond, seed, budget, year, r_min, pool_n = args
-    _, kind, law, closure, hh = next(t for t in targets(year) if t[0] == tid)
-    ver = Verifier(law, VerifierConfig(run_attribution=False))
+    _, kind, law, closure, hh, horizon = next(t for t in targets(year) if t[0] == tid)
+    ver = Verifier(law, VerifierConfig(run_attribution=False, horizon=horizon))
     if pool_n:
         pool = make_pool(tid, hh, pool_n, year)
         hist = search_pool(pool, ver, POOL_PROPOSERS[cond](), budget, batch=25, seed=seed)
@@ -89,7 +89,7 @@ def run(args):
     n_match = 0
     matched_households = set()
     if flagged:
-        post = Verifier(closure, VerifierConfig(run_attribution=False)).evaluate_many([(by_id[r.household_id], r.moves) for r in flagged])
+        post = Verifier(closure, VerifierConfig(run_attribution=False, horizon=horizon)).evaluate_many([(by_id[r.household_id], r.moves) for r in flagged])
         for r, b in zip(flagged, post):
             red = (r.verdict.gain - b.gain) / r.verdict.gain if r.verdict.gain > 0 else 0.0
             if red >= r_min:
