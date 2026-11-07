@@ -18,9 +18,9 @@ Running log of results and findings, newest first. Phase 0's first pass (develop
 | E1.1 child-AMT closure | PolicyEngine 0.00 vs Tax-Calculator 0.57 | F3 at scale |
 | E0.6 false positives, run 1 | 8.3% (dev 3.7%, test 14.3%) | ≤ 5% ✘ → F8, F9, label fix |
 | E0.6 false positives, run 2 (after fixes) | **2.2%** (two-calc: **0.0%**); 32/32 labelled negatives correct | ≤ 5% ✔ |
-| E0.7 matching rule (closure test), 8 planted variants | R ≤ 0.1: precision 0.989, recall 1.00; the plan's R = 0.8: recall 0.37 | both ≥ 0.9 ✔ at R = 0.1 |
+| E0.7 matching rule (closure test) | **invalid (F12), rerun pending** | — |
 | E2.1 planted variants | 8 valid of 10 non-control (run 2); 3/3 negative controls not flagged | — |
-| E2.3 witness-only search (random, greedy) | every target rediscovered within 200 calls by both | H2 untestable this way → pool targets |
+| E2.3 witness-only search (random, greedy) | **invalid (F12), rerun pending** | — |
 | E2.6b canary witnesses | ratio cross-check catches 3/5 federal canaries, tolerance test 5/5; payroll canary invisible | → tolerance cross-check |
 
 ### H1 operationalisation (amended, as proposed in phase0 F-notes)
@@ -228,6 +228,27 @@ flagged. E0.7 on 775 proposals (355 true instances): R = 0.1 → precision
 A ninth family, `cg0_single` (horizon 3: gift an appreciated fund to an adult
 child before its planned 2026 sale; both calculators agree to the dollar on
 the witness after the F11 fix), is added after this run.
+
+### F12. Our bug: proposals on the same household overwrote each other's results — E0.7, E2.3 and canary-search numbers above are INVALID
+
+Every search batches several proposals on one household, and every moved copy
+carried the same household id. Calculator results are matched by tax-unit id,
+which is built from the household id, so proposals in the same batch received
+each other's taxes. Found when a canary that only moves a CTC threshold
+appeared to "create" $80,807 of gain (in isolation the proposal is identical
+under both laws). Fixed in `taxes.evaluate_households` (unique ids per batch),
+regression test `test_duplicate_household_ids_in_one_batch`.
+
+- **Invalid** (rerun in chain 5): E0.7 runs 1–3, E2.3 witness-only runs 1–2,
+  E2.6b search results — directories marked `INVALID.md`. The E0.7 thresholds
+  and the "random search rediscovers everything within 200 calls" conclusion
+  above must be re-established.
+- **Unaffected** (one proposal per household per batch): E1.1, E0.6, E2.1,
+  E0.1, the E2.6b *witness* table.
+- Lesson for H4: the verifier's own plumbing is part of the attack surface; a
+  search agent rewarded on these numbers would have learned to exploit batch
+  composition. Consistency checks (re-evaluating flagged proposals alone) should
+  be part of the verifier, not only of the experiments.
 
 ### F10. Python's ProcessPoolExecutor(max_tasks_per_child) deadlocked
 

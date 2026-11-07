@@ -1,6 +1,6 @@
 # Pre-registration draft (E0.8) — proposal, not yet frozen
 
-**Status:** draft for the researcher's review, 2026-11-07. Nothing here is
+**Status:** draft for the researcher's review, 2026-11-07. **The E0.7 (R) and E2.3 evidence cited below came from runs invalidated by bug F12; reruns are pending and the values must be re-checked before freezing.** Nothing here is
 frozen until it is committed as `preregistration.md` before any agent
 (LLM) search runs. Each value lists the evidence behind it; numbers come from
 `results/FINDINGS.md`.
