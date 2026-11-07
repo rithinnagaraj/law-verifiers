@@ -120,8 +120,24 @@ class PolicyEngineEngine:
         return Simulation(situation=situation, tax_benefit_system=_pe_system(law.pe_reform))
 
     def evaluate_units(self, units: Sequence[FilingUnit], law: Law) -> list[UnitResult]:
+        """Batched evaluation. Units that force the itemization choice are
+        simulated apart from units that leave it to PolicyEngine: once
+        `tax_unit_itemizes` is an input for any unit in a simulation, every
+        other unit gets the input default (False, i.e. standard deduction)
+        instead of PolicyEngine's choice (finding F8)."""
         if not units:
             return []
+        forced = [i for i, u in enumerate(units) if u.itemize is not None]
+        if forced and len(forced) < len(units):
+            free = [i for i, u in enumerate(units) if u.itemize is None]
+            out: list = [None] * len(units)
+            for idx in (forced, free):
+                for i, r in zip(idx, self._evaluate_units([units[i] for i in idx], law)):
+                    out[i] = r
+            return out
+        return self._evaluate_units(units, law)
+
+    def _evaluate_units(self, units: Sequence[FilingUnit], law: Law) -> list[UnitResult]:
         year = units[0].year
         Y = _year_period(year)
         sit = {"people": {}, "tax_units": {}, "families": {}, "spm_units": {}, "marital_units": {}, "households": {}}
