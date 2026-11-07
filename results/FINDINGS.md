@@ -4,6 +4,47 @@ Running log of results and findings, newest first. Phase 0's first pass (develop
 
 ---
 
+## Status for the researcher (end of 2026-11-07 autonomous session)
+
+**Where things stand.** Phase 0 and Phase 1 (verifier validation) are done on
+the VM; Phase 2 has every non-LLM piece running: planted variants, matching
+rule, canary bugs, and search baselines on pool targets.
+
+**Headline results**
+1. **H1 holds on every closure both calculators can see** (sensitivity and
+   specificity 1.00; legitimate-planning false positives 2.2%, 0% on two-calc
+   gains). It fails on the child-AMT closure because PolicyEngine does not
+   implement the rule (F3) — an H4-type finding.
+2. **H4: search exploits calculator bugs, and the plan's cross-check misses
+   most of them.** Random and greedy search found all six federal canary bugs;
+   the 50% ratio cross-check caught 29% of the exploits, a 10% tolerance test
+   94%. Our own plumbing bugs (F8, F12) were the same kind of hazard.
+3. **Matching rule:** the plan's R = 0.8 recalls only 30% of true instances of
+   planted loopholes; R = 0.1 gives precision 0.986 / recall 1.00.
+4. **H2 needs pool targets:** on a fixed witness household random search finds
+   every target within 100 calls; with the witness hidden among 40 households,
+   recall climbs from 0.3 (100 calls) to ~0.9 (1,000), and greedy search is no
+   better than random — a usable baseline curve for the LLM condition.
+
+**Needs you (blocking)**
+- **API keys on the VM** for the LLM conditions (E2.2–E2.5). The code is
+  ready: `uv pip install -e ".[llm]"`, set `ANTHROPIC_API_KEY`, then
+  `python experiments/e2_3_frozen.py --pool 40 --budget 1000 --conditions llm random`
+  (add `--disguised` for H3). Other providers: subclass `LLMProposer._complete`.
+- **No GPU on the VM**: Phase 3 (RL, A100 in the plan) cannot run there.
+- **Pre-registration decisions** (`preregistration-draft.md`): cross-check mode
+  (evidence favours tolerance), R = 0.1 vs 0.2, how to report benefit-only
+  gains (F9).
+- Optional: TAXSIM (needs NBER's binary or web service), PolicyEngine
+  enhanced-CPS households (dataset download).
+
+**Bugs found and fixed** (all with regression tests): F6 sales-tax imputation
+mismatch; F8 forced itemization leaking across a PolicyEngine batch; F11 an
+AMT parameter pairing in planted mutations; F12 proposals on one household
+overwriting each other's results (invalidated and reran E0.7, E2.3, E2.6b).
+
+---
+
 ## 2026-11-07 — Phase 0 at full scale, Phase 1 verifier validation, Phase 2 scaffolding
 
 ### Summary
