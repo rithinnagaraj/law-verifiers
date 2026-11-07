@@ -28,6 +28,9 @@ class Asset:
     basis: float
     interest_yield: float = 0.0  # taxable interest per $ of value per year
     qualified_dividend_yield: float = 0.0  # qualified dividends per $ of value
+    # Planned liquidity event (multi-year horizon): in this tax year the
+    # remaining unrealized gain is realized and the position reinvested.
+    sale_year: Optional[int] = None
 
     @property
     def unrealized_gain(self) -> float:

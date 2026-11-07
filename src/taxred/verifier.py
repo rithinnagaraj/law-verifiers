@@ -26,7 +26,7 @@ from typing import Optional, Sequence
 
 from .household import EconomicSnapshot, Household, economic_snapshot
 from .law import PROVISIONS, Law
-from .moves import MoveError, apply_moves
+from .moves import MoveError, apply_moves, household_in_year
 from .taxes import HouseholdResult, evaluate_households
 
 
@@ -62,6 +62,9 @@ class VerifierConfig:
     # Attribute every gain above the threshold, not only candidates (so saved
     # verdicts can be relabelled with checks switched off).
     attribute_all: bool = False
+    # Tax years evaluated (experiment plan: 3, proposed). Moves may carry a
+    # "year"; gains and the reality check are summed over the horizon.
+    horizon: int = 1
 
 
 @dataclass
@@ -104,8 +107,40 @@ def _unchanged(a: EconomicSnapshot, b: EconomicSnapshot, cfg: VerifierConfig) ->
     return True
 
 
-def _gain(base: HouseholdResult, new: HouseholdResult) -> float:
+def _gain(base, new) -> float:
     return new.net_resources - base.net_resources
+
+
+@dataclass
+class _Total:
+    """A household's results summed over the horizon's years."""
+
+    fed_income_tax: float = 0.0
+    other_tax: float = 0.0
+    benefits: Optional[float] = None
+    pe_only_credits: float = 0.0
+
+    @property
+    def net_resources(self) -> float:
+        return (self.benefits or 0.0) - self.fed_income_tax - self.other_tax
+
+    def add(self, r: HouseholdResult) -> None:
+        self.fed_income_tax += r.fed_income_tax
+        self.other_tax += r.other_tax
+        self.pe_only_credits += r.pe_only_credits
+        if r.benefits is not None:
+            self.benefits = (self.benefits or 0.0) + r.benefits
+
+
+def _horizon_snapshot(hhs: list[Household]) -> EconomicSnapshot:
+    """Flows summed over the horizon; wealth at its end."""
+    snaps = [economic_snapshot(h) for h in hhs]
+    return EconomicSnapshot(
+        labor_income=sum(s.labor_income for s in snaps),
+        investment_yield=sum(s.investment_yield for s in snaps),
+        wealth=snaps[-1].wealth,
+        hours=sum(s.hours for s in snaps),
+    )
 
 
 class Verifier:
@@ -113,28 +148,50 @@ class Verifier:
         self.law = law
         self.cfg = config or VerifierConfig()
 
+    def _years(self, base: Household) -> list[int]:
+        return [base.year + t for t in range(max(1, self.cfg.horizon))]
+
+    def _totals(self, pairs, law: Law, engine: str, with_benefits: bool = True):
+        """[(base total, moved total)] for pairs of per-year household lists,
+        each year evaluated under `law` for that year."""
+        out = [(_Total(), _Total()) for _ in pairs]
+        n_years = len(pairs[0][0])
+        for t in range(n_years):
+            hhs = [h for b, m in pairs for h in (b[t], m[t])]
+            yl = replace(law, year=hhs[0].year)
+            res = evaluate_households(hhs, yl, engine, with_benefits=with_benefits)
+            for k in range(len(pairs)):
+                out[k][0].add(res[2 * k])
+                out[k][1].add(res[2 * k + 1])
+        return out
+
     # Batched evaluation of many (base, moves) proposals under one law.
     def evaluate_many(self, proposals: Sequence[tuple[Household, list]]) -> list[Verdict]:
         verdicts: list[Optional[Verdict]] = [None] * len(proposals)
-        pairs = []  # (index, base, moved)
+        pairs = []  # (index, base years, moved years)
         for i, (base, moves) in enumerate(proposals):
+            years = self._years(base)
             try:
-                moved = apply_moves(base, moves)
+                if any(isinstance(m.get("year", base.year), (int, float)) and int(m.get("year", base.year)) > years[-1] for m in moves):
+                    raise MoveError("a move is dated after the horizon")
+                b_years = [household_in_year(base, [], y) for y in years]
+                m_years = [household_in_year(base, moves, y) for y in years]
             except MoveError as e:
                 verdicts[i] = Verdict("invalid", error=str(e))
                 continue
-            moved.id = base.id + "~moved"
-            pairs.append((i, base, moved))
+            for h in m_years:
+                h.id = base.id + "~moved"
+            pairs.append((i, b_years, m_years))
         if not pairs:
             return verdicts  # type: ignore
 
-        hhs = [h for _, b, m in pairs for h in (b, m)]
-        pe = evaluate_households(hhs, self.law, "policyengine")
-        tc = evaluate_households(hhs, self.law, "taxcalc", with_benefits=False)
+        hy = [(b, m) for _, b, m in pairs]
+        pe = self._totals(hy, self.law, "policyengine")
+        tc = self._totals(hy, self.law, "taxcalc", with_benefits=False)
 
         need_attr = []
-        for k, (i, base, moved) in enumerate(pairs):
-            pb, pm, tb, tm = pe[2 * k], pe[2 * k + 1], tc[2 * k], tc[2 * k + 1]
+        for k, (i, b_years, m_years) in enumerate(pairs):
+            (pb, pm), (tb, tm) = pe[k], tc[k]
             v = Verdict(
                 "no_gain",
                 gain=_gain(pb, pm),
@@ -149,7 +206,7 @@ class Verifier:
             v.gain_pe_only_credits = pm.pe_only_credits - pb.pe_only_credits
             fed_cmp = v.gain_federal_pe - v.gain_pe_only_credits
             v.gain_conservative = v.gain - max(0.0, fed_cmp - v.gain_federal_tc)
-            sb, sm = economic_snapshot(base), economic_snapshot(moved)
+            sb, sm = _horizon_snapshot(b_years), _horizon_snapshot(m_years)
             v.reality_delta = _reality_delta(sb, sm)
             v.reality_unchanged = _unchanged(sb, sm, self.cfg)
             fed_share = fed_cmp / v.gain if v.gain else 1.0
@@ -160,7 +217,7 @@ class Verifier:
             verdicts[i] = v
             v.label = decide_label(v, self.cfg, attributed=False)
             if v.label == "candidate" or (self.cfg.attribute_all and v.gain > self.cfg.gain_threshold):
-                need_attr.append((k, i, base, moved, v))
+                need_attr.append((k, i, b_years, m_years, v))
 
         if self.cfg.run_attribution and need_attr:
             self._attribute(need_attr)
@@ -172,21 +229,20 @@ class Verifier:
         return self.evaluate_many([(base, moves)])[0]
 
     def _attribute(self, items) -> None:
-        hhs = [h for (_, _, b, m, _) in items for h in (b, m)]
+        hy = [(b, m) for (_, _, b, m, _) in items]
         for name in self.cfg.attribution_provisions:
-            law_off = self.law.without(name)
-            pe = evaluate_households(hhs, law_off, "policyengine")
-            for j, (_, _, _, _, v) in enumerate(items):
-                g_off = _gain(pe[2 * j], pe[2 * j + 1])
+            tot = self._totals(hy, self.law.without(name), "policyengine")
+            for (_, _, _, _, v), (b, m) in zip(items, tot):
+                g_off = _gain(b, m)
                 v.attribution[name] = (v.gain - g_off) / v.gain if v.gain else 0.0
         intended = [p for p in self.cfg.attribution_provisions if PROVISIONS[p].intended]
         if intended:
             # Provisions interact (e.g. the kiddie allowance is defined from the
             # dependent standard deduction), so one-at-a-time shares need not
             # add up: also switch all intended provisions off together.
-            pe = evaluate_households(hhs, self.law.without_all(intended), "policyengine")
-            for j, (_, _, _, _, v) in enumerate(items):
-                g_off = _gain(pe[2 * j], pe[2 * j + 1])
+            tot = self._totals(hy, self.law.without_all(intended), "policyengine")
+            for (_, _, _, _, v), (b, m) in zip(items, tot):
+                g_off = _gain(b, m)
                 v.residual_without_intended = g_off / v.gain if v.gain else 0.0
         for (_, _, _, _, v) in items:
             v.signature = sorted(p for p, s in v.attribution.items() if s >= self.cfg.attribution_share)

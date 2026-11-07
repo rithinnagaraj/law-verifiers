@@ -78,6 +78,7 @@ def gift_asset(hh: Household, giver: str, recipient: str, asset: str, fraction: 
         basis=a.basis * f,
         interest_yield=a.interest_yield,
         qualified_dividend_yield=a.qualified_dividend_yield,
+        sale_year=a.sale_year,
     )
     a.value *= 1 - f
     a.basis *= 1 - f
@@ -235,4 +236,58 @@ def apply_moves(hh: Household, moves: list[dict]) -> Household:
         out.validate()
     except ValueError as e:
         raise MoveError(str(e)) from e
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Multi-year horizon
+# ---------------------------------------------------------------------------
+
+ONE_TIME_OPS = ("realize_gain",)
+
+
+def household_in_year(hh: Household, moves: list[dict], year: int) -> Household:
+    """The household as it stands in tax year `year` of a horizon starting at
+    hh.year, after the moves dated (key "year", default hh.year) up to then.
+
+    Facts repeat each year (a static household). Moves persist into later
+    years, except one-time events (realize_gain): their realized gain counts
+    only in their own year, while the basis step-up persists. Assets with a
+    `sale_year` realize their remaining gain in that year (reinvested)."""
+    out = hh.copy()
+    start = hh.year
+    chunk: list[dict] = []  # consecutive moves applied together, as apply_moves does
+    for i, m in enumerate(moves):
+        m = dict(m)
+        try:
+            y = int(m.pop("year", start))
+        except (TypeError, ValueError) as e:
+            raise MoveError(f"move {i}: bad year") from e
+        if y < start:
+            raise MoveError(f"move {i}: year {y} before the horizon starts ({start})")
+        if y > year:
+            continue
+        if m.get("op") in ONE_TIME_OPS and y < year:
+            if chunk:
+                out, chunk = apply_moves(out, chunk), []
+            before = {pid: p.long_term_gains for pid, p in out.people.items()}
+            out = apply_moves(out, [m])
+            for pid, v in before.items():
+                out.people[pid].long_term_gains = v
+        else:
+            chunk.append(m)
+    if chunk or not moves:
+        out = apply_moves(out, chunk)
+    for p in out.people.values():
+        for a in p.assets:
+            if a.sale_year is None:
+                continue
+            if a.sale_year == year and a.unrealized_gain > 0:
+                p.long_term_gains += a.unrealized_gain
+                a.basis = a.value
+            elif a.sale_year < year:
+                # Sold and reinvested in an earlier year. (A realize_gain dated
+                # after the sale on the same asset is not modelled.)
+                a.basis = max(a.basis, a.value)
+    out.year = year
     return out
