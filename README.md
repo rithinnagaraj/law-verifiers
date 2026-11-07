@@ -5,7 +5,8 @@ calculators as an exact verifier.
 
 - Research plan: [`us-tax-red-teaming-research-plan.md`](us-tax-red-teaming-research-plan.md)
 - Experiment plan: [`experiment-plan.md`](experiment-plan.md)
-- Phase 0 findings so far: [`results/phase0/FINDINGS.md`](results/phase0/FINDINGS.md)
+- Findings log: [`results/FINDINGS.md`](results/FINDINGS.md) (Phase 0 first pass: [`results/phase0/FINDINGS.md`](results/phase0/FINDINGS.md))
+- Pre-registration draft (E0.8): [`preregistration-draft.md`](preregistration-draft.md)
 
 ## What is here
 
