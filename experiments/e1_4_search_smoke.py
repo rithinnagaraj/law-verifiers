@@ -37,7 +37,7 @@ def run(args):
     ids, cond, budget, seed, n, year = args
     by_id = {h.id: h for h in households(n, seed, year)}
     hhs = [by_id[i] for i in ids]
-    hist = search_many(hhs, Verifier(Law(year), VerifierConfig()), PROPOSERS[cond](), budget, batch=25, seed=seed)
+    hist = search_many(hhs, Verifier(Law(year), VerifierConfig(recheck_flagged=True)), PROPOSERS[cond](), budget, batch=25, seed=seed)
     rows = []
     for hid, recs in hist.items():
         for r in recs:

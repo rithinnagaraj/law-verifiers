@@ -149,6 +149,7 @@ class Record:
             residual_without_intended=v.residual_without_intended,
             attribution=json.dumps({k: round(x, 3) for k, x in v.attribution.items()}),
             error=v.error,
+            recheck_gain=v.recheck_gain,
         )
 
 

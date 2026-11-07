@@ -65,6 +65,11 @@ class VerifierConfig:
     # Tax years evaluated (experiment plan: 3, proposed). Moves may carry a
     # "year"; gains and the reality check are summed over the horizon.
     horizon: int = 1
+    # Re-evaluate every flagged proposal on its own and label it
+    # "inconsistent" if its gain differs from the batched result (guards
+    # against batch-composition bugs such as F8 and F12). Costs one extra
+    # evaluation per flagged proposal.
+    recheck_flagged: bool = False
 
 
 @dataclass
@@ -90,6 +95,7 @@ class Verdict:
     # Share of the gain left when every intended provision is switched off at once.
     residual_without_intended: Optional[float] = None
     error: Optional[str] = None
+    recheck_gain: Optional[float] = None  # gain when evaluated alone (recheck_flagged)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -223,6 +229,14 @@ class Verifier:
             self._attribute(need_attr)
             for (_, _, _, _, v) in need_attr:
                 v.label = decide_label(v, self.cfg, attributed=True)
+        if self.cfg.recheck_flagged:
+            alone = Verifier(self.law, replace(self.cfg, recheck_flagged=False, run_attribution=False))
+            for i, (base, moves) in enumerate(proposals):
+                v = verdicts[i]
+                if v is not None and v.label in ("candidate", "code_disagreement"):
+                    v.recheck_gain = alone.evaluate(base, moves).gain
+                    if abs(v.recheck_gain - v.gain) > max(1.0, 1e-3 * abs(v.gain)):
+                        v.label = "inconsistent"
         return verdicts  # type: ignore
 
     def evaluate(self, base: Household, moves: list) -> Verdict:
