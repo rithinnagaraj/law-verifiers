@@ -34,12 +34,20 @@ from taxred.cases import closure_cases
 from taxred.planted import variants
 from taxred.generate import random_households
 from taxred.search import GreedyPoolProposer, GreedyProposer, RandomPoolProposer, RandomProposer, search_many, search_pool
+from taxred.llm import LLMPoolProposer, LLMProposer
 from taxred.verifier import Verifier, VerifierConfig
 
 PROPOSERS = {"random": RandomProposer, "greedy": GreedyProposer}
 POOL_PROPOSERS = {"random": RandomPoolProposer, "greedy": GreedyPoolProposer}
 FLAGGED = ("candidate", "code_disagreement")
 BUDGETS = [10, 25, 50, 100, 200, 400, 1000, 3000]
+BASE_RULES = "US federal individual income tax and benefit law for the tax year shown, as in force, except:"
+HIST_RULES = {
+    "kiddie_tra1986": "There is no special tax on a child's unearned income: a child's investment income is taxed at the child's own rates.",
+    "kiddie_tipra2005": "A child's net unearned income is taxed at the parent's rate only for children under 14.",
+    "kiddie_sbwota2007": "A child's net unearned income is taxed at the parent's rate only for children under 18.",
+    "dependent_std_tra1986": "There is no special tax on a child's unearned income, and a dependent filer gets the full standard deduction.",
+}
 HIST_WITNESS = {
     "kiddie_tra1986": "w200000_i20000_a8",
     "kiddie_tipra2005": "w200000_i20000_a16",
@@ -48,19 +56,20 @@ HIST_WITNESS = {
 }
 
 
-def targets(year: int):
-    """(target id, kind, law, closure, household, horizon)"""
+def targets(year: int, disguised: bool = False):
+    """(target id, kind, law, closure, household, horizon, rules text)"""
     out = []
     man = Path(out_dir("phase2/planted")) / "variants.json"
     valid = {m["id"] for m in json.loads(man.read_text()) if m["valid"]} if man.exists() else None
     for v in variants(year):
         if valid is None or v.id in valid:
-            out.append((f"planted:{v.id}", "planted", v.law, v.closure, v.witness_household, v.horizon))
+            rules = f"{BASE_RULES} {v.disguised if disguised else v.description}"
+            out.append((f"planted:{v.id}", "planted", v.law, v.closure, v.witness_household, v.horizon, rules))
     cases = closure_cases(year)
     for name, hid in HIST_WITNESS.items():
         c = cases[name]
         hh = next(h for h in c.panel(year) if h.id == hid)
-        out.append((f"hist:{name}", "historical", c.law_pre, c.law_post, hh, 1))
+        out.append((f"hist:{name}", "historical", c.law_pre, c.law_post, hh, 1, f"{BASE_RULES} {HIST_RULES[name]}"))
     return out
 
 
@@ -74,15 +83,17 @@ def make_pool(tid: str, hh, n: int, year: int):
 
 
 def run(args):
-    tid, cond, seed, budget, year, r_min, pool_n = args
-    _, kind, law, closure, hh, horizon = next(t for t in targets(year) if t[0] == tid)
+    tid, cond, seed, budget, year, r_min, pool_n, model, disguised = args
+    _, kind, law, closure, hh, horizon, rules = next(t for t in targets(year, disguised) if t[0] == tid)
     ver = Verifier(law, VerifierConfig(run_attribution=False, horizon=horizon))
     if pool_n:
         pool = make_pool(tid, hh, pool_n, year)
-        hist = search_pool(pool, ver, POOL_PROPOSERS[cond](), budget, batch=25, seed=seed)
+        prop = LLMPoolProposer(rules=rules, model=model) if cond == "llm" else POOL_PROPOSERS[cond]()
+        hist = search_pool(pool, ver, prop, budget, batch=10 if cond == "llm" else 25, seed=seed)
     else:
         pool = [hh]
-        hist = search_many([hh], ver, PROPOSERS[cond](), budget, batch=25, seed=seed)[hh.id]
+        prop = LLMProposer(rules=rules, model=model) if cond == "llm" else PROPOSERS[cond]()
+        hist = search_many([hh], ver, prop, budget, batch=10 if cond == "llm" else 25, seed=seed)[hh.id]
     by_id = {h.id: h for h in pool}
     flagged = [r for r in hist if r.verdict.label in FLAGGED]
     first = None
@@ -110,14 +121,16 @@ def main():
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--r-min", type=float, default=None, help="default: the R chosen by E0.7, else 0.3")
     ap.add_argument("--conditions", nargs="*", default=list(PROPOSERS))
+    ap.add_argument("--model", default="claude-opus-5-5", help="for the llm condition (needs API credentials)")
+    ap.add_argument("--disguised", action="store_true", help="planted targets show the disguised rule description (H3)")
     ap.add_argument("--pool", type=int, default=0, help="search over a pool of this many households (witness hidden among random ones); 0 = witness only")
     a = ap.parse_args()
     if a.r_min is None:
         e07 = Path(out_dir("phase0/e0_7")) / "summary.json"
         a.r_min = float(json.loads(e07.read_text())["best"]["R"]) if e07.exists() else 0.3
-    od = out_dir("phase2/frozen" + (f"_pool{a.pool}" if a.pool else ""))
+    od = out_dir("phase2/frozen" + (f"_pool{a.pool}" if a.pool else "") + ("_disguised" if a.disguised else ""))
     tids = [t[0] for t in targets(a.year)]
-    jobs = [(t, c, s, a.budget, a.year, a.r_min, a.pool) for t in tids for c in a.conditions for s in range(a.seeds)]
+    jobs = [(t, c, s, a.budget, a.year, a.r_min, a.pool, a.model, a.disguised) for t in tids for c in a.conditions for s in range(a.seeds)]
     rows = run_jobs(run, jobs, a.workers, checkpoint=od / f"checkpoint_r{a.r_min:g}_b{a.budget}.jsonl", max_tasks_per_child=8)
     df = pd.DataFrame(rows)
     df.to_csv(od / "runs.csv", index=False)

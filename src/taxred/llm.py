@@ -22,6 +22,7 @@ from .household import Household
 
 VOCABULARY = """\
 Moves (JSON objects; "op" names the move). People and tax units are referred to by id.
+Any move may carry "year": Y (default: the first tax year) when several tax years are evaluated.
 - {"op": "set_filing_status", "tax_unit": U, "status": "SINGLE"|"JOINT"|"SEPARATE"|"HEAD_OF_HOUSEHOLD"}
     SEPARATE splits a married unit (the spouse gets unit U + "_s"); JOINT merges a married couple.
 - {"op": "gift_asset", "giver": P, "recipient": Q, "asset": A, "fraction": f}   (0 < f <= 1, basis carries over)
@@ -139,3 +140,60 @@ class LLMProposer:
         props, wanted = parse_reply(self._complete(user))
         self.wanted += wanted
         return props[:k]
+
+
+def household_summary(hh: Household) -> dict:
+    """A compact view of a household for pool search (the full JSON of 40
+    households would crowd out the feedback)."""
+    people = {}
+    for pid, p in hh.people.items():
+        d = {"age": p.age}
+        for k in ("wages", "self_employment", "long_term_gains", "mortgage_interest", "charitable_cash", "childcare_expenses"):
+            v = getattr(p, k)
+            if v:
+                d[k] = round(v)
+        if p.is_student:
+            d["student"] = True
+        if p.assets:
+            d["assets"] = [
+                {"id": a.id, "value": round(a.value), "basis": round(a.basis), "interest_yield": a.interest_yield,
+                 "qualified_dividend_yield": a.qualified_dividend_yield, **({"sale_year": a.sale_year} if a.sale_year else {})}
+                for a in p.assets
+            ]
+        people[pid] = d
+    units = [{"id": tu.id, "head": tu.head, "spouse": tu.spouse, "dependents": tu.dependents} for tu in hh.tax_units]
+    return {"id": hh.id, "state": hh.state, "people": people, "tax_units": units, "married_pairs": hh.married_pairs}
+
+
+@dataclass
+class LLMPoolProposer(LLMProposer):
+    """The agent chooses the household (from a pool) and the moves."""
+
+    def propose_pool(self, pool: list, history, k: int, rng) -> list:
+        idx = {h.id: i for i, h in enumerate(pool)}
+        pool_json = "\n".join(json.dumps(household_summary(h), sort_keys=True) for h in pool)
+        fb = []
+        for r in sorted(history, key=lambda r: -r.verdict.gain)[:15] + history[-15:]:
+            fb.append(json.dumps({"household": r.household_id, "moves": r.moves, "label": r.verdict.label, "gain": round(r.verdict.gain)}))
+        user = (
+            f"Rules in force:\n{self.rules}\n\nHouseholds (tax year {pool[0].year}), one per line:\n{pool_json}\n\n"
+            f"Verifier feedback on earlier proposals:\n" + ("\n".join(dict.fromkeys(fb)) or "none yet") + "\n\n"
+            f"Propose {k} new, distinct proposals. Each proposal must also name its household: "
+            '{"household": "<id>", "moves": [...], "rationale": "..."}.'
+        )
+        text = self._complete(user)
+        m = re.search(r"\{.*\}", text, re.S)
+        out = []
+        if m:
+            try:
+                obj = json.loads(m.group(0))
+            except json.JSONDecodeError:
+                obj = {}
+            for p in obj.get("proposals", []) or []:
+                if not isinstance(p, dict) or p.get("household") not in idx:
+                    continue
+                moves = p.get("moves")
+                if isinstance(moves, list) and moves and all(isinstance(x, dict) and "op" in x for x in moves):
+                    out.append((idx[p["household"]], moves))
+            self.wanted += [str(w) for w in obj.get("wanted_moves", []) or []]
+        return out[:k]
