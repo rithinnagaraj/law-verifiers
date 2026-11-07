@@ -59,3 +59,25 @@ def test_tc_mars_override_keeps_other_statuses_current():
         base = evaluate_households([hh], Law(year), "taxcalc", with_benefits=False)[0].fed_income_tax
         law = Law(year).with_reform({}, {"STD": mars_override(SEPARATE=50_000)})
         assert evaluate_households([hh], law, "taxcalc", with_benefits=False)[0].fed_income_tax == base
+
+
+@pytest.mark.parametrize("engine", list(ENGINES))
+def test_duplicate_household_ids_in_one_batch(engine):
+    # Finding F12: several proposals on one household share its id; results
+    # matched by unit id used to overwrite each other.
+    from taxred.household import Household, Person, TaxUnit
+    from taxred.moves import apply_moves
+    from taxred.taxes import evaluate_households
+
+    base = Household(
+        "d", 2024, "TX",
+        {"a": Person("a", 40, wages=230_000), "b": Person("b", 38), "k": Person("k", 5)},
+        [TaxUnit("t", "a", "b", ["k"])], [("a", "b")],
+    )
+    sep = apply_moves(base, [{"op": "set_filing_status", "tax_unit": "t", "status": "SEPARATE"}])
+    k401 = apply_moves(base, [{"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 20_000}])
+    sep.id = k401.id = "d~moved"  # same id, as the verifier gives every moved copy
+    alone = [evaluate_households([h], Law(2024), engine, with_benefits=False)[0].fed_income_tax for h in (sep, k401)]
+    batch = [r.fed_income_tax for r in evaluate_households([sep, k401], Law(2024), engine, with_benefits=False)]
+    assert alone[0] != alone[1]
+    assert batch == pytest.approx(alone)

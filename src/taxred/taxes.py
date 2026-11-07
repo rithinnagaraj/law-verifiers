@@ -173,7 +173,21 @@ def evaluate_households(
     law_year = law.year
     if law_year != households[0].year:
         raise ValueError(f"law year {law_year} != household year {households[0].year}")
-    units_per_hh = [compile_filing_units(h) for h in households]
+    # Unit ids are built from household ids and results are matched by unit
+    # id, so two households with the same id in one batch (several proposals
+    # on one household, as in every search) would overwrite each other's
+    # results (finding F12). Give each household in the batch a unique id.
+    ids = [h.id for h in households]
+    if len(set(ids)) != len(ids):
+        uniq = []
+        for k, h in enumerate(households):
+            c = copy.copy(h)  # shallow: people and units are only read
+            c.id = f"{h.id}#{k}"
+            uniq.append(c)
+        work = uniq
+    else:
+        work = list(households)
+    units_per_hh = [compile_filing_units(h) for h in work]
     all_units = [u for us in units_per_hh for u in us]
     results = {r.unit_id: r for r in engine.evaluate_units(all_units, law)}
     adjustments = apply_kiddie_tax(all_units, results, law, engine)
