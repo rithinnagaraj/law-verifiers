@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T13:32:55Z",
+    "git_commit": "f856ff18931a9f0c36f315f43ccc39fc573a2f1a",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e2_3_frozen.py",
+      "--budget",
+      "200",
+      "--seeds",
+      "3",
+      "--workers",
+      "6"
+    ]
+  },
+  "r_min": 0.1,
+  "budget": 200,
+  "seeds": 3,
+  "recall": [
+    {
+      "condition": "greedy",
+      "kind": "historical",
+      "n_targets": 4,
+      "recall@10": 0.25,
+      "recall@25": 0.25,
+      "recall@50": 0.25,
+      "recall@100": 1.0,
+      "recall@200": 1.0,
+      "auc_log_budget": 0.510300489804729
+    },
+    {
+      "condition": "greedy",
+      "kind": "planted",
+      "n_targets": 13,
+      "recall@10": 0.5897435897435898,
+      "recall@25": 0.7435897435897436,
+      "recall@50": 0.923076923076923,
+      "recall@100": 0.9487179487179488,
+      "recall@200": 1.0,
+      "auc_log_budget": 0.8387171328623851
+    },
+    {
+      "condition": "random",
+      "kind": "historical",
+      "n_targets": 4,
+      "recall@10": 0.4166666666666667,
+      "recall@25": 0.6666666666666666,
+      "recall@50": 0.75,
+      "recall@100": 0.75,
+      "recall@200": 1.0,
+      "auc_log_budget": 0.7055595676548294
+    },
+    {
+      "condition": "random",
+      "kind": "planted",
+      "n_targets": 13,
+      "recall@10": 0.6153846153846154,
+      "recall@25": 0.6666666666666666,
+      "recall@50": 0.8205128205128206,
+      "recall@100": 0.923076923076923,
+      "recall@200": 1.0,
+      "auc_log_budget": 0.792311395783945
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T12:52:23Z",
+    "git_commit": "f856ff18931a9f0c36f315f43ccc39fc573a2f1a",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e2_1_planted.py",
+      "--workers",
+      "6"
+    ]
+  },
+  "n": 17,
+  "valid": 13
+}
