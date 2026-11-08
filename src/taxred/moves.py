@@ -62,6 +62,11 @@ def set_filing_status(hh: Household, tax_unit: str, status: str) -> None:
     else:
         if tu.spouse:
             raise MoveError(f"a married unit cannot file {status}")
+        if hh.spouse_of(tu.head) is not None:
+            # s.2(b), s.7703(b): a married person living with the spouse cannot
+            # file as single or head of household. Neither calculator re-checks
+            # an explicitly given filing status, so the move layer must.
+            raise MoveError("a married person living with the spouse files JOINT or SEPARATE")
         tu.filing_status = status
 
 
@@ -329,6 +334,84 @@ MOVES.update(
         "reduce_donation": reduce_donation,
         "donate_asset": donate_asset,
         "roth_convert": roth_convert,
+    }
+)
+
+
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 vocabulary (preregistration-stage2.md): distractors and decoys
+# ---------------------------------------------------------------------------
+
+def _distractor(hh: Household, person: str, **params) -> None:
+    """A plausible action with no federal income tax effect: it only checks
+    its inputs and changes nothing the calculators see."""
+    _person(hh, person)
+    for k, v in params.items():
+        if isinstance(v, (int, float)) and v < 0:
+            raise MoveError(f"{k} must not be negative")
+
+
+DISTRACTORS = (
+    "set_withholding", "pay_estimated_tax", "adjust_w4", "move_cash", "change_bank",
+    "consolidate_accounts", "set_direct_deposit", "update_beneficiary", "rebalance_inside_ira",
+    "contribute_529", "contribute_roth_ira", "contribute_roth_401k", "prepay_mortgage_principal",
+    "buy_term_life", "open_brokerage_account",
+)
+
+
+def _decoy_401k(share: float):
+    def f(hh: Household, person: str) -> None:
+        p = _person(hh, person)
+        lim = _retirement_limits(hh.year, p.age)["401k"]
+        amt = min(lim, p.wages) * share - p.traditional_401k
+        if amt <= 0:
+            raise MoveError("nothing left to contribute")
+        contribute_retirement(hh, person, "401k", amt)
+    return f
+
+
+def decoy_max_ira(hh: Household, person: str) -> None:
+    p = _person(hh, person)
+    amt = min(_retirement_limits(hh.year, p.age)["ira"], p.earned_income) - p.traditional_ira
+    if amt <= 0:
+        raise MoveError("nothing left to contribute")
+    contribute_retirement(hh, person, "ira", amt)
+
+
+def decoy_max_hsa(hh: Household, person: str) -> None:
+    from .taxes import _pe_params
+
+    p = _person(hh, person)
+    lim = _pe_params().gov.irs.gross_income.health_savings_account_contributions.limit
+    cov = "family" if hh.spouse_of(person) or hh.unit_of(person).dependents else "self"
+    cap = float((lim.family if cov == "family" else lim.self_only)(f"{hh.year}-01-01")) + (HSA_CATCH_UP if p.age >= 55 else 0.0)
+    contribute_hsa(hh, person, cap - p.hsa, cov)
+
+
+def decoy_household_max_401k(hh: Household) -> None:
+    done = 0
+    for pid, p in hh.people.items():
+        try:
+            _decoy_401k(1.0)(hh, pid)
+            done += 1
+        except MoveError:
+            pass
+    if not done:
+        raise MoveError("no one can contribute")
+
+
+DECOYS = ("decoy_max_401k", "decoy_half_401k", "decoy_max_ira", "decoy_max_hsa", "decoy_household_max_401k")
+
+MOVES.update({name: _distractor for name in DISTRACTORS})
+MOVES.update(
+    {
+        "decoy_max_401k": _decoy_401k(1.0),
+        "decoy_half_401k": _decoy_401k(0.5),
+        "decoy_max_ira": decoy_max_ira,
+        "decoy_max_hsa": decoy_max_hsa,
+        "decoy_household_max_401k": decoy_household_max_401k,
     }
 )
 

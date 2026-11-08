@@ -21,7 +21,7 @@ from typing import Optional, Protocol
 import numpy as np
 
 from .household import Household
-from .moves import MoveError, apply_moves
+from .moves import DECOYS, DISTRACTORS, MoveError, apply_moves
 from .verifier import Verdict, Verifier
 
 FLAGGED = ("candidate", "code_disagreement")
@@ -41,9 +41,10 @@ def _frac(rng, continuous: bool, choices=(0.25, 0.5, 1.0), lo: float = 0.05, hi:
     return round(float(rng.uniform(lo, hi)), 3) if continuous else float(_choice(rng, list(choices)))
 
 
-def random_move(hh: Household, rng: np.random.Generator, continuous: bool = False) -> Optional[dict]:
+def random_move(hh: Household, rng: np.random.Generator, continuous: bool = False, stage2: bool = False) -> Optional[dict]:
     """One random move that is plausible for `hh` (it may still be invalid).
-    continuous: draw fractions and amounts from a continuum (stage 1)."""
+    continuous: draw fractions and amounts from a continuum (stage 1).
+    stage2: the vocabulary also has the 15 distractors and 5 decoys."""
     people = list(hh.people)
     ops = []
     with_assets = [p for p in people if hh.people[p].assets]
@@ -75,8 +76,16 @@ def random_move(hh: Household, rng: np.random.Generator, continuous: bool = Fals
         ops.append("roth_convert")
     if hh.scenarios and any(hh.people[p].ira_balance > 0 for p in people):
         ops.append("recharacterize")
+    if stage2:
+        ops += list(DISTRACTORS) + list(DECOYS)
     op = _choice(rng, ops)
 
+    if op in DISTRACTORS:
+        return {"op": op, "person": _choice(rng, people), "amount": round(float(rng.uniform(0, 10_000)))}
+    if op == "decoy_household_max_401k":
+        return {"op": op}
+    if op in DECOYS:
+        return {"op": op, "person": _choice(rng, people)}
     if op == "gift_asset":
         g = _choice(rng, with_assets)
         r = _choice(rng, [p for p in people if p != g])
@@ -136,7 +145,7 @@ def random_move(hh: Household, rng: np.random.Generator, continuous: bool = Fals
     return None
 
 
-def random_sequence(hh: Household, rng: np.random.Generator, max_len: int = 3, tries: int = 20, continuous: bool = False, horizon: int = 1) -> list[dict]:
+def random_sequence(hh: Household, rng: np.random.Generator, max_len: int = 3, tries: int = 20, continuous: bool = False, horizon: int = 1, stage2: bool = False) -> list[dict]:
     """A valid random sequence of 1..max_len moves (built move by move).
     With horizon > 1, each move is dated in a random year of the horizon
     with probability 1/2 (otherwise it applies from the first year)."""
@@ -146,7 +155,7 @@ def random_sequence(hh: Household, rng: np.random.Generator, max_len: int = 3, t
     for _ in range(tries):
         if len(seq) >= n:
             break
-        m = random_move(cur, rng, continuous)
+        m = random_move(cur, rng, continuous, stage2)
         if m is None:
             continue
         try:
@@ -203,11 +212,11 @@ class Proposer(Protocol):
 
 
 class RandomProposer:
-    def __init__(self, max_len: int = 3, continuous: bool = False, horizon: int = 1):
-        self.max_len, self.continuous, self.horizon = max_len, continuous, horizon
+    def __init__(self, max_len: int = 3, continuous: bool = False, horizon: int = 1, stage2: bool = False):
+        self.max_len, self.continuous, self.horizon, self.stage2 = max_len, continuous, horizon, stage2
 
     def propose(self, hh, history, k, rng):
-        return [random_sequence(hh, rng, self.max_len, continuous=self.continuous, horizon=self.horizon) for _ in range(k)]
+        return [random_sequence(hh, rng, self.max_len, continuous=self.continuous, horizon=self.horizon, stage2=self.stage2) for _ in range(k)]
 
 
 class GreedyProposer:
@@ -216,15 +225,15 @@ class GreedyProposer:
     re-draw one move). Falls back to random sequences until there is an
     archive."""
 
-    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.3, continuous: bool = False, horizon: int = 1):
+    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.3, continuous: bool = False, horizon: int = 1, stage2: bool = False):
         self.max_len, self.top, self.explore = max_len, top, explore
-        self.continuous, self.horizon = continuous, horizon
+        self.continuous, self.horizon, self.stage2 = continuous, horizon, stage2
 
     def _seq(self, hh, rng):
-        return random_sequence(hh, rng, self.max_len, continuous=self.continuous, horizon=self.horizon)
+        return random_sequence(hh, rng, self.max_len, continuous=self.continuous, horizon=self.horizon, stage2=self.stage2)
 
     def _move(self, hh, rng):
-        m = random_move(hh, rng, self.continuous)
+        m = random_move(hh, rng, self.continuous, self.stage2)
         if m is not None and self.horizon > 1 and rng.random() < 0.5:
             m = dict(m, year=hh.year + int(rng.integers(self.horizon)))
         return m
@@ -320,14 +329,14 @@ class PoolProposer(Protocol):
 class RandomPoolProposer:
     """Uniform household, random valid move sequence."""
 
-    def __init__(self, max_len: int = 3, continuous: bool = False, horizon: int = 1):
-        self.max_len, self.continuous, self.horizon = max_len, continuous, horizon
+    def __init__(self, max_len: int = 3, continuous: bool = False, horizon: int = 1, stage2: bool = False):
+        self.max_len, self.continuous, self.horizon, self.stage2 = max_len, continuous, horizon, stage2
 
     def propose_pool(self, pool, history, k, rng):
         out = []
         for _ in range(k):
             i = int(rng.integers(len(pool)))
-            out.append((i, random_sequence(pool[i], rng, self.max_len, continuous=self.continuous, horizon=self.horizon)))
+            out.append((i, random_sequence(pool[i], rng, self.max_len, continuous=self.continuous, horizon=self.horizon, stage2=self.stage2)))
         return out
 
 
@@ -336,8 +345,8 @@ class GreedyPoolProposer:
     far on their own household; explore new households with probability
     `explore`."""
 
-    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.4, continuous: bool = False, horizon: int = 1):
-        self.inner = GreedyProposer(max_len=max_len, top=top, explore=0.0, continuous=continuous, horizon=horizon)
+    def __init__(self, max_len: int = 4, top: int = 5, explore: float = 0.4, continuous: bool = False, horizon: int = 1, stage2: bool = False):
+        self.inner = GreedyProposer(max_len=max_len, top=top, explore=0.0, continuous=continuous, horizon=horizon, stage2=stage2)
         self.max_len, self.top, self.explore = max_len, top, explore
 
     def propose_pool(self, pool, history, k, rng):

@@ -113,6 +113,7 @@ class Variant:
 
     family_split: str = "train"
     horizon: int = 1  # tax years the verifier must evaluate to see the loophole
+    stage2: bool = False
 
     @property
     def split(self) -> str:
@@ -136,6 +137,7 @@ class Family:
     control: bool = False
     split: str = "train"  # train | val | test (family-level)
     horizon: int = 1
+    stage2: bool = False  # built for stage 2 (preregistration-stage2.md); excluded elsewhere
 
 
 def _fam_dependent_floor(year, m):
@@ -333,11 +335,15 @@ FAMILIES: dict[str, Family] = {
 }
 
 
-def variants(year: int = 2024, families=None) -> list[Variant]:
+def variants(year: int = 2024, families=None, stage2: bool = False) -> list[Variant]:
+    """Planted variants: stage 0/1 families by default, stage 2 families
+    (minimum witness length 3, rare eligibility) with stage2=True."""
     base = Law(year)
     out = []
     for f in FAMILIES.values():
         if families and f.name not in families:
+            continue
+        if f.stage2 != stage2:
             continue
         for m in f.magnitudes:
             pe, tc, desc, dis, kiddie = f.build(year, m)
@@ -365,6 +371,56 @@ def variants(year: int = 2024, families=None) -> list[Variant]:
                     control=f.control,
                     family_split=f.split,
                     horizon=f.horizon,
+                    stage2=f.stage2,
                 )
             )
     return out
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 families (preregistration-stage2.md): at least 3 coordinated moves,
+# one dated in a later year, eligibility a conjunction of household facts.
+# ---------------------------------------------------------------------------
+
+
+def _s2_household(hid, year, kind: str):
+    """Married couple, one spouse with all the income (very high), the other
+    with none, two children; `kind` = "bonds" (interest-bearing bonds) or
+    "business" (self-employment income). Possible futures attached."""
+    from .household import with_scenarios
+
+    if kind == "bonds":
+        a = Person("a", 45, wages=700_000, hours=2080, assets=[Asset("bonds", 250_000 / 0.05, 250_000 / 0.05, interest_yield=0.05)])
+    else:
+        a = Person("a", 45, self_employment=950_000, hours=2400)
+    people = {"a": a, "b": Person("b", 43), "k0": Person("k0", 4), "k1": Person("k1", 9)}
+    hh = Household(hid, year, "TX", people, [TaxUnit("t", "a", "b", ["k0", "k1"])], [("a", "b")])
+    return with_scenarios(hh)
+
+
+def _s2_witness(year, kind):
+    y = year + 1
+    moves = [
+        {"op": "set_filing_status", "tax_unit": "t", "status": "SEPARATE", "year": y},
+        {"op": "assign_dependent", "dependent": "k0", "tax_unit": "t_s", "year": y},
+        {"op": "assign_dependent", "dependent": "k1", "tax_unit": "t_s", "year": y},
+    ]
+    if kind == "bonds":
+        moves.append({"op": "gift_asset", "giver": "a", "recipient": "b", "asset": "bonds", "fraction": 1.0, "year": y})
+    else:
+        moves.append({"op": "shift_income", "payer": "a", "payee": "b", "amount": 250_000, "year": y})
+    return moves
+
+
+for _kind in ("bonds", "business"):
+    FAMILIES[f"s2_ctc_mfs_{_kind}"] = Family(
+        f"s2_ctc_mfs_{_kind}",
+        "move_threshold",
+        [300_000, 400_000],
+        _fam_ctc_mfs,
+        (lambda k: (lambda y, m: (_s2_household("w", y, k), _s2_witness(y, k))))(_kind),
+        lambda y: [],
+        split="stage2",
+        horizon=3,
+        stage2=True,
+    )
