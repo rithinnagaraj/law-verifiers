@@ -1,0 +1,511 @@
+{
+  "meta": {
+    "time_utc": "2026-11-08T06:54:27Z",
+    "git_commit": "e770cf63a2dcfd466535b93d45a28b1e45e50a75",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e2_s2_prepare.py",
+      "--workers",
+      "4"
+    ]
+  },
+  "variants": [
+    {
+      "variant": "s2_ctc_mfs_bonds_300000",
+      "family": "s2_ctc_mfs_bonds",
+      "valid": true,
+      "witness_label": "candidate",
+      "witness_gain": 10460.0,
+      "witness_gain_closure": 6293.333333333372,
+      "witness_reduction": 0.39834289356277514,
+      "witness_len": 4,
+      "scenario_gains": {
+        "up": 13660.0,
+        "down": 578.0,
+        "income_drop": 17142.0
+      },
+      "crosscheck": true,
+      "n_short": 644,
+      "short_hits": [
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2024
+            },
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            }
+          ],
+          0.241,
+          5256
+        ],
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            }
+          ],
+          0.377,
+          3360
+        ],
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2025
+            }
+          ],
+          0.377,
+          3360
+        ],
+        [
+          [
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2024
+            }
+          ],
+          0.241,
+          5256
+        ],
+        [
+          [
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.377,
+          3360
+        ],
+        [
+          [
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2025
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.377,
+          3360
+        ]
+      ],
+      "length_ok": false,
+      "n_adapted": 275,
+      "n_eligible_in_bank": 2,
+      "witness_position": 122,
+      "passes": false
+    },
+    {
+      "variant": "s2_ctc_mfs_bonds_400000",
+      "family": "s2_ctc_mfs_bonds",
+      "valid": true,
+      "witness_label": "candidate",
+      "witness_gain": 10893.333333333372,
+      "witness_gain_closure": 6293.333333333372,
+      "witness_reduction": 0.4222766217870242,
+      "witness_len": 4,
+      "scenario_gains": {
+        "up": 14960.0,
+        "down": 578.0,
+        "income_drop": 17142.0
+      },
+      "crosscheck": true,
+      "n_short": 644,
+      "short_hits": [
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2024
+            },
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            }
+          ],
+          0.424,
+          6923
+        ],
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            }
+          ],
+          0.584,
+          5027
+        ],
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2025
+            }
+          ],
+          0.584,
+          5027
+        ],
+        [
+          [
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2024
+            }
+          ],
+          0.424,
+          6923
+        ],
+        [
+          [
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.584,
+          5027
+        ],
+        [
+          [
+            {
+              "op": "gift_asset",
+              "giver": "a",
+              "recipient": "b",
+              "asset": "bonds",
+              "fraction": 1.0,
+              "year": 2025
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.584,
+          5027
+        ]
+      ],
+      "length_ok": false,
+      "n_adapted": 275,
+      "n_eligible_in_bank": 2,
+      "witness_position": 199,
+      "passes": false
+    },
+    {
+      "variant": "s2_ctc_mfs_business_300000",
+      "family": "s2_ctc_mfs_business",
+      "valid": false,
+      "witness_label": "no_gain",
+      "witness_gain": -5932.634765625,
+      "witness_gain_closure": -10932.634765625,
+      "witness_reduction": 0.0,
+      "witness_len": 4,
+      "scenario_gains": {
+        "up": -675.28125,
+        "down": -675.28125,
+        "income_drop": -16447.341796875
+      },
+      "crosscheck": true,
+      "n_short": 570,
+      "short_hits": [
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k0",
+              "amount": 237500,
+              "year": 2024
+            }
+          ],
+          0.153,
+          10242
+        ],
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k1",
+              "amount": 237500,
+              "year": 2024
+            }
+          ],
+          0.153,
+          10242
+        ],
+        [
+          [
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k0",
+              "amount": 237500,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.153,
+          10242
+        ],
+        [
+          [
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k1",
+              "amount": 237500,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.153,
+          10242
+        ]
+      ],
+      "length_ok": false,
+      "n_adapted": 10,
+      "n_eligible_in_bank": 0,
+      "witness_position": 104,
+      "passes": false
+    },
+    {
+      "variant": "s2_ctc_mfs_business_400000",
+      "family": "s2_ctc_mfs_business",
+      "valid": false,
+      "witness_label": "no_gain",
+      "witness_gain": -5932.634765625,
+      "witness_gain_closure": -10932.634765625,
+      "witness_reduction": 0.0,
+      "witness_len": 4,
+      "scenario_gains": {
+        "up": -675.28125,
+        "down": -675.28125,
+        "income_drop": -16447.341796875
+      },
+      "crosscheck": true,
+      "n_short": 570,
+      "short_hits": [
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k0",
+              "amount": 237500,
+              "year": 2024
+            }
+          ],
+          0.253,
+          11609
+        ],
+        [
+          [
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            },
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k1",
+              "amount": 237500,
+              "year": 2024
+            }
+          ],
+          0.253,
+          11609
+        ],
+        [
+          [
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k0",
+              "amount": 237500,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.253,
+          11609
+        ],
+        [
+          [
+            {
+              "op": "shift_income",
+              "payer": "a",
+              "payee": "k1",
+              "amount": 237500,
+              "year": 2024
+            },
+            {
+              "op": "set_filing_status",
+              "tax_unit": "t",
+              "status": "SEPARATE",
+              "year": 2025
+            }
+          ],
+          0.253,
+          11609
+        ]
+      ],
+      "length_ok": false,
+      "n_adapted": 10,
+      "n_eligible_in_bank": 0,
+      "witness_position": 96,
+      "passes": false
+    }
+  ]
+}
