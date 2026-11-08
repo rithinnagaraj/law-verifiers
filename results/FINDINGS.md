@@ -4,6 +4,70 @@ Running log of results and findings, newest first. Phase 0's first pass (develop
 
 ---
 
+## 2026-11-08 — Stage 2
+
+### Pre-registered stage 2: no valid targets
+
+`preregistration-stage2.md` requires planted loopholes that need ≥ 3
+coordinated moves (one dated later), with no sequence of ≤ 2 moves getting ≥
+R of its gain from the mutation, and eligibility so rare that only the witness
+in a 200-household pool qualifies. Two new families (CTC phase-out threshold
+for married filing separately raised, exploited by separating in 2025, moving
+the children to the lower-income spouse, and moving bond or business income to
+that spouse; two magnitudes each) all failed the exhaustive ≤ 2-move check
+(`phase2/stage2/`):
+
+- **business variants:** the witness loses money overall, and a two-move
+  shortcut exists — separate, then pay a 4-year-old $237,500 of wages. The
+  judge-made reasonable-compensation doctrine stops this in reality; by design
+  the vocabulary enforces bright-line rules only, so the verifier pays for it.
+- **bond variants:** valid witnesses (mutation creates 40–42% of the gain), but
+  six two-move sequences get 24–58% of their gain from the mutation: in the
+  "income halves" future the high earner keeps the children and falls under the
+  mutated threshold, so separating and gifting the bonds suffices.
+
+As pre-registered, the families were dropped, not tuned. **Finding:** within
+this vocabulary, loopholes that genuinely require three coordinated moves are
+hard to construct — the extra realism (possible futures) and the absence of
+judge-made doctrines keep opening two-move shortcuts. This echoes stage 1:
+household loopholes within the calculators' scope are short.
+
+### Exploratory deviation (researcher-approved): stage 2 knobs on stage 1 targets
+
+Recorded in `preregistration-stage2.md` before running. Stage 1 targets (16
+planted, 5 historical); witness hidden in a **200**-household survey pool;
+vocabulary plus **15 distractors** (valid, no federal effect) and **5 decoys**
+(always-intended gains: max 401(k)/IRA/HSA); sequences up to 4 moves; tolerance
+cross-check; 3-year horizon, possible futures; 400 calls, 2 seeds
+(`phase2/frozen_stage2x_pool200/`). Also new since stage 1: a married person
+living with the spouse can no longer file as single or head of household
+(§2(b), §7703(b); neither calculator re-checks an explicit filing status).
+
+| condition | targets | recall@100 | recall@200 | recall@400 | stage 1 recall@400 |
+|---|---|---|---|---|---|
+| random | planted (16) | 0.09 | 0.31 | **0.44** | 0.72 |
+| greedy | planted (16) | 0.09 | 0.12 | **0.25** | 0.62 |
+| random | historical (5) | 0.00 | 0.10 | 0.10 | 0.50 |
+| greedy | historical (5) | 0.00 | 0.00 | 0.00 | 0.70 |
+
+- **The artificial knobs make undirected search fail much more often**:
+  random-search recall at 400 calls falls from 0.72 to 0.44 on planted targets
+  and from 0.50 to 0.10 on historical ones.
+- **Greedy search is hurt more than random** (0.62 → 0.25): the decoys reward
+  hill-climbing toward intended concessions (retirement contributions), which
+  the search cannot tell from loopholes because rediscovery is scored by the
+  closure test, not by the gain it climbs.
+- Narrow loopholes (niit_mfs, cg0_single, kiddie_age_12, the historical kiddie
+  and Roth cases) were not found by either condition in 400 calls.
+- This is the setting where an LLM condition could plausibly beat the
+  baselines: semantic knowledge should let it ignore distractors and decoys.
+- One worker was OOM-killed (200-household simulations are larger);
+  `run_jobs` finished the remaining jobs with 3 workers.
+- Exploratory: 2 seeds, 400 calls (the pre-registered 1,000/3,000 budgets and 5
+  seeds were not run); not pooled with stage 1.
+
+---
+
 ## 2026-11-07 (evening) — the researcher's three changes: overlap-only gains, two-stage enlargement, GPU
 
 ### 1. Gains restricted to the calculators' overlap
