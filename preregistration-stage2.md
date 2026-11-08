@@ -38,3 +38,32 @@ separate when the problem is made hard on purpose.
   about real household tax law, and they are never pooled with stage 1.
 - If random search matches every other condition in stage 2 too, the report
   says so: the knobs above did not make search matter.
+
+## Outcome of the pre-registered construction, and a labelled deviation (2026-11-08)
+
+**Pre-registered stage 2: no valid targets.** Two new families (CTC phase-out
+threshold for married filing separately raised; exploited by filing
+separately, moving the children to the lower-income spouse, and moving bond
+income or business income to that spouse, dated 2025) were built with two
+magnitudes each (`experiments/e2_s2_prepare.py`, `results/phase2/stage2/`):
+
+- business variants: the witness loses money overall, and a two-move
+  shortcut exists (separate, then pay a young child the business income as
+  wages — stopped in reality by the judge-made reasonable-compensation
+  doctrine, which the vocabulary deliberately does not enforce);
+- bond variants: valid witnesses (the mutation creates 40-42% of the gain),
+  but six two-move sequences get >= R of their gain from the mutation —
+  separating and gifting the bonds suffices, because in the "income halves"
+  future the high earner keeps the children and falls under the mutated
+  threshold.
+
+As pre-registered, failing families were dropped, not tuned.
+
+**Deviation (decided by the researcher, 2026-11-08, before running).** An
+exploratory run applies the remaining stage 2 settings — 200-household survey
+pools, the 15 distractors and 5 decoys, sequences of up to 4 moves, the
+tolerance cross-check — to the **stage 1 targets** (16 planted, 5 historical),
+with random pools (the rarity filter exists only for the stage 2 families),
+400 verifier calls and 2 seeds (stage 1's budget, so the two are comparable).
+It is reported separately, labelled exploratory, and never pooled with
+stage 1 or presented as the pre-registered stage 2.

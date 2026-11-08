@@ -127,8 +127,11 @@ def make_pool(tid: str, hh, n: int, year: int, stage: int = 0):
 
 
 def run(args):
-    tid, cond, seed, budget, year, r_min, pool_n, model, disguised, batch, stage = args
-    _, kind, law, closure, hh, horizon, rules = next(t for t in targets(year, disguised, stage) if t[0] == tid)
+    tid, cond, seed, budget, year, r_min, pool_n, model, disguised, batch, stage, exploratory = args
+    # Exploratory stage 2 (a deviation, see preregistration-stage2.md): stage 1
+    # targets and random survey pools, with the stage 2 vocabulary and checks.
+    tstage = 1 if exploratory else stage
+    _, kind, law, closure, hh, horizon, rules = next(t for t in targets(year, disguised, tstage) if t[0] == tid)
     if stage >= 1:
         horizon = max(horizon, 3)
     opts = dict(continuous=True, horizon=horizon) if stage >= 1 else {}
@@ -138,7 +141,7 @@ def run(args):
     witness_id = hh.id
     ver = Verifier(law, cfg)
     if pool_n:
-        pool, witness_id = make_pool(tid, hh, pool_n, year, stage)
+        pool, witness_id = make_pool(tid if not exploratory else tid + ":x", hh, pool_n, year, tstage)
         prop = LLMPoolProposer(rules=rules, model=model) if cond == "llm" else POOL_PROPOSERS[cond](**opts)
         hist = search_pool(pool, ver, prop, budget, batch=10 if cond == "llm" else batch, seed=seed)
     else:
@@ -173,6 +176,7 @@ def main():
     ap.add_argument("--r-min", type=float, default=None, help="default: the R chosen by E0.7, else 0.3")
     ap.add_argument("--conditions", nargs="*", default=list(PROPOSERS))
     ap.add_argument("--stage", type=int, default=0, choices=[0, 1, 2], help="1: realistic enlargement (survey households, 3-year horizon, futures, continuous amounts, dated moves); 2: stage 1 + pre-registered artificial difficulty")
+    ap.add_argument("--exploratory", action="store_true", help="with --stage 2: stage 1 targets and random survey pools (deviation, labelled)")
     ap.add_argument("--batch", type=int, default=25, help="proposals per search round (larger amortises calculator overhead)")
     ap.add_argument("--model", default="claude-opus-5-5", help="for the llm condition (needs API credentials)")
     ap.add_argument("--disguised", action="store_true", help="planted targets show the disguised rule description (H3)")
@@ -181,13 +185,13 @@ def main():
     if a.r_min is None:
         e07 = Path(out_dir("phase0/e0_7")) / "summary.json"
         a.r_min = float(json.loads(e07.read_text())["best"]["R"]) if e07.exists() else 0.3
-    od = out_dir("phase2/frozen" + (f"_stage{a.stage}" if a.stage else "") + (f"_pool{a.pool}" if a.pool else "") + ("_disguised" if a.disguised else ""))
+    od = out_dir("phase2/frozen" + (f"_stage{a.stage}" if a.stage else "") + ("x" if a.exploratory else "") + (f"_pool{a.pool}" if a.pool else "") + ("_disguised" if a.disguised else ""))
     if a.stage >= 1 and a.pool:
         from taxred.ecps import load_households
 
         load_households(*ECPS_BANK)  # build the survey-sample cache once, before the workers start
-    tids = [t[0] for t in targets(a.year, stage=a.stage)]
-    jobs = [(t, c, s, a.budget, a.year, a.r_min, a.pool, a.model, a.disguised, a.batch, a.stage) for t in tids for c in a.conditions for s in range(a.seeds)]
+    tids = [t[0] for t in targets(a.year, stage=1 if a.exploratory else a.stage)]
+    jobs = [(t, c, s, a.budget, a.year, a.r_min, a.pool, a.model, a.disguised, a.batch, a.stage, a.exploratory) for t in tids for c in a.conditions for s in range(a.seeds)]
     rows = run_jobs(run, jobs, a.workers, checkpoint=od / f"checkpoint_r{a.r_min:g}_b{a.budget}.jsonl", max_tasks_per_child=8)
     df = pd.DataFrame(rows)
     df.to_csv(od / "runs.csv", index=False)
