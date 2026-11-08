@@ -1,0 +1,322 @@
+{
+  "meta": {
+    "time_utc": "2026-11-07T19:37:16Z",
+    "git_commit": "c293bb432b397443e0e2b88986a3b70ddd6adddf",
+    "git_dirty": false,
+    "host": "law-verifiers-rithin",
+    "python": "3.12.16",
+    "cpus": 12,
+    "versions": {
+      "policyengine_us": "2.104.3",
+      "taxcalc": "6.8.5",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1"
+    },
+    "argv": [
+      "experiments/e1_closures.py",
+      "--workers",
+      "6"
+    ]
+  },
+  "R_MIN": 0.2,
+  "R_EPS": 0.02,
+  "cases": {
+    "kiddie_tra1986": {
+      "coverage": "internal",
+      "closure": "Tax Reform Act of 1986, s.1411 (IRC s.1(g)), children under 14",
+      "n_covered": 24,
+      "n_not_covered": 88,
+      "sensitivity": 1.0,
+      "sensitivity_ci": [
+        0.8575264022774743,
+        1.0
+      ],
+      "sensitivity_pe_federal": 1.0,
+      "sensitivity_tc_federal": 0.8333333333333334,
+      "match_rate": 0.75,
+      "specificity": 1.0,
+      "specificity_ci": [
+        0.958947370941922,
+        1.0
+      ],
+      "flag_rate_pre_covered": 1.0,
+      "flag_rate_post_covered": 0.4166666666666667,
+      "closed_in_post_signature": 0.0,
+      "median_reduction_covered": 0.4558877249529949,
+      "median_reduction_not_covered": 0.0,
+      "post_labels": {
+        "intended_concession": 14,
+        "candidate": 8,
+        "code_disagreement": 2
+      },
+      "post_residual_median_attribution": {
+        "head_of_household": 0.0,
+        "retirement_contributions": 0.0,
+        "savers_credit": 0.0,
+        "eitc": 0.0,
+        "eitc_investment_income_limit": 0.0,
+        "ctc": 0.102,
+        "dependent_std_deduction_limit": -1.08,
+        "child_amt_exemption_limit": 0.0,
+        "niit": 0.372,
+        "dependent_std_deduction_floor": 0.407,
+        "kiddie_allowance": 0.156,
+        "kiddie_tax": -1.487
+      }
+    },
+    "kiddie_tipra2005": {
+      "coverage": "internal",
+      "closure": "Tax Increase Prevention and Reconciliation Act of 2005, s.510 (age 14 -> 18)",
+      "n_covered": 12,
+      "n_not_covered": 100,
+      "sensitivity": 1.0,
+      "sensitivity_ci": [
+        0.7353515306029488,
+        1.0
+      ],
+      "sensitivity_pe_federal": 1.0,
+      "sensitivity_tc_federal": 0.8333333333333334,
+      "match_rate": 0.75,
+      "specificity": 1.0,
+      "specificity_ci": [
+        0.9637833073548235,
+        1.0
+      ],
+      "flag_rate_pre_covered": 1.0,
+      "flag_rate_post_covered": 0.4166666666666667,
+      "closed_in_post_signature": 0.0,
+      "median_reduction_covered": 0.4558877249529949,
+      "median_reduction_not_covered": 0.0,
+      "post_labels": {
+        "intended_concession": 7,
+        "candidate": 4,
+        "code_disagreement": 1
+      },
+      "post_residual_median_attribution": {
+        "head_of_household": 0.0,
+        "retirement_contributions": 0.0,
+        "savers_credit": 0.0,
+        "eitc": 0.0,
+        "eitc_investment_income_limit": 0.0,
+        "ctc": 0.102,
+        "dependent_std_deduction_limit": -1.08,
+        "child_amt_exemption_limit": 0.0,
+        "niit": 0.372,
+        "dependent_std_deduction_floor": 0.407,
+        "kiddie_allowance": 0.156,
+        "kiddie_tax": -1.487
+      }
+    },
+    "kiddie_sbwota2007": {
+      "coverage": "internal",
+      "closure": "Small Business and Work Opportunity Tax Act of 2007, s.8241",
+      "n_covered": 36,
+      "n_not_covered": 76,
+      "sensitivity": 1.0,
+      "sensitivity_ci": [
+        0.902606244085508,
+        1.0
+      ],
+      "sensitivity_pe_federal": 1.0,
+      "sensitivity_tc_federal": 0.9444444444444444,
+      "match_rate": 0.75,
+      "specificity": 1.0,
+      "specificity_ci": [
+        0.9526212461330692,
+        1.0
+      ],
+      "flag_rate_pre_covered": 1.0,
+      "flag_rate_post_covered": 0.3611111111111111,
+      "closed_in_post_signature": 0.0,
+      "median_reduction_covered": 0.4839994044073853,
+      "median_reduction_not_covered": 0.0,
+      "post_labels": {
+        "intended_concession": 23,
+        "candidate": 12,
+        "code_disagreement": 1
+      },
+      "post_residual_median_attribution": {
+        "head_of_household": 0.0,
+        "retirement_contributions": 0.0,
+        "savers_credit": 0.0,
+        "eitc": 0.0,
+        "eitc_investment_income_limit": 0.0,
+        "ctc": 0.0,
+        "dependent_std_deduction_limit": -1.425,
+        "child_amt_exemption_limit": 0.0,
+        "niit": 0.411,
+        "dependent_std_deduction_floor": 0.443,
+        "kiddie_allowance": 0.17,
+        "kiddie_tax": -2.034
+      }
+    },
+    "dependent_std_tra1986": {
+      "coverage": "two-calc",
+      "closure": "Tax Reform Act of 1986, s.102 (IRC s.63(c)(5)): a dependent's standard deduction limited to the greater of a floor and earned income",
+      "n_covered": 84,
+      "n_not_covered": 28,
+      "sensitivity": 1.0,
+      "sensitivity_ci": [
+        0.9570350803704349,
+        1.0
+      ],
+      "sensitivity_pe_federal": 1.0,
+      "sensitivity_tc_federal": 1.0,
+      "match_rate": 0.9166666666666666,
+      "specificity": 1.0,
+      "specificity_ci": [
+        0.8765638814997362,
+        1.0
+      ],
+      "flag_rate_pre_covered": 1.0,
+      "flag_rate_post_covered": 0.9285714285714286,
+      "closed_in_post_signature": 0.0,
+      "median_reduction_covered": 0.33636363636363636,
+      "median_reduction_not_covered": 0.0,
+      "post_labels": {
+        "candidate": 78,
+        "intended_concession": 6
+      },
+      "post_residual_median_attribution": {
+        "head_of_household": 0.0,
+        "retirement_contributions": 0.0,
+        "savers_credit": 0.0,
+        "eitc": 0.0,
+        "eitc_investment_income_limit": 0.0,
+        "ctc": 0.0,
+        "dependent_std_deduction_limit": -0.507,
+        "child_amt_exemption_limit": 0.0,
+        "niit": 0.0,
+        "dependent_std_deduction_floor": 0.065,
+        "kiddie_allowance": 0.0,
+        "kiddie_tax": 0.0
+      }
+    },
+    "tra1986_package": {
+      "coverage": "internal",
+      "closure": "Tax Reform Act of 1986, ss.102 and 1411",
+      "n_covered": 84,
+      "n_not_covered": 28,
+      "sensitivity": 1.0,
+      "sensitivity_ci": [
+        0.9570350803704349,
+        1.0
+      ],
+      "sensitivity_pe_federal": 1.0,
+      "sensitivity_tc_federal": 1.0,
+      "match_rate": 0.9404761904761905,
+      "specificity": 1.0,
+      "specificity_ci": [
+        0.8765638814997362,
+        1.0
+      ],
+      "flag_rate_pre_covered": 1.0,
+      "flag_rate_post_covered": 0.7857142857142857,
+      "closed_in_post_signature": 0.0,
+      "median_reduction_covered": 0.38134715025906735,
+      "median_reduction_not_covered": 0.0,
+      "post_labels": {
+        "candidate": 58,
+        "intended_concession": 18,
+        "code_disagreement": 8
+      },
+      "post_residual_median_attribution": {
+        "head_of_household": 0.0,
+        "retirement_contributions": 0.0,
+        "savers_credit": 0.0,
+        "eitc": 0.0,
+        "eitc_investment_income_limit": 0.0,
+        "ctc": 0.0,
+        "dependent_std_deduction_limit": -0.507,
+        "child_amt_exemption_limit": 0.0,
+        "niit": 0.0,
+        "dependent_std_deduction_floor": 0.085,
+        "kiddie_allowance": 0.0,
+        "kiddie_tax": 0.0
+      }
+    },
+    "child_amt_tra1986": {
+      "coverage": "two-calc",
+      "closure": "Tax Reform Act of 1986 (IRC s.59(j)): a child's AMT exemption limited to earned income + an inflation-adjusted amount",
+      "n_covered": 56,
+      "n_not_covered": 56,
+      "sensitivity": 0.0,
+      "sensitivity_ci": [
+        0.0,
+        0.06375009666236217
+      ],
+      "sensitivity_pe_federal": 0.0,
+      "sensitivity_tc_federal": 0.5714285714285714,
+      "match_rate": 0.0,
+      "specificity": 1.0,
+      "specificity_ci": [
+        0.9362499033376378,
+        1.0
+      ],
+      "flag_rate_pre_covered": 1.0,
+      "flag_rate_post_covered": 1.0,
+      "closed_in_post_signature": 0.0,
+      "median_reduction_covered": 0.0,
+      "median_reduction_not_covered": 0.0,
+      "post_labels": {
+        "candidate": 44,
+        "code_disagreement": 12
+      },
+      "post_residual_median_attribution": {
+        "head_of_household": 0.0,
+        "retirement_contributions": 0.0,
+        "savers_credit": 0.0,
+        "eitc": 0.0,
+        "eitc_investment_income_limit": 0.0,
+        "ctc": 0.0,
+        "dependent_std_deduction_limit": -0.616,
+        "child_amt_exemption_limit": 0.0,
+        "niit": 0.0,
+        "dependent_std_deduction_floor": 0.065,
+        "kiddie_allowance": 0.0,
+        "kiddie_tax": 0.0
+      }
+    },
+    "roth_recharacterization_tcja2017": {
+      "coverage": "two-calc",
+      "closure": "Tax Cuts and Jobs Act 2017, s.13611: no recharacterization of Roth conversions after 2017",
+      "n_covered": 9,
+      "n_not_covered": 0,
+      "sensitivity": 0.3333333333333333,
+      "sensitivity_ci": [
+        0.07485463141969183,
+        0.7007049437914596
+      ],
+      "sensitivity_pe_federal": 0.3333333333333333,
+      "sensitivity_tc_federal": 0.3333333333333333,
+      "match_rate": 0.1111111111111111,
+      "specificity": null,
+      "specificity_ci": [
+        NaN,
+        NaN
+      ],
+      "flag_rate_pre_covered": 1.0,
+      "flag_rate_post_covered": 1.0,
+      "closed_in_post_signature": 0.0,
+      "median_reduction_covered": -0.027771639449318607,
+      "median_reduction_not_covered": null,
+      "post_labels": {
+        "candidate": 9
+      },
+      "post_residual_median_attribution": {
+        "head_of_household": 0.0,
+        "retirement_contributions": 0.0,
+        "savers_credit": 0.0,
+        "eitc": 0.0,
+        "eitc_investment_income_limit": 0.0,
+        "ctc": 0.0,
+        "dependent_std_deduction_limit": 0.0,
+        "child_amt_exemption_limit": 0.0,
+        "niit": 0.0,
+        "dependent_std_deduction_floor": 0.0,
+        "kiddie_allowance": 0.0,
+        "kiddie_tax": 0.0
+      }
+    }
+  }
+}

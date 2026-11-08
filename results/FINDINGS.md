@@ -18,7 +18,7 @@ code are tagged coverage `shared-code` (kiddie-tax cases). Tests:
 **Every result above this section used the old net-resources gain** (benefits
 minus all taxes); the stage 1 reruns use the federal scope.
 
-### 2. Stage 1 (realistic enlargement) — built and validated; search runs next
+### 2. Stage 1 (realistic enlargement) — built, validated and run
 
 - **Survey households** (`src/taxred/ecps.py`): PolicyEngine's enhanced CPS
   2024 (public, 108 MB), sampled by survey weight, all states; tax-unit roles
@@ -58,6 +58,48 @@ minus all taxes); the stage 1 reruns use the federal scope.
   no effect (the conversion stands).
 - **Stage 2 settings were pre-registered before any stage 1 result**
   (`preregistration-stage2.md`).
+
+### Stage 1 results (federal-scope reruns and the realistic search; chain 6)
+
+**Reruns under the federal-only gain scope.** E1.1: identical to before for the
+six original closures (their gains were federal already). New closure, Roth
+recharacterization (TCJA 2017): sensitivity 0.33 (3 of 9 witness households),
+median reduction −3% — undoing the conversion in the down future helps only
+some households; where the conversion pays even after a fall (largely because
+of the terminal-valuation convention), the closure *raises* the gain. E0.6:
+**false positives 0.0%** (the two WIC cases are gone with benefits out of
+scope), all 32 negatives correct. E2.1: 16 of 16 non-control variants valid,
+controls not flagged. E0.7: R = 0.1 (precision 0.987, recall 1.00).
+
+**E2.3 stage 1** (`phase2/frozen_stage1_pool40/`): each target's witness
+hidden among 39 enhanced-CPS survey households (neutral ids), 3-year horizon,
+three possible futures per household, continuous amounts and dated moves, the
+stage 1 move vocabulary; 400 verifier calls, 2 seeds, R = 0.1.
+
+| condition | targets | recall@50 | recall@100 | recall@200 | recall@400 |
+|---|---|---|---|---|---|
+| random | planted (16) | 0.12 | 0.22 | 0.41 | **0.72** |
+| greedy | planted (16) | 0.12 | 0.16 | 0.41 | 0.62 |
+| random | historical (5) | 0.10 | 0.10 | 0.30 | 0.50 |
+| greedy | historical (5) | 0.10 | 0.30 | 0.50 | 0.70 |
+
+Same budgets on synthetic pools (stage 0): random planted 0.30 / 0.57 / 0.87
+at 100 / 200 / 400 calls.
+
+- **Realism makes search harder but not hard.** Recall at matched budgets drops
+  by 0.08–0.16, and broad loopholes now match fewer pool households (survey
+  households are less often eligible than synthetic draws), but random search
+  still finds ~70% of planted loopholes within 400 calls. Per the researcher's
+  instruction this is reported as a finding: *household loopholes within the
+  calculators' scope are simple enough for undirected search*.
+- **Greedy is no better than random on planted targets** (0.62 vs 0.72 at 400);
+  on the 5 historical targets greedy is ahead (0.70 vs 0.50) — n = 5 × 2 seeds,
+  not significant.
+- Hardest targets: niit_mfs (narrow eligibility), ctc_mfs_400000, the Roth
+  closure (needs a dated, scenario-contingent pair of moves).
+- One worker was OOM-killed once; `run_jobs` retried with fewer workers.
+- Next per the plan: stage 2 (pre-registered artificial difficulty), then the
+  LLM conditions (API keys needed).
 
 ### 3. GPU
 
