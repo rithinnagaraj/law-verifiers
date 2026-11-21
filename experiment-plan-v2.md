@@ -16,7 +16,8 @@
 | Anytime runs | Each search job runs to the largest budget once; recall at smaller budgets is read off the same run. |
 | Seeds | 5 per condition × target *(freeze)*. |
 | Statistics | Hierarchical bootstrap (families, then seeds), 10,000 resamples; Holm across confirmatory tests. |
-| Cost model | Measured: about 2.9 s per verifier call per worker at 3 years × 3 futures (stage 1: 400 calls in ~19 min per job); 6 workers on the current VM (memory-limited). |
+| Models | Search LLMs (C2, three providers, spanning the capability range): **Gemini 4 Carbon** (Google; ceiling, Google's most capable reasoning model), **GPT-6.2 Sol** (OpenAI; mid-priced), **DeepSeek V4.1 Flash** (DeepSeek; low-cost, open weights). Open-weights judge: **GLM-5.3** (Z.AI). RL policy: a 3–4B open-weights instruct model chosen in D0. Exact version IDs are recorded in A9 and never replaced by aliases; each call logs the model ID returned by the API. |
+| Cost model | Measured: about 2.9 s per verifier call per worker at 3 years × 3 futures (stage 1: 400 calls in ~19 min per job); 6 workers on the current VM (memory-limited); 24 on the planned A–C machine (see "Compute and cost estimates"). |
 
 ---
 
@@ -69,12 +70,12 @@
 - **Validate:** on 3 val families, beam finds the witness when given the witness household and budget ≥ its grid size.
 
 ### A8. Pilot and power analysis
-- **Setup:** a pilot pool of the 3 val families plus 6 train families (train families are used here for variance only, before any RL; no test family is touched). Random, greedy, beam: 3 seeds at 1,000 calls. One frontier LLM, plain and disguised: 3 seeds at 300 calls (needs API keys).
+- **Setup:** a pilot pool of the 3 val families plus 6 train families (train families are used here for variance only, before any RL; no test family is touched). Random, greedy, beam: 3 seeds at 1,000 calls. GPT-6.2 Sol, plain and disguised: 3 seeds at 300 calls (needs API keys). Token check: all three C2 models, plain, 1 seed × 300 calls on the 3 val families, to measure real input, output and thinking tokens per call before budgets are frozen.
 - **Output:** variance of per-family recall and AUC; power for H2 (difference in AUC) and H3 (paired TOST at Δmax = 0.15).
 - **Decision:** seeds and budgets *(freeze)*; whether H3 is confirmatory (≥ 80% power at Δ ≤ 0.15) or exploratory.
 
 ### A8b. Disguise check (moved from C1)
-- **Setup:** before A9, each C2 frontier model gets every disguised description (all splits) and is asked which real provision it describes. No search runs and no verifier results are produced, so no outcome data is seen.
+- **Setup:** before A9, each C2 model gets every disguised description (all splits) and is asked which real provision it describes. No search runs and no verifier results are produced, so no outcome data is seen.
 - **Rule:** a disguise identified by > 1 of the 3 models is rewritten and re-checked; all rewrites are logged and frozen in A9. No disguise text changes after A9.
 
 ### A9. Pre-registration freeze
@@ -112,7 +113,7 @@ Commit `preregistration.md`: tolerance, R, whitelist, intended/anti-abuse lists,
 
 ### C2. Main comparison (H2)
 - **Targets:** A5 test families (≥ 8), both magnitudes (≥ 16 targets); the unit of analysis is the family.
-- **Conditions:** random, greedy, beam, three frontier LLMs + search (plain text), open base model + search.
+- **Conditions:** random, greedy, beam, three LLMs + search (Gemini 4 Carbon, GPT-6.2 Sol, DeepSeek V4.1 Flash; plain text), open base model + search. Secondary analysis: recall against model capability tier (ceiling, mid, low-cost).
 - **Budget:** anytime to 1,000 calls *(freeze; 3,000 if compute allows)*; seeds per A8.
 - **Primary metric:** AUC of recall vs. log calls on {100, 300, 1,000}.
 - **Test:** each LLM vs. the best baseline (chosen on the A8 pilot pool, pre-registered), hierarchical bootstrap by family; Holm across the three LLMs.
@@ -152,7 +153,7 @@ Starts only after G2 (A5), B1–B2 and the D0 throughput gate pass. The GPU is n
 
 **Decision (H5):** D1 beats the base model, D3 and D4 on held-out-mechanism recall (bootstrap by family). Confirmatory only if G2 passed; the D2–D1 gap is reported as the oracle shift.
 
-**Cost:** ~3 GPU-days per run × 5 runs ≈ 15 GPU-days, *after* D0 passes; plus the CPU nodes (≥ 60 workers, ≈ 540 GB RAM) for the same period. Without them, Phase D does not start.
+**Cost:** ~3 GPU-days per run × 5 runs ≈ 15 GPU-days, *after* D0 passes; plus the verifier node (n2-highmem-80, ≥ 60 workers) for the same period; machines are listed under "Compute and cost estimates". Without the node, Phase D does not start.
 
 ---
 
@@ -160,7 +161,7 @@ Starts only after G2 (A5), B1–B2 and the D0 throughput gate pass. The GPU is n
 
 | ID | Experiment | Notes |
 |---|---|---|
-| E1 | Judge calibration | **Roles:** the three C2 frontier models come from providers P1, P2, P3. Each candidate is judged by a 3-member panel: the two frontier providers that did *not* produce it, plus one strong open-weights model (fixed in A9). Baseline and RL candidates get P1 + P2 + the open-weights model. The exclusion is per candidate, so no provider judges its own model's output. Judges are blind to the source. Calibration set: historical loopholes (+), legitimate planning (−), benefit cliffs (own class), canary exploits (− "not the law"). Output: accuracy per judge, Fleiss' κ, panel vote threshold. |
+| E1 | Judge calibration | **Roles:** the three C2 models come from Google (Gemini 4 Carbon), OpenAI (GPT-6.2 Sol) and DeepSeek (V4.1 Flash). Each candidate is judged by a 3-member panel: the two C2 providers that did *not* produce it, plus GLM-5.3 (open weights, not a C2 model). Baseline and RL candidates get Gemini 4 Carbon + GPT-6.2 Sol + GLM-5.3. The exclusion is per candidate, so no provider judges its own model's output. Judges are blind to the source. Calibration set: historical loopholes (+), legitimate planning (−), benefit cliffs (own class), canary exploits (− "not the law"). Output: accuracy per judge, Fleiss' κ, panel vote threshold. |
 | E2 | Borderline audit | Every candidate with disagreement > half the tolerance, checked against the statute by the team. |
 | E3 | Expert review | ~40 unique strategies (deduplicated by moves and mechanism across C2–C6 and D5), blinded, mixed with 10 decoys of known label. Expert 1 rates all; expert 2 rates a 30% overlap → Cohen's κ; disagreements adjudicated. Output: verifier error rate against adjudicated labels. |
 | E4 | Disclosure | Any current-law candidate that survives E1–E3 and has no match in known sources is shared with the relevant authority before publication, described at provision level. |
@@ -190,19 +191,53 @@ A9 ─ B1, B2 (H1) ─ B3, B4 (H4) ─ C1 ─ C2 ─ C3, C4, C5, C6 ─ D0…D6 
 
 ## Compute and cost estimates
 
-| Block | Verifier calls | Worker-hours (≈2.9 s/call) | Wall-clock (6 workers) | Other |
+### Machines
+
+| Phase | Machine (GCP) | Workers | Notes |
+|---|---|---|---|
+| A–C | **n2-highmem-32** (32 vCPU, 256 GB), no GPU, cloned from the current VM's boot disk | 24 (~216 GB; `vm_run.sh` MemoryMax and `TAXRED_MEM_GB` raised to ~235 GB) | ~8 calls/s, ~4× the current VM. The A100 VM stays stopped. Faster option: n2-highmem-48 (384 GB, ~38 workers). |
+| D, trainer | current **a2-highgpu-1g** (1× A100 40 GB, 12 vCPU, 85 GB) | — | GRPO + LoRA and generation only. D0 checks that group 8 × batch 16 at ~15k-token prompts fits in 40 GB; if not, a2-ultragpu-1g (A100 80 GB). |
+| D, verifier | **n2-highmem-80** (80 vCPU, 640 GB), same zone and network as the trainer | 64 (~576 GB) | ~22 calls/s, passes G5. If the per-worker rate drops under load: n2-highmem-96 (768 GB, ~80 workers). Fallback gate (≥ 10 calls/s): n2-highmem-48. Needs 80 N2 vCPUs of regional quota; the trainer–verifier rollout pool is built in D0. |
+
+### Verifier compute
+
+| Block | Verifier calls | Worker-hours (≈2.9 s/call) | Wall-clock, 24 workers (6 on the current VM) | Other |
 |---|---|---|---|---|
-| A2 | 60k | 48 | 8 h | |
-| A5 (60 candidates; 90 if extended) | ~1.5M (~2.2M) | ~1,200 (~1,800) | ~8 days (~12 days) | biggest CPU cost |
-| A8 pilot | ~100k | 80 | 14 h | LLM pilot needs keys |
-| B1–B4 | ~250k | 200 | 1.5 days | |
-| C2 (7 conditions × 16 test targets × 5 seeds × 1,000 calls) | 560k | 450 | ~3 days | |
-| C3–C6 | ~400k | 320 | 2.5 days | |
-| D | rollouts | on the CPU nodes (G5) | ~15 GPU-days | CPU nodes with ≥ 60 workers (≥ 30 in the fallback) for the same period |
+| A2 | 60k | 48 | 2 h (8 h) | |
+| A5 (60 candidates; 90 if extended) | ~1.5M (~2.2M) | ~1,200 (~1,800) | ~2 days (~3 days) (current VM: ~8 (~12) days) | biggest CPU cost |
+| A8 pilot (9 families × 2 magnitudes) | ~200k | 160 | 7 h (~1.1 days) | LLM pilot needs keys |
+| B1–B4 | ~250k | 200 | 8 h (1.5 days) | |
+| C2 (7 conditions × 16 test targets × 5 seeds × 1,000 calls) | 560k | 450 | 19 h (~3 days) | |
+| C3–C6 | ~400k | 320 | 13 h (2.5 days) | |
+| **A–C total** | ~3M | ~2,400 | **~4–5 days** (~17–22 days) | LLM runs are further limited by API latency |
+| D | rollouts | on the verifier node | ~15 GPU-days (≈ 3 weeks for both D machines) | stop the verifier node whenever training is not running |
 
-LLM spend (order of magnitude, one frontier model at $4 / $20 per M input/output tokens, 10 proposals per call, ~15k input + 2k output tokens per call): ≈ $0.10 per call → ~$10 per 1,000-call run. C2 + C4 for three models ≈ 3 × 2 × 16 × 5 runs ≈ 480 runs ≈ $4.8k before prompt caching; judges (E1) and the A8b disguise check add a few hundred dollars. Prices for the other two providers to be confirmed.
+### LLM spend
 
-**Pre-registered cut order** if compute or budget runs short: (1) seeds 5 → 3; (2) the 3,000-call budget is never run; (3) C6 reduced to R = 0.5 and whitelist-off relabelling only (no new runs); (4) 10-year sensitivity dropped. A larger CPU machine for A5 and C is the first thing to request; it is cheaper than any cut.
+Assumptions: one LLM call proposes 10 sequences with ~15k input + ~2k output tokens, so a 1,000-verifier-call run is ~100 LLM calls. Standard prices checked 2026-11-22, USD per M tokens (input / output):
+
+| Model | Price | Cost per 1,000-call run | Price notes |
+|---|---|---|---|
+| Gemini 4 Carbon (`gemini-4-carbon`) | 4 / 20 from 2026-12-01 (2 / 10 before) | ~$10 | All C2 runs fall after the step-up. |
+| GPT-6.2 Sol (`gpt-6.2-sol`) | 2 / 10 | ~$5 | |
+| DeepSeek V4.1 Flash (`deepseek-flash` → V4.1-Flash-1017) | 0.30 / 1.20 peak; half off-peak | ~$0.35–0.70 | Peak: 01–04 and 06–10 UTC on weekdays; its runs are scheduled off-peak. |
+| GLM-5.3 (judge only) | ~1.40 / 4.40 | — | |
+
+| Item | Verifier calls driven by an LLM | Cost |
+|---|---|---|
+| A8 pilot (GPT-6.2 Sol, plain + disguised, 9 families × 2 magnitudes, 3 seeds × 300) + token check (3 models) | ~32k + ~16k | ~$0.25k |
+| A8b disguise check, C1 knowledge probe | single prompts | < $0.05k |
+| B3 canaries with LLM conditions (3 models, 10 canaries, 5 seeds) | 150k | ~$0.8k |
+| C2 + C4 (3 models × plain/disguised × 16 targets × 5 seeds) | 480k | ~$2.5k |
+| C5 temporal arm (only if eligible provisions exist) | ≤ 60k | $0–0.3k |
+| C6 robustness (GPT-6.2 Sol, fixed in advance: pool of 200, 10-year horizon, historical targets) | ~165k | ~$0.8–1k |
+| E1 judge panel | — | ~$0.1–0.3k |
+| Prompt development and smoke tests (mostly on DeepSeek V4.1 Flash) | — | ~$0.5k |
+| **Total** | | **~$5.5k** before caching |
+
+All three models bill thinking as output; if thinking adds 50% to output tokens, the total is ~$7–8k. Caching the fixed prompt prefix saves ~10–30%. **Planning figure: ~$5.5k (range $4–8k);** the A8 token check replaces these assumptions before A9. Gemini 4 Carbon is ~60% of the spend; largest single saving: B3 with GPT-6.2 Sol only (~$0.5k). Prompts are developed on val with all three models, not tuned on one.
+
+**Pre-registered cut order** if compute or budget runs short: (1) seeds 5 → 3; (2) the 3,000-call budget is never run; (3) C6 reduced to R = 0.5 and whitelist-off relabelling only (no new runs); (4) 10-year sensitivity dropped; (5) B3 LLM conditions reduced to one model. Moving A–C to the larger CPU machine above comes before any cut.
 
 ---
 
