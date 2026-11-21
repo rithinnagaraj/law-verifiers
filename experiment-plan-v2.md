@@ -55,9 +55,9 @@
   3. Single-mutation ablation: each mutation alone yields share < R on the witness.
   4. Continuous spot check: 500 random draws of amounts and years around the grid, same test.
   5. Negative control: the reverse direction (making an intended provision more generous) is not flagged.
-- **Split:** by mechanism, ≈ 50% train / 20% val / 30% test *(freeze)*; at least 2 mechanisms appear only in test.
+- **Split (by family, then mechanism; filled in this order):** test first (≥ 8 families, ~40%), then val (≥ 3), then train (the rest) *(freeze)*. At least 2 mechanisms appear only in test. With exactly 20 families: 8 test / 3 val / 9 train. The two magnitudes of a family stay in the same split and count as one unit in every bootstrap.
 - **Output:** family manifest (mutations, witnesses, gate results, rejection reasons). Rejected families are logged, not tuned.
-- **Go/no-go G2:** ≥ 20 families pass → H5 confirmatory; else H5 exploratory and H2 runs on what passed (minimum 8 test families; fewer → H2 exploratory).
+- **Go/no-go G2:** ≥ 20 families pass → H5 confirmatory (≥ 9 train families). Fewer → H5 exploratory; H2 still gets the first 8 passing families as test (fewer than 8 → H2 exploratory). If the pass rate after 40 candidates projects fewer than 20 from 60, A5 extends to 90 candidates before giving up on G2 (≈ +4 days).
 - **Cost:** ~25k calls (~20 worker-hours) per candidate family, gate-dominated; 60 candidates ≈ 8 days on 6 workers (see the cost table).
 
 ### A6. Matching re-validation (old E0.7)
@@ -69,9 +69,13 @@
 - **Validate:** on 3 val families, beam finds the witness when given the witness household and budget ≥ its grid size.
 
 ### A8. Pilot and power analysis
-- **Setup:** val families only. Random, greedy, beam: 3 seeds at 1,000 calls. One frontier LLM, plain and disguised: 3 seeds at 300 calls (needs API keys).
+- **Setup:** a pilot pool of the 3 val families plus 6 train families (train families are used here for variance only, before any RL; no test family is touched). Random, greedy, beam: 3 seeds at 1,000 calls. One frontier LLM, plain and disguised: 3 seeds at 300 calls (needs API keys).
 - **Output:** variance of per-family recall and AUC; power for H2 (difference in AUC) and H3 (paired TOST at Δmax = 0.15).
 - **Decision:** seeds and budgets *(freeze)*; whether H3 is confirmatory (≥ 80% power at Δ ≤ 0.15) or exploratory.
+
+### A8b. Disguise check (moved from C1)
+- **Setup:** before A9, each C2 frontier model gets every disguised description (all splits) and is asked which real provision it describes. No search runs and no verifier results are produced, so no outcome data is seen.
+- **Rule:** a disguise identified by > 1 of the 3 models is rewritten and re-checked; all rewrites are logged and frozen in A9. No disguise text changes after A9.
 
 ### A9. Pre-registration freeze
 Commit `preregistration.md`: tolerance, R, whitelist, intended/anti-abuse lists, family manifest and splits, legitimate-planning test split, budgets, seeds, conditions, primary tests, power analysis, Δmax, budget cut order, stopping rules. **No test-split data is looked at before this commit.**
@@ -103,20 +107,19 @@ Commit `preregistration.md`: tolerance, R, whitelist, intended/anti-abuse lists,
 
 ## Phase C — Search comparison (H2, H3)
 
-### C1. Contamination probes (old E2.2)
-- **Disguise check:** each frontier model gets every disguised description and is asked which real provision it is. Any disguise identified by > 1 of 3 models is rewritten **before** C2 (logged).
-- **Knowledge probe:** each model lists loopholes for each historical pre-closure law with no search; score per model × case, used as a covariate.
+### C1. Knowledge probe (old E2.2)
+- Each model lists loopholes for each historical pre-closure law with no search; score per model × case, used as a covariate. (The disguise check now runs before the freeze, A8b.)
 
 ### C2. Main comparison (H2)
-- **Targets:** A5 test families (both magnitudes).
+- **Targets:** A5 test families (≥ 8), both magnitudes (≥ 16 targets); the unit of analysis is the family.
 - **Conditions:** random, greedy, beam, three frontier LLMs + search (plain text), open base model + search.
 - **Budget:** anytime to 1,000 calls *(freeze; 3,000 if compute allows)*; seeds per A8.
 - **Primary metric:** AUC of recall vs. log calls on {100, 300, 1,000}.
-- **Test:** each LLM vs. the best baseline (chosen on val in A8, pre-registered), hierarchical bootstrap by family; Holm across the three LLMs.
+- **Test:** each LLM vs. the best baseline (chosen on the A8 pilot pool, pre-registered), hierarchical bootstrap by family; Holm across the three LLMs.
 - **Logged:** wanted moves, tokens and dollars per run, wall-clock.
 
-### C3. Cost parity (H2 secondary)
-- **Setup:** for each LLM condition, measure dollars and wall-clock per run; give each baseline extra calls worth the same cost (capped at 10× the LLM budget); compare recall at matched cost.
+### C3. Matched cost, capped at 10× calls (H2 secondary)
+- **Setup:** for each LLM condition, measure dollars and wall-clock per run; give each baseline extra calls worth the same cost, **capped at 10× the LLM's call budget**; compare recall at that budget. Where the cap binds, the result is reported as "capped", not as true cost parity.
 
 ### C4. H3, surface invariance
 - **Setup:** same targets, LLM conditions with disguised text, same seeds as C2 (paired).
@@ -133,21 +136,23 @@ Commit `preregistration.md`: tolerance, R, whitelist, intended/anti-abuse lists,
 
 ## Phase D — RL (H5)
 
-Starts only after G2 (A5) and B1–B2 pass.
+Starts only after G2 (A5), B1–B2 and the D0 throughput gate pass. The GPU is not used for Phase D until D0 passes; it is detached or the VM stopped while idle.
+
+**How the policy is used.** In training and evaluation alike, the model is the *proposer inside the C2 search scaffold*. One episode = one scaffold step: the model sees the rule text, the pool summary and the scaffold's archive (top 15 and last 15 results), proposes a sequence, and may refine it up to 3 times on verifier feedback (≤ 4 calls). Training episodes are started from archives sampled from earlier runs on the **same training family only** (never val or test), generated by the base open model and the random and greedy baselines (no frontier-LLM trajectories, so RL is not warm-started by frontier models); later in training, the policy's own earlier runs are added. The policy thus learns to condition on search history. A 1,000-call evaluation is 250 consecutive episodes sharing one archive, exactly as for the frontier LLMs in C2.
 
 | ID | Experiment | Notes |
 |---|---|---|
-| D0 | Format and throughput check | Valid-move rate of the base model (< 80% → small format-only SFT on random valid sequences). Verifier throughput for rollouts measured; horizon and futures fixed as in Phase C. |
-| D1 | RL with verifier reward | GRPO + LoRA, 3–4B model on the A100 40 GB; train families only; reward = federal gain if all checks pass, small penalty for invalid moves; episode ≤ 4 calls. 2 seeds. |
+| D0 | Format and throughput gate | Valid-move rate of the base model (< 80% → small format-only SFT on random valid sequences). Verifier throughput: GRPO at group 8 × batch 16 × ≤ 4 calls needs ~512 calls per step. **Gate: ≥ 20 calls/s sustained** (~25 s per step). At ~2.9 s per call per worker that needs **≥ 60 verifier workers** (~9 GB each, ≈ 540 GB RAM, one or more high-memory CPU nodes) feeding an asynchronous rollout pool, decoupled from gradient updates. Fallback: ≥ 10 calls/s (≥ 30 workers) with batch 8 (~256 calls, ~26 s per step), recorded as a deviation. The current VM (~2 calls/s) passes neither. |
+| D1 | RL with verifier reward | GRPO + LoRA, 3–4B model on the A100 40 GB; train families only; reward = federal gain if every check passes (whitelist on), small penalty for invalid moves. 2 seeds. |
 | D2 | RL with oracle reward | Same, reward = mutation-attributable gain. 1 seed. Upper bound. |
-| D3 | Interface control | Same as D1 on current law with no planted mutation (only legitimate planning rewards). Separates "learned the tool" from "learned to find loopholes". |
+| D3 | Interface control | Same scaffold, current law with no planted mutation, reward = federal gain with reality and cross-check but **whitelist off**, so ordinary tax minimization is rewarded. Its reward differs from D1's by design: it measures how much a generic "lower the tax bill" skill alone transfers to finding planted loopholes. |
 | D4 | Best-of-N control | Base model at matched total inference compute. |
-| D5 | Evaluation | D1–D4 on val families during training; final on test families (held-out mechanisms) and historical cases, all **without** the oracle, C2 protocol. |
+| D5 | Evaluation | D1–D4 on val families during training; final on test families (held-out mechanisms) and historical cases, all **without** the oracle, C2 protocol (250 episodes per 1,000-call run). |
 | D6 | Monitoring | Canary hits, `code_disagreement` and `inconsistent` rates per eval; stop a run if canary hits rise over 3 consecutive evals. |
 
 **Decision (H5):** D1 beats the base model, D3 and D4 on held-out-mechanism recall (bootstrap by family). Confirmatory only if G2 passed; the D2–D1 gap is reported as the oracle shift.
 
-**Cost:** ~3 GPU-days per run × 5 runs ≈ 15 GPU-days; verifier throughput (CPU) is the likely bottleneck, measured in D0.
+**Cost:** ~3 GPU-days per run × 5 runs ≈ 15 GPU-days, *after* D0 passes; plus the CPU nodes (≥ 60 workers, ≈ 540 GB RAM) for the same period. Without them, Phase D does not start.
 
 ---
 
@@ -155,7 +160,7 @@ Starts only after G2 (A5) and B1–B2 pass.
 
 | ID | Experiment | Notes |
 |---|---|---|
-| E1 | Judge calibration | 3 judges from different providers, none from the searching model's family, blind to source. Calibration set: historical loopholes (+), legitimate planning (−), benefit cliffs (own class), canary exploits (− "not the law"). Output: accuracy per judge, Fleiss' κ, panel vote threshold. |
+| E1 | Judge calibration | **Roles:** the three C2 frontier models come from providers P1, P2, P3. Each candidate is judged by a 3-member panel: the two frontier providers that did *not* produce it, plus one strong open-weights model (fixed in A9). Baseline and RL candidates get P1 + P2 + the open-weights model. The exclusion is per candidate, so no provider judges its own model's output. Judges are blind to the source. Calibration set: historical loopholes (+), legitimate planning (−), benefit cliffs (own class), canary exploits (− "not the law"). Output: accuracy per judge, Fleiss' κ, panel vote threshold. |
 | E2 | Borderline audit | Every candidate with disagreement > half the tolerance, checked against the statute by the team. |
 | E3 | Expert review | ~40 unique strategies (deduplicated by moves and mechanism across C2–C6 and D5), blinded, mixed with 10 decoys of known label. Expert 1 rates all; expert 2 rates a 30% overlap → Cohen's κ; disagreements adjudicated. Output: verifier error rate against adjudicated labels. |
 | E4 | Disclosure | Any current-law candidate that survives E1–E3 and has no match in known sources is shared with the relevant authority before publication, described at provision level. |
@@ -167,7 +172,7 @@ Starts only after G2 (A5) and B1–B2 pass.
 ```
 A1 ─ A2 ─ A3 ─┐
 A4 ───────────┤
-A5 ─ A6 ──────┼─ A7 ─ A8 ─ A9 (freeze)
+A5 ─ A6 ──────┼─ A7 ─ A8 ─ A8b ─ A9 (freeze)
               │
               └─ G2: ≥ 20 families?  yes → H5 confirmatory / no → exploratory
 A9 ─ B1, B2 (H1) ─ B3, B4 (H4) ─ C1 ─ C2 ─ C3, C4, C5, C6 ─ D0…D6 ─ E1…E4
@@ -179,6 +184,7 @@ A9 ─ B1, B2 (H1) ─ B3, B4 (H4) ─ C1 ─ C2 ─ C3, C4, C5, C6 ─ D0…D6 
 | G2 | A5: ≥ 20 families | H5 exploratory; H2 needs ≥ 8 test families or becomes exploratory. |
 | G3 | A8: H3 powered at Δ ≤ 0.15 | H3 exploratory (confidence interval only). |
 | G4 | D0: valid-move rate ≥ 80% after format SFT | Report the open-model arm as infeasible at this size. |
+| G5 | D0: verifier throughput ≥ 20 calls/s (≥ 60 workers), or ≥ 10 calls/s with the halved batch | Phase D waits for the CPU nodes; the GPU stays detached. |
 
 ---
 
@@ -187,14 +193,14 @@ A9 ─ B1, B2 (H1) ─ B3, B4 (H4) ─ C1 ─ C2 ─ C3, C4, C5, C6 ─ D0…D6 
 | Block | Verifier calls | Worker-hours (≈2.9 s/call) | Wall-clock (6 workers) | Other |
 |---|---|---|---|---|
 | A2 | 60k | 48 | 8 h | |
-| A5 (60 candidates) | ~1.5M | ~1,200 | ~8 days | biggest CPU cost |
+| A5 (60 candidates; 90 if extended) | ~1.5M (~2.2M) | ~1,200 (~1,800) | ~8 days (~12 days) | biggest CPU cost |
 | A8 pilot | ~100k | 80 | 14 h | LLM pilot needs keys |
 | B1–B4 | ~250k | 200 | 1.5 days | |
-| C2 (7 conditions × ~12 test targets × 5 seeds × 1,000 calls) | 420k | 340 | 2.5 days | |
+| C2 (7 conditions × 16 test targets × 5 seeds × 1,000 calls) | 560k | 450 | ~3 days | |
 | C3–C6 | ~400k | 320 | 2.5 days | |
-| D | rollouts | (CPU-bound) | ~15 GPU-days | |
+| D | rollouts | on the CPU nodes (G5) | ~15 GPU-days | CPU nodes with ≥ 60 workers (≥ 30 in the fallback) for the same period |
 
-LLM spend (order of magnitude, one frontier model at $4 / $20 per M input/output tokens, 10 proposals per call, ~15k input + 2k output tokens per call): ≈ $0.10 per call → ~$10 per 1,000-call run. C2 + C4 for three models ≈ 3 × 2 × 12 × 5 runs ≈ 360 runs ≈ $3.6k before prompt caching. Prices for the other two providers to be confirmed.
+LLM spend (order of magnitude, one frontier model at $4 / $20 per M input/output tokens, 10 proposals per call, ~15k input + 2k output tokens per call): ≈ $0.10 per call → ~$10 per 1,000-call run. C2 + C4 for three models ≈ 3 × 2 × 16 × 5 runs ≈ 480 runs ≈ $4.8k before prompt caching; judges (E1) and the A8b disguise check add a few hundred dollars. Prices for the other two providers to be confirmed.
 
 **Pre-registered cut order** if compute or budget runs short: (1) seeds 5 → 3; (2) the 3,000-call budget is never run; (3) C6 reduced to R = 0.5 and whitelist-off relabelling only (no new runs); (4) 10-year sensitivity dropped. A larger CPU machine for A5 and C is the first thing to request; it is cheaper than any cut.
 
