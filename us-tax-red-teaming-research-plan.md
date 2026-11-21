@@ -1,6 +1,6 @@
 # Research Plan: Red-Teaming US Household Tax Law with AI Agents
 
-**Status:** Draft v0.1 · **Scope:** US federal (and where modeled, state) household tax and benefit rules only
+**Status:** Superseded by [`research-plan-v2.md`](research-plan-v2.md) (2026-11-22). Draft v0.1 · **Scope:** US federal (and where modeled, state) household tax and benefit rules only
 
 ---
 

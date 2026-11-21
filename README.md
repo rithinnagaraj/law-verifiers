@@ -3,7 +3,8 @@
 Red-teaming US household tax law with AI agents, using existing tax
 calculators as an exact verifier.
 
-- Research plan: [`us-tax-red-teaming-research-plan.md`](us-tax-red-teaming-research-plan.md)
+- **Research plan v2 (current):** [`research-plan-v2.md`](research-plan-v2.md)
+- Research plan v0.1 (superseded): [`us-tax-red-teaming-research-plan.md`](us-tax-red-teaming-research-plan.md)
 - Experiment plan: [`experiment-plan.md`](experiment-plan.md)
 - Findings log: [`results/FINDINGS.md`](results/FINDINGS.md) (Phase 0 first pass: [`results/phase0/FINDINGS.md`](results/phase0/FINDINGS.md))
 - Pre-registration draft (E0.8): [`preregistration-draft.md`](preregistration-draft.md)
