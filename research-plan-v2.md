@@ -1,6 +1,6 @@
 # Research Plan v2: Red-Teaming Encoded US Household Tax Rules with Verifier-Guided Search
 
-**Status:** v2, 2026-11-22. Replaces [`us-tax-red-teaming-research-plan.md`](us-tax-red-teaming-research-plan.md) (v0.1) after four rounds of adversarial review. Thresholds marked *(to freeze)* are fixed in the pre-registration before any LLM search runs. Evidence so far is in [`results/FINDINGS.md`](results/FINDINGS.md).
+**Status:** v2, 2026-11-22. Experiments: [`experiment-plan-v2.md`](experiment-plan-v2.md). Replaces [`us-tax-red-teaming-research-plan.md`](us-tax-red-teaming-research-plan.md) (v0.1) after four rounds of adversarial review. Thresholds marked *(to freeze)* are fixed in the pre-registration before any LLM search runs. Evidence so far is in [`results/FINDINGS.md`](results/FINDINGS.md).
 
 ---
 

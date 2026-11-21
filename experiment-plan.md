@@ -1,6 +1,6 @@
 # Experiment Plan: Red-Teaming US Household Tax Law with AI Agents
 
-**Status:** Draft v0.1 · **Companion to:** [`us-tax-red-teaming-research-plan.md`](us-tax-red-teaming-research-plan.md)
+**Status:** Superseded by [`experiment-plan-v2.md`](experiment-plan-v2.md) (2026-11-22). Draft v0.1 · **Companion to:** [`us-tax-red-teaming-research-plan.md`](us-tax-red-teaming-research-plan.md)
 
 This document turns the research plan into a list of concrete experiments. Each one has an ID, its inputs and outputs, how it decides the question it tests, and what it depends on. Values marked *(proposed)* get fixed in the pre-registration (E0.8) before any agent search runs.
 
