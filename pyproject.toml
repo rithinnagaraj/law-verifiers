@@ -1,0 +1,31 @@
+[project]
+name = "taxgap"
+version = "2.0.0"
+description = "Verifier-guided search for gaps in encoded US household tax rules (experiment plan v2)"
+requires-python = ">=3.11,<3.13"
+# Calculator versions are pinned: every result records them, and a change of
+# version is a change of verifier (experiment plan, stopping rules).
+dependencies = [
+    "policyengine-us==2.104.3",
+    "policyengine-core==3.34.8",
+    "taxcalc==6.8.5",
+    "numpy",
+    "pandas",
+    "h5py",
+    "scipy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-timeout"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 1800
+filterwarnings = ["ignore::DeprecationWarning", "ignore::FutureWarning", "ignore::UserWarning"]
