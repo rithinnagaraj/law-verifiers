@@ -11,6 +11,7 @@ pairs are used to build mutations.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Optional
 
 from ..law import Change
@@ -72,6 +73,7 @@ def candidates() -> list[Param]:
     return ps
 
 
+@lru_cache(maxsize=4)
 def verify(years=(2024, 2025, 2026), tol=0.5) -> tuple[list[Param], list[tuple]]:
     """(verified params, [(param key, reason)]) by comparing current-law values."""
     ok, bad = [], []
