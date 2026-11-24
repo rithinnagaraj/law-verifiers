@@ -118,3 +118,13 @@ def test_kiddie_variant_keeps_parent_salt():
     hh.people["p"].mortgage_interest = 30_000
     r = evaluate([hh], CURRENT_LAW, fresh=True)[0]
     assert r.kiddie_pe > 0 and r.kiddie_tc > 0 and r.pe == pytest.approx(r.tc, abs=5)
+
+
+def test_separate_filers_living_together_alignment():
+    # EITC (s.32(d)) and child care credit (s.21(e)(2)) are not available to
+    # a spouse filing separately who lives with the other spouse.
+    hh = couple(30_000, 0, kids=(4, 7))
+    hh.people["a"].childcare = 4_000
+    hh.tax_units = [TaxUnit("t", "a", dependents=["k0", "k1"], filing_status="SEPARATE"), TaxUnit("t_s", "b", filing_status="SEPARATE")]
+    r = evaluate([hh], CURRENT_LAW, fresh=True)[0]
+    assert r.pe == pytest.approx(r.tc, abs=2)

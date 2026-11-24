@@ -62,6 +62,12 @@ def _record(rec_id: int, r: Return, salt: float, hsa_on: bool) -> dict:
         e18400=float(salt),
         e03290=s("hsa") if hsa_on else 0.0,
     )
+    if r.filing_status == "SEPARATE":
+        # Spouses in this model live together: no child and dependent care
+        # credit on a separate return (s.21(e)(2)). PolicyEngine applies the
+        # rule; Tax-Calculator has no switch for it, so it gets no expenses.
+        rec["e32800"] = 0.0
+        rec["f2441"] = 0
     for p in filers:
         for k, v in p.other.items():
             for col in OTHER_ITEMS[k][1]:
