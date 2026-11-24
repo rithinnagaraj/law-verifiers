@@ -92,9 +92,11 @@ def test_memo_equals_fresh():
 
 
 def test_kiddie_variant_keeps_parent_salt():
-    # Itemizing parent in a taxing state: both calculators agree on the kiddie tax.
+    # Itemizing parent in a taxing state: both calculators agree on the total.
+    # (The Form 8615 component differs: Tax-Calculator applies the child AMT
+    # limit on the child's own return and PolicyEngine does not, F3.)
     hh = parent_child(wages=400_000, interest=30_000)
     hh.state = "CA"
     hh.people["p"].mortgage_interest = 30_000
     r = evaluate([hh], CURRENT_LAW, fresh=True)[0]
-    assert r.kiddie_pe > 0 and r.kiddie_pe == pytest.approx(r.kiddie_tc, rel=0.02, abs=20)
+    assert r.kiddie_pe > 0 and r.kiddie_tc > 0 and r.pe == pytest.approx(r.tc, abs=5)

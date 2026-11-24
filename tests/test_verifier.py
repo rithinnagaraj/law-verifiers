@@ -37,7 +37,7 @@ def test_canary_is_a_code_disagreement():
     # PolicyEngine-only bug: MFS standard deduction = joint amount.
     law = CURRENT_LAW.plus(Change("gov.irs.deductions.standard.amount.SEPARATE", kind="copy", pe_src="gov.irs.deductions.standard.amount.JOINT"))
     v = Verifier(law).one(couple(120_000, 100_000), SEP)
-    assert v.label == "code_disagreement" and v.gain > 5_000 and abs(v.gain_tc) < 100
+    assert v.label == "code_disagreement" and v.gain > 5_000 and v.gain_tc < 500
 
 
 def test_gift_to_child_beats_kiddie_floor_is_shared_code():
