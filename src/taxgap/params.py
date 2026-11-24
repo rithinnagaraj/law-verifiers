@@ -50,14 +50,42 @@ def pe_value(path: str, year: int) -> float:
     return float(v) if not isinstance(v, bool) else v
 
 
+def _clear_path(path: str) -> None:
+    """Clear the instant cache of every node from the root down to `path`.
+
+    Parameter.update() clears caches by walking `.parent`, but a scale
+    bracket has no parent link, so for scale parameters the walk stops at
+    the bracket and every ancestor (the scale's node up to the root) keeps
+    at-instant objects built from the old values. Found when an EITC
+    switch-off (eitc.max[i].amount = 0) leaked into later current-law
+    evaluations."""
+    m = _BRACKET.match(path)
+    base = m.group(1) if m else path
+    node = pe_system().parameters
+    parts = base.split(".")
+    nodes = [node]
+    for p in parts:
+        node = node.children[p] if hasattr(node, "children") and p in node.children else getattr(node, p, None)
+        if node is None:
+            break
+        nodes.append(node)
+    if m and node is not None:
+        nodes.append(node.brackets[int(m.group(2))])
+    for n in nodes:
+        c = getattr(n, "_at_instant_cache", None)
+        if c is not None:
+            c.clear()
+
+
 @contextlib.contextmanager
 def pe_patched(changes: Iterable[tuple[str, object]]):
     """Apply {path: value-by-year} changes to the base system, restore after.
 
     Each change is (path, values) where values is a dict {year: value}; a
     value holds for that calendar year. Years outside the dict keep current
-    law. Restoring reinstates the original value-list objects and clears
-    every instant cache on the way to the root."""
+    law. Restoring reinstates the original value-list objects. After both
+    steps every instant cache from the root to each changed parameter is
+    cleared (_clear_path), as is the system's own cache."""
     from policyengine_core.periods import period as P
 
     sysm = pe_system()
@@ -65,16 +93,17 @@ def pe_patched(changes: Iterable[tuple[str, object]]):
     try:
         for path, values in changes:
             node = pe_node(path)
-            saved.append((node, node.values_list, getattr(node, "modified", False)))
+            saved.append((path, node, node.values_list, getattr(node, "modified", False)))
             for year in sorted(values):
                 node.update(period=P(f"year:{int(year)}:1"), value=values[year])
+            _clear_path(path)
         sysm._parameters_at_instant_cache = {}
         yield sysm
     finally:
-        for node, values_list, modified in reversed(saved):
+        for path, node, values_list, modified in reversed(saved):
             node.values_list = values_list
             node.modified = modified
-            node.parent.clear_parent_cache()
+            _clear_path(path)
         sysm._parameters_at_instant_cache = {}
 
 

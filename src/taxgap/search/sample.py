@@ -20,7 +20,6 @@ OPS = (
     "assign_dependent",
     "gift_asset",
     "shift_income",
-    "itemize",
     "contribute_retirement",
     "realize_gain",
     "contribute_hsa",
@@ -31,7 +30,7 @@ OPS = (
     "set_hours",
 )
 # set_hours is a real change of reality: drawn rarely.
-WEIGHTS = np.array([1.0] * 12 + [0.25])
+WEIGHTS = np.array([1.0] * 11 + [0.25])
 
 
 def _filers(hh: Household) -> list[str]:
@@ -68,7 +67,6 @@ def candidates(hh: Household, rng: np.random.Generator, year: int) -> list[dict]
     if se and len(people) > 1:
         s = pick(se)
         out.append({"op": "shift_income", "payer": s, "payee": pick([q for q in people if q != s]), "amount": round(u(0.02, 1.0) * hh.people[s].self_employment, 0)})
-    out.append({"op": "itemize", "tax_unit": pick([tu.id for tu in hh.tax_units]), "itemize": bool(rng.integers(2))})
     workers = [pid for pid in _filers(hh) if hh.people[pid].earned_income > 1_000]
     if workers:
         w = pick(workers)

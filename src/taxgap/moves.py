@@ -175,8 +175,10 @@ def set_hours(hh: Household, year: int, person: str, hours: float) -> None:
     p.hours = hours
 
 
-def itemize(hh: Household, year: int, tax_unit: str, itemize: bool) -> None:
-    hh.tax_unit(tax_unit).itemize = bool(itemize)
+# No "itemize" move: Tax-Calculator cannot force the itemization choice (it
+# always takes the larger deduction), so a forced choice is outside the
+# calculators' overlap (found in A2 testing). Both calculators pick the
+# better option, which is what a rational household would do.
 
 
 def contribute_retirement(hh: Household, year: int, person: str, account: str, amount: float) -> None:
@@ -299,7 +301,6 @@ MOVES: dict[str, Callable] = {
     "gift_asset": gift_asset,
     "shift_income": shift_income,
     "set_hours": set_hours,
-    "itemize": itemize,
     "contribute_retirement": contribute_retirement,
     "realize_gain": realize_gain,
     "contribute_hsa": contribute_hsa,

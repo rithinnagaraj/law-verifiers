@@ -85,6 +85,10 @@ def evaluate(returns: Sequence[Return], law: Law, salt: dict) -> dict[str, Retur
         df[c] = df[c].astype(int if c in _INT_COLS else float)
     pol = tc.Policy()
     pol.implement_reform({k: {year: 9e99} for k in TAKEUP})
+    # Spouses in this model live together: a separate filer is not eligible
+    # for the EITC (s.32(d)(2) as amended by ARPA 2021 requires living apart).
+    # Tax-Calculator otherwise allows it from 2021; PolicyEngine does not.
+    pol.implement_reform({"EITC_sep_filers_elig": {year: False}})
     reform = law.tc_reform(year)
     if reform:
         pol.implement_reform(reform)

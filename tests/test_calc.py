@@ -49,6 +49,24 @@ def test_patch_matches_reform_and_restores():
     assert patched != pytest.approx(before, abs=1)
 
 
+def test_scale_patch_takes_effect_and_restores_after_caching():
+    # Scale brackets have no parent link: caches above them must be cleared
+    # explicitly, both when patching and when restoring (found in A2 testing:
+    # the whitelist's EITC switch-off leaked into later current-law results).
+    from taxgap.law import PROVISIONS
+
+    hh = H("e", {"a": Person("a", 30, wages=20_000, hours=2080), "k": Person("k", 6)}, TaxUnit("t", "a", dependents=["k"]))
+    rs = compile_returns(hh, "x", 2025)
+    cur = pe.evaluate(rs, CURRENT_LAW)["x.0"].fed_tax  # primes every instant cache
+    off = pe.evaluate(rs, CURRENT_LAW.without("eitc"))["x.0"].fed_tax
+    again = pe.evaluate(rs, CURRENT_LAW)["x.0"].fed_tax
+    assert off - cur > 3_000  # the patch took effect although caches were primed
+    assert again == pytest.approx(cur, abs=0.01)  # and the restore is complete
+    for name in ("retirement_contributions", "ctc", "head_of_household"):
+        pe.evaluate(rs, CURRENT_LAW.without(name))
+        assert pe.evaluate(rs, CURRENT_LAW)["x.0"].fed_tax == pytest.approx(cur, abs=0.01), name
+
+
 def test_both_calculators_see_the_change():
     hh = couple(120_000, 100_000)
     hh.tax_units = [TaxUnit("t", "a", filing_status="SEPARATE"), TaxUnit("t_s", "b", filing_status="SEPARATE")]
