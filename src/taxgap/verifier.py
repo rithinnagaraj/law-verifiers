@@ -171,8 +171,9 @@ def gains(preps: Sequence[_Prepared], law: Law, with_tc: bool = True, terminal: 
         for prob, name, b, m in s:
             rb: list[YearTax] = [next(res) for _ in b]
             rm: list[YearTax] = [next(res) for _ in m]
-            # PolicyEngine tax without the PolicyEngine-only credits (the saver's
-            # credit reduces tax, so it is added back), comparable with Tax-Calculator.
+            # PolicyEngine tax comparable with Tax-Calculator. The saver's credit
+            # (PolicyEngine-only) is zeroed at the source, so pe_only is 0; the
+            # add-back stays for any PolicyEngine-only credit reported later.
             gp = sum(x.pe + x.pe_only for x in rb) - sum(x.pe + x.pe_only for x in rm)
             gt = sum(x.tc for x in rb) - sum(x.tc for x in rm) if with_tc else 0.0
             gk = sum(x.kiddie_pe for x in rb) - sum(x.kiddie_pe for x in rm)

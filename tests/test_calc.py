@@ -128,3 +128,26 @@ def test_separate_filers_living_together_alignment():
     hh.tax_units = [TaxUnit("t", "a", dependents=["k0", "k1"], filing_status="SEPARATE"), TaxUnit("t_s", "b", filing_status="SEPARATE")]
     r = evaluate([hh], CURRENT_LAW, fresh=True)[0]
     assert r.pe == pytest.approx(r.tc, abs=2)
+
+
+def _parent(wages, **kw):
+    return H("p2", {"a": Person("a", 30, wages=wages, hours=2080, **kw), "k0": Person("k0", 9), "k1": Person("k1", 5)},
+             TaxUnit("t", "a", dependents=["k0", "k1"], filing_status="HEAD_OF_HOUSEHOLD"))
+
+
+@pytest.mark.parametrize("status", ["HEAD_OF_HOUSEHOLD", "SINGLE"])
+def test_care_expenses_without_imputed_subsidy(status):
+    # A2: PolicyEngine subtracted an imputed child care subsidy (4,680 -> 104
+    # of expenses); Tax-Calculator has none. Both now see expenses as paid.
+    hh = _parent(30_600, childcare=4_680)
+    hh.tax_units[0].filing_status = status
+    r = evaluate([hh], CURRENT_LAW, fresh=True)[0]
+    assert r.pe + r.pe_only == pytest.approx(r.tc, abs=2)
+
+
+def test_savers_credit_excluded_when_not_usable():
+    # A2: a low earner with no tax left before credits; adding the computed
+    # saver's credit back made PolicyEngine's tax too high.
+    hh = _parent(28_000, k401=2_000)
+    r = evaluate([hh], CURRENT_LAW, fresh=True)[0]
+    assert r.pe_only == 0 and r.pe == pytest.approx(r.tc, abs=2)

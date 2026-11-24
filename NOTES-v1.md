@@ -30,3 +30,10 @@ Each item below is a requirement of the v2 code and has a regression test.
 | Saver's credit exclusion had the wrong sign (subtracted instead of added back). | Fixed; regression test. |
 | Tax-Calculator allows the EITC and the child-care credit to a separate filer; the statute requires the spouses to live apart, and in this model they live together (PolicyEngine agrees). | `EITC_sep_filers_elig = False`; no care expenses on separate returns in Tax-Calculator. |
 | Tax-Calculator cannot force the itemization choice. | No `itemize` move. |
+
+## Found in A2 (noise floor on 3,000 survey households)
+
+| Issue | v2 handling |
+|---|---|
+| The saver's credit was excluded by adding PolicyEngine's computed credit back to its tax. When the non-refundable credit was not (fully) usable (tax before credits already near zero), this overstated PolicyEngine's tax by up to the whole credit. | `savers_credit` is set to 0 as a PolicyEngine input, so it is excluded at the source; regression test. |
+| PolicyEngine subtracts a child care subsidy imputed by its benefit model from care expenses before the child and dependent care credit (4,680 of expenses became 104 in one case); Tax-Calculator uses the expenses as given. The difference also moves the CTC between its non-refundable and refundable parts. | Care expenses are given to the PolicyEngine tax unit directly (`tax_unit_childcare_expenses`), as paid out of pocket; regression test. |

@@ -3,7 +3,9 @@
 All returns in one call share a tax year and a law. Returns that force the
 itemization choice are simulated apart from returns that leave it free
 (v1 finding F8). Sales tax is set to zero (F6). A return may carry a fixed
-SALT amount (Form 8615 variants keep the parent's own SALT).
+SALT amount (Form 8615 variants keep the parent's own SALT). The saver's
+credit is set to zero and care expenses are given to the tax unit as paid
+(no imputed subsidy); both found in A2.
 """
 
 from __future__ import annotations
@@ -82,6 +84,14 @@ def _situation(returns: Sequence[Return], law: Law, salt: dict) -> dict:
             "filing_status": {Y: r.filing_status},
             "state_sales_tax": {Y: 0.0},
             "local_sales_tax": {Y: 0.0},
+            # Saver's credit: only PolicyEngine computes it, so it is excluded
+            # at the source. Adding the computed credit back afterwards is
+            # wrong when the non-refundable credit is not (fully) usable (A2).
+            "savers_credit": {Y: 0.0},
+            # Care expenses as paid out of pocket, given to the tax unit
+            # directly: PolicyEngine otherwise subtracts a child care subsidy
+            # imputed by its benefit model, which Tax-Calculator does not (A2).
+            "tax_unit_childcare_expenses": {Y: childcare},
             "health_savings_account_ald": {Y: float(sum(p.hsa for p in r.filers)) if hsa_on else 0.0},
         }
         if r.itemize is not None:
@@ -90,7 +100,7 @@ def _situation(returns: Sequence[Return], law: Law, salt: dict) -> dict:
             tu["state_and_local_sales_or_income_tax"] = {Y: float(salt[r.key])}
         sit["tax_units"][f"t{i}"] = tu
         sit["families"][f"f{i}"] = {"members": ids}
-        sit["spm_units"][f"s{i}"] = {"members": ids, "spm_unit_pre_subsidy_childcare_expenses": {Y: childcare}}
+        sit["spm_units"][f"s{i}"] = {"members": ids}
         sit["households"][f"h{i}"] = {"members": ids, "state_name": {Y: r.state}}
         filers = [ids[j] for j, m in enumerate(r.members) if m.role in ("HEAD", "SPOUSE")]
         sit["marital_units"][f"m{i}"] = {"members": filers}
