@@ -36,8 +36,8 @@ from .moves import MoveError, years_of
 @dataclass(frozen=True)
 class Config:
     threshold: float = 50.0  # $ over the horizon
-    tol_abs: float = 10.0  # cross-check: |gain_pe - gain_tc| <= max(tol_abs, tol_rel x |gain_pe|)
-    tol_rel: float = 0.02
+    tol_abs: float = 5.0  # frozen by the A2 rule (2026-11-25); cross-check: |gain_pe - gain_tc| <= max(tol_abs, tol_rel x |gain_pe|)
+    tol_rel: float = 0.01
     # "tolerance" (above) or "ratio" (v1: Tax-Calculator's gain >= ratio x
     # PolicyEngine's, gains below tol_abs need no confirmation; A3 only)
     mode: str = "tolerance"

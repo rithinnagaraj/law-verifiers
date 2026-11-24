@@ -35,7 +35,7 @@ from taxgap.verifier import Config, Verdict, Verifier, label
 POOL = 40
 BUDGET = 400
 SEEDS = (0, 1, 2)
-TOLS = [("max($10,1%)", Config(tol_rel=0.01)), ("max($10,2%)", Config(tol_rel=0.02)), ("max($10,5%)", Config(tol_rel=0.05)), ("max($10,10%)", Config(tol_rel=0.10)), ("ratio 50%", Config(mode="ratio", tol_abs=25.0))]
+TOLS = [("max($5,1%) frozen", Config(tol_abs=5.0, tol_rel=0.01)), ("max($10,1%)", Config(tol_abs=10.0, tol_rel=0.01)), ("max($10,2%)", Config(tol_abs=10.0, tol_rel=0.02)), ("max($10,5%)", Config(tol_abs=10.0, tol_rel=0.05)), ("max($10,10%)", Config(tol_abs=10.0, tol_rel=0.10)), ("ratio 50%", Config(mode="ratio", tol_abs=25.0))]
 
 SURVEY: list = []
 
@@ -114,7 +114,7 @@ def summarize(d) -> None:
         out[name] = {"catch": rate, "a2_cd": a2r, "legit_cd": lcd, "legit_flagged": lfl}
         lines.append(f"| {name} | {rate:.3f} | {caught} / {len(expl)} | {a2r:.4f} | {lcd:.3f} | {lfl:.3f} |")
     lines.append("")
-    lines.append("## Per canary (frozen default max($10, 2%))")
+    lines.append("## Per canary (frozen tolerance max($5, 1%), from A2)")
     lines.append("")
     lines.append("| canary | witness label | exploits | caught | best exploit gain | found by |")
     lines.append("|---|---|---|---|---|---|")
