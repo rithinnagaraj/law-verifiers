@@ -70,6 +70,8 @@ def candidates() -> list[Param]:
     ]
     for k in range(4):
         ps.append(Param(f"eitc_max{k}", "eitc", f"gov.irs.credits.eitc.max[{k}].amount", "EITC_c", k))
+        ps.append(Param(f"eitc_ps{k}", "eitc", f"gov.irs.credits.eitc.phase_out.start[{k}].amount", "EITC_ps", k))
+        ps.append(Param(f"eitc_prt{k}", "eitc", f"gov.irs.credits.eitc.phase_out.rate[{k}].amount", "EITC_prt", k, generous=-1))
     return ps
 
 

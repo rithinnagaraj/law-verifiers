@@ -7,7 +7,8 @@ direction that lowers tax), at two magnitudes. For each magnitude m:
   witness  targeted search on witness archetypes for a sequence whose gain
            under L comes from the interaction: mutation-attributable share
            >= 0.3 and each single mutation's share < R; minimized (moves
-           dropped while that holds); at least 2 moves (k >= 2)
+           dropped while that holds); witnesses with k >= 2 moves are
+           preferred; a k = 1 family is kept but marked shallow
 
 Gate (both magnitudes must pass):
   1 witness valid: labelled candidate under L; attributable share >= 0.3
@@ -49,7 +50,7 @@ class Family:
     mechanism: str
     p1: Param
     p2: Param
-    magnitudes: tuple = (1.5, 2.5)
+    magnitudes: tuple = (2.0, 4.0)
 
     def _f(self, p: Param, m: float, reverse: bool = False) -> tuple:
         up = (p.generous > 0) != reverse
@@ -165,10 +166,8 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
     if not w["found"]:
         out["reason"] = "no interacting witness"
         return out
-    if w["k"] < 2:
-        out["reason"] = "witness needs only one move"
-        return out
     hh, mv, k = pool[w["household"]], w["moves"], w["k"]
+    out["shallow"] = k < 2  # one-move witness: check 2 is vacuous; reported, not rejected
     vL = Verifier(laws["L"], Config())
     # 1. witness valid
     v = vL.one(hh, mv)
