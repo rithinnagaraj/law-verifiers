@@ -38,6 +38,10 @@ class Config:
     threshold: float = 50.0  # $ over the horizon
     tol_abs: float = 10.0  # cross-check: |gain_pe - gain_tc| <= max(tol_abs, tol_rel x |gain_pe|)
     tol_rel: float = 0.02
+    # "tolerance" (above) or "ratio" (v1: Tax-Calculator's gain >= ratio x
+    # PolicyEngine's, gains below tol_abs need no confirmation; A3 only)
+    mode: str = "tolerance"
+    ratio: float = 0.5
     reality_abs: float = 1.0
     reality_rel: float = 0.005
     whitelist: str = "plan"  # plan (research plan list) | extended (+ HSA, charitable deduction)
@@ -83,6 +87,8 @@ class Verdict:
 
 
 def crosscheck_ok(v: Verdict, cfg: Config) -> bool:
+    if cfg.mode == "ratio":
+        return v.gain <= cfg.tol_abs or v.gain_tc >= cfg.ratio * v.gain
     return v.disagreement <= max(cfg.tol_abs, cfg.tol_rel * abs(v.gain))
 
 
