@@ -56,6 +56,7 @@
   3. Single-mutation ablation: each mutation alone yields share < R on the witness.
   4. Continuous spot check: 500 random draws of amounts and years around the grid, same test.
   5. Negative control: the reverse direction (making an intended provision more generous) is not flagged.
+- **Counting rule (amendment 2026-11-24, before the A5a spike; see `DECISIONS.md`):** a family passes only if its minimal witness needs ≥ 2 moves at both magnitudes. One-move families (check 2 vacuous) are reported separately as `shallow` and do not count toward G0, G2 or the split. The A5 summary reports pass/shallow/fail counts per operator and per mechanism, all rejection reasons, and the fact that the catalog is constructed, so pass rates are not an estimate of how common interactions are in law.
 - **Split (by family, then mechanism; filled in this order):** test first (≥ 8 families, ~40%), then val (≥ 3), then train (the rest) *(freeze)*. At least 2 mechanisms appear only in test. With exactly 20 families: 8 test / 3 val / 9 train. The two magnitudes of a family stay in the same split and count as one unit in every bootstrap.
 - **Output:** family manifest (mutations, witnesses, gate results, rejection reasons). Rejected families are logged, not tuned.
 - **Staging:** A5 runs in two parts so that a weak generator is caught before the full catalog is spent.

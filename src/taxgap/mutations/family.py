@@ -7,8 +7,16 @@ direction that lowers tax), at two magnitudes. For each magnitude m:
   witness  targeted search on witness archetypes for a sequence whose gain
            under L comes from the interaction: mutation-attributable share
            >= 0.3 and each single mutation's share < R; minimized (moves
-           dropped while that holds); witnesses with k >= 2 moves are
-           preferred; a k = 1 family is kept but marked shallow
+           dropped while that holds). The family's witness is the shortest
+           one found. Every single move of every interacting sequence found
+           is also tested alone: if any one move interacts, the witness has
+           k = 1 and the family is shallow.
+
+Counting rule (set 2026-11-24, before the A5a spike): a magnitude passes
+only with a witness of k >= 2 moves and all five checks ok. With k = 1,
+checks 2 and 4 are vacuous (there are no 0-move sequences to test) and are
+not run; the gate is recorded as shallow, never as passed, so one-move
+families do not count toward G0, G2 or the split.
 
 Gate (both magnitudes must pass):
   1 witness valid: labelled candidate under L; attributable share >= 0.3
@@ -124,25 +132,32 @@ def witness_search(laws: dict, rng: np.random.Generator, budget: int = 1250, bat
                 found.append((k, s, x))
         elite.sort(key=lambda e: -e[0])
         elite = elite[:8]
-    # minimize interacting sequences: drop moves while still interacting
-    mins = []
-    for k, s, x in sorted(found, key=lambda f: -f[2]["attr"])[:10]:
-        seq = list(s)
-        changed = True
-        while changed and len(seq) > 1:
-            changed = False
-            for i in range(len(seq)):
-                shorter = seq[:i] + seq[i + 1 :]
-                y = _scores([(pool[k], shorter)], laws)[0]
-                if y["interacting"]:
-                    seq, x, changed = shorter, y, True
-                    break
-        mins.append((len(seq) < 2, len(seq), -x["attr"], k, seq, x))
-    best = min(mins, key=lambda t: t[:3]) if mins else None
-    if best is None:
-        return {"found": False, "proposals": n, "n_interacting": len(found)}
-    _, k_len, _, k, seq, x = best
-    return {"found": True, "proposals": n, "n_interacting": len(found), "household": k, "household_id": pool[k].id, "moves": seq, "k": k_len, "scores": x}
+    if not found:
+        return {"found": False, "proposals": n, "n_interacting": 0, "n_one_move": 0}
+    # does any single move of any interacting sequence interact on its own?
+    singles: dict = {}
+    for k, s, _ in found:
+        for m in s:
+            singles.setdefault((k, json.dumps(m, sort_keys=True)), (k, [m]))
+    items = list(singles.values())
+    ones = [(k, s, x) for (k, s), x in zip(items, _scores([(pool[k], s) for k, s in items], laws)) if x["interacting"]]
+    mins = [(1, -x["attr"], k, s, x) for k, s, x in ones]
+    if not ones:
+        # minimize interacting sequences: drop moves while still interacting
+        for k, s, x in sorted(found, key=lambda f: -f[2]["attr"])[:10]:
+            seq = list(s)
+            changed = True
+            while changed and len(seq) > 1:
+                changed = False
+                for i in range(len(seq)):
+                    shorter = seq[:i] + seq[i + 1 :]
+                    y = _scores([(pool[k], shorter)], laws)[0]
+                    if y["interacting"]:
+                        seq, x, changed = shorter, y, True
+                        break
+            mins.append((len(seq), -x["attr"], k, seq, x))
+    k_len, _, k, seq, x = min(mins, key=lambda t: t[:2])  # shortest, then largest attributable gain
+    return {"found": True, "proposals": n, "n_interacting": len(found), "n_one_move": len(ones), "household": k, "household_id": pool[k].id, "moves": seq, "k": k_len, "scores": x}
 
 
 def _matches(props: list, law: Law, verifier: Verifier) -> list:
@@ -167,7 +182,7 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
         out["reason"] = "no interacting witness"
         return out
     hh, mv, k = pool[w["household"]], w["moves"], w["k"]
-    out["shallow"] = k < 2  # one-move witness: check 2 is vacuous; reported, not rejected
+    out["shallow"] = k < 2  # one-move witness: recorded and reported, never counted as passing
     vL = Verifier(laws["L"], Config())
     # 1. witness valid
     v = vL.one(hh, mv)
@@ -176,6 +191,14 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
     # 3. single-mutation ablation
     s = w["scores"]
     out["checks"]["3_ablation"] = {"share1": s["s1"] / s["gL"], "share2": s["s2"] / s["gL"], "ok": s["s1"] < R * s["gL"] and s["s2"] < R * s["gL"]}
+    # 5. negative control
+    rv = _matches([(hh, mv)], laws["Lrev"], Verifier(laws["Lrev"], Config()))
+    out["checks"]["5_reverse"] = {"matches": len(rv), "ok": not rv}
+    if out["shallow"]:
+        out["vacuous"] = ["2_grid", "4_spot"]
+        failed = [k_ for k_, c in out["checks"].items() if not c["ok"]]
+        out["reason"] = "shallow (one-move witness)" + (", failed " + ",".join(failed) if failed else "")
+        return out
     # 2. non-decomposability on 10 archetypes
     arch = gate_archetypes() + [hh]
     n_seq, sampled, hits = 0, False, []
@@ -199,9 +222,7 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
             draws.append((a, sq))
     sh = _matches(draws, laws["L"], vL)
     out["checks"]["4_spot"] = {"draws": len(draws), "matches": len(sh), "examples": [{"hh": p[0].id, "moves": p[1], "attr": at} for p, _, at in sh[:3]], "ok": not sh}
-    # 5. negative control
-    rv = _matches([(hh, mv)], laws["Lrev"], Verifier(laws["Lrev"], Config()))
-    out["checks"]["5_reverse"] = {"matches": len(rv), "ok": not rv}
+    out["checks"] = {k_: out["checks"][k_] for k_ in sorted(out["checks"])}
     out["passed"] = all(c["ok"] for c in out["checks"].values())
     if not out["passed"]:
         out["reason"] = "failed " + ",".join(k_ for k_, c in out["checks"].items() if not c["ok"])

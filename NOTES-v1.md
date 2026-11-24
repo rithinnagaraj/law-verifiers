@@ -1,5 +1,7 @@
 # What v1 taught us (carried into v2 as requirements, not code)
 
+(Design decisions and deviations from the experiment plan are logged in `DECISIONS.md`.)
+
 The v1 code lives on branch `docs/experiment-plan`; nothing here imports it.
 Each item below is a requirement of the v2 code and has a regression test.
 
