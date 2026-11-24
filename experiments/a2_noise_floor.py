@@ -66,7 +66,7 @@ def main():
     a = ap.parse_args()
     out = results_dir(a.tag) / "proposals.jsonl"
     if not a.summary:
-        HH.extend(ecps.load(a.n, seed=0))
+        HH.extend(ecps.load(a.n + 40, seed=0)[: a.n])
         print(f"[a2] {len(HH)} survey households", flush=True)
         jobs = [{"id": f"j{s}", "households": list(range(s, min(s + a.jobsize, len(HH)))), "per": a.per, "seed": a.seed} for s in range(0, len(HH), a.jobsize)]
         run(jobs, job, out, workers=a.workers)
