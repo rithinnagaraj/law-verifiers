@@ -60,3 +60,11 @@ def test_relabel_is_pure():
     law = CURRENT_LAW.plus(Change("gov.irs.deductions.standard.amount.SEPARATE", kind="copy", pe_src="gov.irs.deductions.standard.amount.JOINT"))
     v = Verifier(law).one(couple(120_000, 100_000), SEP)
     assert label(v, Config(use_crosscheck=False)) == "candidate"
+
+
+def test_savers_credit_not_counted():
+    # 401(k) deferral by a low earner: PolicyEngine also grants the saver's
+    # credit (Tax-Calculator does not compute it); the gain excludes it, so
+    # the two calculators agree.
+    v = Verifier(CURRENT_LAW).one(single(37_400), [{"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 18_000}])
+    assert v.gain == pytest.approx(v.gain_tc, abs=5) and v.gain > 3_000

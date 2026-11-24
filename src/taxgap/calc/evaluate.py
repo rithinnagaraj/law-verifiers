@@ -30,7 +30,7 @@ BATCH_RETURNS = 1_500  # returns per calculator call
 class YearTax:
     pe: float  # federal income tax, PolicyEngine (kiddie tax included)
     tc: float  # federal income tax, Tax-Calculator (kiddie tax included); nan if not computed
-    pe_only: float  # PolicyEngine-only federal credits (saver's credit), part of pe
+    pe_only: float  # PolicyEngine-only federal credits (saver's credit) applied in pe; pe + pe_only is comparable with tc
     kiddie_pe: float  # Form 8615 tax computed by this package, part of pe
     kiddie_tc: float
 
