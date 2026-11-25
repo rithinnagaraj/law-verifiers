@@ -32,11 +32,12 @@ class Param:
     status: Optional[str] = None
     gen: int = 2  # generator version that added it (v2 uses only gen-2 params, so spike 1 stays reproducible)
     integer: bool = False  # whole numbers in both calculators (ages): scaling rounds to the nearest integer
+    hi: Optional[float] = None  # upper bound of Tax-Calculator's valid range (integer params)
 
     def change(self, kind: str, value) -> tuple:
         if self.integer and kind == "scale":
             kind = "scale_round"
-        out = [Change(self.pe, self.tc, self.tc_index, kind, value)]
+        out = [Change(self.pe, self.tc, self.tc_index, kind, value, hi=self.hi if kind == "scale_round" else None)]
         for name, idx in self.extra:
             out.append(Change(None, name, idx, kind, value))
         return tuple(out)
@@ -79,7 +80,7 @@ def candidates() -> list[Param]:
     # generator v3 (G0 revision 1, 2026-11-25): eligibility gates and the QBI phase-in
     ps += [
         Param("eitc_age_min", "eitc_age", "gov.irs.credits.eitc.eligibility.age.min", "EITC_MinEligAge", generous=-1, gen=3, integer=True),
-        Param("eitc_age_max", "eitc_age", "gov.irs.credits.eitc.eligibility.age.max", "EITC_MaxEligAge", gen=3, integer=True),
+        Param("eitc_age_max", "eitc_age", "gov.irs.credits.eitc.eligibility.age.max", "EITC_MaxEligAge", gen=3, integer=True, hi=125),
         Param("qbi_rt", "qbi_rate", "gov.irs.deductions.qbi.max.rate", "PT_qbid_rt", gen=3),
     ]
     ps += _mars("qbi_thd", "qbi_threshold", "gov.irs.deductions.qbi.phase_out.start", "PT_qbid_taxinc_thd", gen=3)

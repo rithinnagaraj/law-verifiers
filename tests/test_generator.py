@@ -54,3 +54,6 @@ def test_age_mutations_are_whole_years():
     lo = fams["eitc_age:eitc_age_min+eitc_max0"]
     assert lo.laws(2.0)["L1"].tc_reform(2025)["EITC_MinEligAge"][2025] == 13
     assert lo.laws(4.0)["L1"].tc_reform(2025)["EITC_MinEligAge"][2025] == 6
+    hi = fams["eitc_age:eitc_age_max+eitc_max0"]
+    assert hi.laws(2.0)["L1"].tc_reform(2025)["EITC_MaxEligAge"][2025] == 125  # Tax-Calculator's maximum
+    assert hi.laws(4.0)["L1"].tc_reform(2025)["EITC_MaxEligAge"][2025] == 125

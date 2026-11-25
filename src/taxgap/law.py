@@ -40,6 +40,7 @@ class Change:
     kind: str = "set"  # set | scale | scale_round | add | copy
     value: object = None  # constant / factor / delta
     pe_src: Optional[str] = None  # copy: source path
+    hi: Optional[float] = None  # scale_round: upper bound (Tax-Calculator's valid range)
     tc_src_index: Optional[int] = None  # copy: source index
 
     def pe_values(self) -> dict:
@@ -65,7 +66,10 @@ class Change:
             return current() * float(self.value)
         if self.kind == "scale_round":
             v = current() * float(self.value)
-            return int(math.floor(v + 0.5)) if math.isfinite(v) else v  # PE stores "no limit" as inf
+            if not math.isfinite(v):
+                return v  # PE stores "no limit" as inf
+            v = int(math.floor(v + 0.5))
+            return min(v, int(self.hi)) if self.hi is not None else v
         if self.kind == "add":
             return current() + float(self.value)
         if self.kind == "copy":
