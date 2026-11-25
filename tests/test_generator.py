@@ -39,3 +39,18 @@ def test_all_families_finds_both_versions():
     fams = all_families(0)
     assert all(s in fams for s in SPIKE1)
     assert all(f.id in fams for f in candidates(0, 3))
+
+
+def test_age_mutations_are_whole_years():
+    fams = all_families(0)
+    for fid in ("eitc_age:eitc_age_min+eitc_max0", "eitc_age:eitc_age_max+eitc_max0"):
+        f = fams[fid]
+        for m in f.magnitudes:
+            for law in f.laws(m).values():
+                for c in law.changes:
+                    if "age" in (c.tc or ""):
+                        r = law.tc_reform(2025)[c.tc][2025]
+                        assert float(r) == int(r), (fid, m, r)
+    lo = fams["eitc_age:eitc_age_min+eitc_max0"]
+    assert lo.laws(2.0)["L1"].tc_reform(2025)["EITC_MinEligAge"][2025] == 13
+    assert lo.laws(4.0)["L1"].tc_reform(2025)["EITC_MinEligAge"][2025] == 6

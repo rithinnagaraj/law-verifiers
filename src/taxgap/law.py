@@ -6,6 +6,8 @@ name and MARS/kid index) and how it changes:
 
   set    a constant value in every year
   scale  current-law value x factor, year by year
+  scale_round  the same, rounded to the nearest integer (halves up): for
+         parameters that are whole numbers in both calculators (ages)
   add    current-law value + delta, year by year
   copy   the current-law value of another PolicyEngine path (and another
          Tax-Calculator index), year by year
@@ -22,6 +24,7 @@ whether a gain gets around an anti-abuse rule.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from typing import Optional
@@ -34,7 +37,7 @@ class Change:
     pe: Optional[str] = None  # PolicyEngine parameter path
     tc: Optional[str] = None  # Tax-Calculator parameter name
     tc_index: Optional[int] = None  # MARS (0 = SINGLE ...) or kid index; None = scalar
-    kind: str = "set"  # set | scale | add | copy
+    kind: str = "set"  # set | scale | scale_round | add | copy
     value: object = None  # constant / factor / delta
     pe_src: Optional[str] = None  # copy: source path
     tc_src_index: Optional[int] = None  # copy: source index
@@ -60,6 +63,8 @@ class Change:
             return self.value
         if self.kind == "scale":
             return current() * float(self.value)
+        if self.kind == "scale_round":
+            return int(math.floor(current() * float(self.value) + 0.5))
         if self.kind == "add":
             return current() + float(self.value)
         if self.kind == "copy":

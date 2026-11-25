@@ -31,8 +31,11 @@ class Param:
     generous: int = +1  # +1: raising it lowers tax; -1: lowering it lowers tax
     status: Optional[str] = None
     gen: int = 2  # generator version that added it (v2 uses only gen-2 params, so spike 1 stays reproducible)
+    integer: bool = False  # whole numbers in both calculators (ages): scaling rounds to the nearest integer
 
     def change(self, kind: str, value) -> tuple:
+        if self.integer and kind == "scale":
+            kind = "scale_round"
         out = [Change(self.pe, self.tc, self.tc_index, kind, value)]
         for name, idx in self.extra:
             out.append(Change(None, name, idx, kind, value))
@@ -75,8 +78,8 @@ def candidates() -> list[Param]:
         ps.append(Param(f"eitc_prt{k}", "eitc", f"gov.irs.credits.eitc.phase_out.rate[{k}].amount", "EITC_prt", k, generous=-1))
     # generator v3 (G0 revision 1, 2026-11-25): eligibility gates and the QBI phase-in
     ps += [
-        Param("eitc_age_min", "eitc_age", "gov.irs.credits.eitc.eligibility.age.min", "EITC_MinEligAge", generous=-1, gen=3),
-        Param("eitc_age_max", "eitc_age", "gov.irs.credits.eitc.eligibility.age.max", "EITC_MaxEligAge", gen=3),
+        Param("eitc_age_min", "eitc_age", "gov.irs.credits.eitc.eligibility.age.min", "EITC_MinEligAge", generous=-1, gen=3, integer=True),
+        Param("eitc_age_max", "eitc_age", "gov.irs.credits.eitc.eligibility.age.max", "EITC_MaxEligAge", gen=3, integer=True),
         Param("qbi_rt", "qbi_rate", "gov.irs.deductions.qbi.max.rate", "PT_qbid_rt", gen=3),
     ]
     ps += _mars("qbi_thd", "qbi_threshold", "gov.irs.deductions.qbi.phase_out.start", "PT_qbid_taxinc_thd", gen=3)
