@@ -64,7 +64,8 @@ class Change:
         if self.kind == "scale":
             return current() * float(self.value)
         if self.kind == "scale_round":
-            return int(math.floor(current() * float(self.value) + 0.5))
+            v = current() * float(self.value)
+            return int(math.floor(v + 0.5)) if math.isfinite(v) else v  # PE stores "no limit" as inf
         if self.kind == "add":
             return current() + float(self.value)
         if self.kind == "copy":
