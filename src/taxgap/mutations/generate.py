@@ -20,7 +20,7 @@ Statuses: SEPARATE, HEAD_OF_HOUSEHOLD, SINGLE (a household can move into
 them). Both parameters move in the direction that lowers tax, by the
 family's magnitudes (x2 and x4).
 
-`candidates(seed)`: all candidates, operators taken round-robin, each
+`candidates_v2(seed)`: all v2 candidates (spike 1), operators round-robin, each
 operator's candidates in a seeded random order. The spike takes the first
 10, the main catalog the next ones.
 """
@@ -56,6 +56,7 @@ def mechanism(op: str, a: Param, b: Param) -> str:
 
 def _by_op() -> dict[str, list]:
     ok, _ = verify()
+    ok = [p for p in ok if p.gen <= 2]  # v2 is frozen to its own catalog
     by = {p.key: p for p in ok}
     ops: dict[str, list] = {o: [] for o in OPERATORS}
     for s in STATUSES:
@@ -82,7 +83,7 @@ def _by_op() -> dict[str, list]:
     return ops
 
 
-def candidates(seed: int = 0) -> list[Family]:
+def candidates_v2(seed: int = 0) -> list[Family]:
     rng = np.random.default_rng(seed)
     lists = {}
     for op, pairs in _by_op().items():
@@ -93,4 +94,81 @@ def candidates(seed: int = 0) -> list[Family]:
         for op in OPERATORS:
             if i < len(lists[op]):
                 out.append(lists[op][i])
+    return out
+
+
+# --- generator v3 (G0 revision 1, 2026-11-25, before spike 2; DECISIONS.md) ---
+#
+# AND structures only: two parameters of one benefit, from different
+# statutory subsections, each of which alone caps or denies the benefit.
+#
+#   eitc_gate      EITC investment-income limit (s.32(i)) x each EITC range
+#                  parameter (max, phase-out start, phase-out rate; s.32(b)),
+#                  0-3 children
+#   eitc_age       childless-EITC min or max age (s.32(c)(1)(A)(ii)) x the
+#                  childless range parameters (s.32(b))
+#   ctc_phase_out  CTC or ODC amount (s.24(h)(2), (h)(4)) x CTC phase-out
+#                  threshold (s.24(b), (h)(3)), each filing status
+#   qbi_phase_in   two of QBI rate (s.199A(b)(2)), threshold (s.199A(e)(2)),
+#                  phase-in range (s.199A(b)(3)(B)), each filing status
+#
+# Spike 1's candidates (v2) are excluded. Same selection as v2: operators
+# round-robin, each operator's candidates in a seeded order.
+
+OPERATORS_V3 = ("eitc_gate", "eitc_age", "ctc_phase_out", "qbi_phase_in")
+MECHANISM_V3 = {"eitc_gate": "eitc_investment_test", "eitc_age": "eitc_age_test", "ctc_phase_out": "credit_phase_out", "qbi_phase_in": "qbi_phase_in"}
+ALL_STATUSES = ("SINGLE", "JOINT", "SEPARATE", "HEAD_OF_HOUSEHOLD")
+
+
+def _by_op_v3() -> dict[str, list]:
+    ok, _ = verify()
+    by = {p.key: p for p in ok}
+    ops: dict[str, list] = {o: [] for o in OPERATORS_V3}
+
+    def add(op, a, b):
+        if a in by and b in by:
+            ops[op].append((by[a], by[b]))
+
+    for k in range(4):
+        for x in (f"eitc_max{k}", f"eitc_ps{k}", f"eitc_prt{k}"):
+            add("eitc_gate", "eitc_inv", x)
+    for g in ("eitc_age_min", "eitc_age_max"):
+        for x in ("eitc_max0", "eitc_ps0", "eitc_prt0"):
+            add("eitc_age", g, x)
+    for s in ALL_STATUSES:
+        for a in ("ctc_amt", "odc"):
+            add("ctc_phase_out", a, f"ctc_ps.{s}")
+        for a, b in (("qbi_rt", f"qbi_thd.{s}"), ("qbi_rt", f"qbi_gap.{s}"), (f"qbi_thd.{s}", f"qbi_gap.{s}")):
+            add("qbi_phase_in", a, b)
+    return ops
+
+
+def candidates_v3(seed: int = 0) -> list[Family]:
+    excluded = {f.id.split(":", 1)[1] for f in candidates_v2(seed)[:10]}  # spike 1, stays rejected
+    rng = np.random.default_rng(seed)
+    lists = {}
+    for op, pairs in _by_op_v3().items():
+        fams = [Family(f"{op}:{a.key}+{b.key}", MECHANISM_V3[op], a, b, MAGNITUDES) for a, b in pairs if f"{a.key}+{b.key}" not in excluded]
+        lists[op] = [fams[i] for i in rng.permutation(len(fams))]
+    out = []
+    for i in range(max((len(v) for v in lists.values()), default=0)):
+        for op in OPERATORS_V3:
+            if i < len(lists[op]):
+                out.append(lists[op][i])
+    return out
+
+
+GENERATORS = {2: candidates_v2, 3: candidates_v3}
+
+
+def candidates(seed: int = 0, gen: int = 3) -> list[Family]:
+    """Candidates of generator `gen` (2: spike 1; 3: since G0 revision 1)."""
+    return GENERATORS[gen](seed)
+
+
+def all_families(seed: int = 0) -> dict[str, Family]:
+    """Every candidate of every generator version, by id (for re-lookup)."""
+    out: dict[str, Family] = {}
+    for g in GENERATORS.values():
+        out.update({f.id: f for f in g(seed)})
     return out

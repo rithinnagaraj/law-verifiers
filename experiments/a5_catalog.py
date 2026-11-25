@@ -1,9 +1,12 @@
 """A5. Interaction-mutation catalog.
 
 Stages:
-  --stage a5a   spike: the first 10 candidates (seeded order); gate G0
+  --stage a5a   spike 1: the first 10 generator-v2 candidates; gate G0
                 (>= 3 of 10 pass) decides whether A4, A5b and A7 proceed
-  --stage a5b   the next 50 candidates (--extend: 80)
+  --stage a5a2  spike 2 after G0 revision 1: the first 10 generator-v3
+                candidates (spike 1 excluded); a5a3 is reserved for revision 2
+  --stage a5b   the next candidates of the last spike's generator
+                (up to 50, --extend: 80; v3 has fewer)
   --summary     family manifest, counts by operator and mechanism,
                 rejection reasons, G0/G2, split (once A5b is complete)
 
@@ -28,17 +31,21 @@ import numpy as np
 
 from taxgap.config import results_dir
 from taxgap.mutations.family import gate
-from taxgap.mutations.generate import candidates
+from taxgap.mutations.generate import all_families, candidates
 from taxgap.runner import read_rows, run
 
 SEED = 0
 SPIKE = 10
+SPIKES = {"a5a": 2, "a5a2": 3}  # spike stage -> generator version (DECISIONS.md, G0 revisions)
+A5B_GEN = 3  # generator of the last spike
+STAGES = (*SPIKES, "a5b")
 G0_MIN = 3
 G2_MIN = 20
 
 DISCLAIMER = (
     "The candidate catalog is constructed: a designed generator pairs parameters at "
-    "max/min structures (regular tax vs AMT, the EITC's tests, filing-status parameters) "
+    "structures chosen to interact (v2: regular tax vs AMT, the EITC's tests, filing-status parameters; "
+    "v3 after G0 revision 1: two tests of one benefit, each of which alone denies it) "
     "and scales them x2 and x4. Pass rates measure how many of these designed candidates "
     "yield gated, non-decomposable interaction families; they are not an estimate of how "
     "common such interactions are in tax law."
@@ -57,7 +64,7 @@ def operator(fid: str) -> str:
 
 
 def job(j: dict) -> list:
-    fam = {f.id: f for f in candidates(SEED)}[j["family"]]
+    fam = all_families(SEED)[j["family"]]
     rows = []
     for m in fam.magnitudes:
         rng = np.random.default_rng([int(hashlib.sha1(fam.id.encode()).hexdigest()[:8], 16), int(m * 10)])
@@ -100,7 +107,7 @@ def _table(rs: list, key, title: str) -> list:
 
 
 def summarize(d) -> None:
-    rows = read_rows(d / "a5a.jsonl") + read_rows(d / "a5b.jsonl")
+    rows = [r for s in STAGES for r in read_rows(d / f"{s}.jsonl")]
     for r in rows:
         r.setdefault("status", status(r["gates"]))
         r["passed"] = r["status"] == "pass"
@@ -108,14 +115,17 @@ def summarize(d) -> None:
              "Counting rule (set before the A5a spike): only families whose minimal witness needs >= 2 moves "
              "at both magnitudes can pass; one-move (shallow) families are reported separately and do not "
              "count toward G0, G2 or the split.", ""]
-    for stage in ("a5a", "a5b"):
+    g0_met = set()
+    for stage in STAGES:
         rs = [r for r in rows if r["stage"] == stage]
         if not rs:
             continue
         c = Counter(r["status"] for r in rs)
         lines.append(f"## {stage}: {c['pass']} of {len(rs)} candidates pass ({c['shallow']} shallow, {c['fail']} fail)")
-        if stage == "a5a":
-            lines.append(f"**G0 (>= {G0_MIN} of {SPIKE} pass, shallow excluded): {'PASS' if c['pass'] >= G0_MIN else 'FAIL'}**")
+        if stage in SPIKES:
+            if c["pass"] >= G0_MIN:
+                g0_met.add(stage)
+            lines.append(f"**G0, spike {list(SPIKES).index(stage) + 1} (generator v{SPIKES[stage]}; >= {G0_MIN} of {SPIKE} pass, shallow excluded): {'PASS' if c['pass'] >= G0_MIN else 'FAIL'}**")
         lines.append("")
         lines += _table(rs, lambda r: operator(r["family"]["id"]), "operator") + [""]
         lines += _table(rs, lambda r: r["family"]["mechanism"], "mechanism") + [""]
@@ -142,7 +152,8 @@ def summarize(d) -> None:
     json.dump(manifest, open(d / "manifest.json", "w"), indent=1)
     cand_file = d / "a5b_candidates.json"
     if cand_file.exists() and len([r for r in rows if r["stage"] == "a5b"]) >= len(json.load(open(cand_file))):
-        sp = split([r["family"] for r in rows if r["passed"]])
+        # passing families of a5b and of spikes that met G0 (a failed spike's candidates stay rejected)
+        sp = split([r["family"] for r in rows if r["passed"] and (r["stage"] == "a5b" or r["stage"] in g0_met)])
         json.dump(sp, open(d / "split.json", "w"), indent=1)
         lines += ["", f"Split (passing families only): test {len(sp['test'])} (test-only mechanisms: {', '.join(sp['test_only_mechanisms']) or 'none'}), "
                   f"val {len(sp['val'])}, train {len(sp['train'])}. {sp['note']}"]
@@ -152,17 +163,16 @@ def summarize(d) -> None:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=("a5a", "a5b"))
+    ap.add_argument("--stage", choices=STAGES)
     ap.add_argument("--extend", action="store_true")
     ap.add_argument("--workers", type=int, default=None)
     ap.add_argument("--summary", action="store_true")
     a = ap.parse_args()
     d = results_dir("a5")
-    cands = candidates(SEED)
-    if a.stage == "a5a":
-        sel = cands[:SPIKE]
+    if a.stage in SPIKES:
+        sel = candidates(SEED, SPIKES[a.stage])[:SPIKE]
     elif a.stage == "a5b":
-        sel = cands[SPIKE : SPIKE + (80 if a.extend else 50)]
+        sel = candidates(SEED, A5B_GEN)[SPIKE : SPIKE + (80 if a.extend else 50)]
     else:
         sel = []
     if sel:

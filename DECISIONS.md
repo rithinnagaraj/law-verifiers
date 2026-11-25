@@ -24,5 +24,33 @@ revisions, each recorded here with its reason).
 
 ## G0 revisions
 
-None yet. Each revision records the failed spike's per-check rejection
-counts, what was changed, and why, before the new spike runs.
+Each revision records the failed spike's per-check rejection counts, what
+was changed, and why, before the new spike runs.
+
+### Spike 1 (generator v2, 2026-11-25): G0 not met, 0 of 10 pass
+
+- Candidates: 2 `amt_pair`, 2 `eitc_pair`, 2 `status_pair`, 2 `status_child`, 2 `scalar_pair` (list in `results/a5/a5a_candidates.json`).
+- Result: 0 pass, 0 shallow, 10 fail. Per gate (20 = 10 families × 2 magnitudes): no interacting witness 19; witness found but failed check 2 (grid) 1 (`eitc_pair:eitc_inv+eitc_prt1` ×2, 3-move witness on `w_partners_low`). No other check was reached.
+- These 10 candidates stay rejected and are not re-gated.
+- Diagnosis (scratch script `diag_a5.py`, run after the spike; 200 random sequences of ≤ 3 moves per family and magnitude on the 30 witness archetypes, plus each mutated law's effect on tax levels with no moves):
+  - No bug found: every parameter that should affect a witness archetype changes its tax level (for example `brk4.SINGLE` on 14 of 270 household-years, `ctc_amt` on 102). The parameters with no level effect are limits that no archetype reaches under current law (`amt_ps.SINGLE`, `amt_ps.SEPARATE`, `brk5.SEPARATE`, `salt.HEAD_OF_HOUSEHOLD`, `eitc_inv`, `dep_std`).
+  - Structure-blind operators (`status_pair`, `status_child`, `scalar_pair`, 6 candidates): 0 interacting sequences. Every sequence with attributable gain ≥ $50 either had one mutation alone ≥ R of the gain (additive) or the attributable gain was < 0.3 of the gain. This is what the additivity argument above predicts.
+  - `amt_pair` (2 candidates): inert. The AMT never binds on any archetype, even with the regular-tax mutation applied (the combined law's level effect equals the regular-tax mutation's alone), so the AMT parameter never matters.
+  - `eitc_pair` (2 candidates): the only witness. The investment-income test denies the whole credit, so loosening it does nothing for a household that is also phased out, and vice versa (an AND structure).
+
+### Revision 1 (2026-11-25, before spike 2): generator v3, AND structures only
+
+Chosen by the user from three options (AND structures over a wider catalog; AND structures over the current catalog; stop A5 and report).
+
+- **Principle.** Check 3 requires each mutation alone to give < R of the gain on the witness. Only structures in which each of two conditions alone denies the benefit can pass that reliably. Every v3 operator pairs two parameters of one benefit from *different statutory subsections*, each of which on its own caps or denies the benefit:
+  - `eitc_gate`: EITC investment-income limit (§32(i)) × each EITC range parameter (maximum credit, phase-out start, phase-out rate; §32(b)), for 0–3 children. 12 pairs.
+  - `eitc_age`: childless-EITC minimum or maximum age (§32(c)(1)(A)(ii)) × the childless range parameters (§32(b)). 6 pairs.
+  - `ctc_phase_out`: CTC or ODC amount (§24(h)(2), (h)(4)) × CTC phase-out threshold (§24(b), (h)(3)). A household beyond the phase-out end gains from neither alone. 2 × 4 statuses = 8 pairs.
+  - `qbi_phase_in`: any two of the QBI rate (§199A(b)(2)), threshold (§199A(e)(2)) and phase-in range (§199A(b)(3)(B)); a self-employed filer with no W-2 wages beyond the range gets no deduction. 3 × 4 statuses = 12 pairs.
+- **Dropped:** `status_pair`, `status_child` and `scalar_pair` (additive, as predicted and as seen in spike 1); `amt_pair` (inert: the AMT does not bind on any archetype); pairs within one EITC subsection (max × start × rate are all §32(b), so they would not be two provisions).
+- **Catalog additions**, verified equal in both calculators for 2024–2026 by `catalog.verify()`, which drops any that differ: `eitc_age_min`, `eitc_age_max`, `qbi_thd.<status>`, `qbi_gap.<status>`, `qbi_rt`. Not added: the CTC phase-out rate, which PolicyEngine encodes as $50 per $1,000 and Tax-Calculator as 0.05, so it cannot pass the equal-values check.
+- **Statuses:** v3 uses all four filing statuses. The v2 restriction to statuses a household can move into belonged to the filing-status operators, and the v3 structures do not involve a status choice.
+- **Unchanged:** magnitudes (×2, ×4), archetypes, gate checks and thresholds (R, witness share, $50 floor, witness budget, grid cap, spot size), counting rule and split rule.
+- **Selection:** the same as v2 (operators round-robin, each operator's candidates in a seeded order, seed 0). Spike 1's 10 candidates are excluded (two of them, `eitc_inv+eitc_ps1` and `eitc_inv+eitc_prt1`, would otherwise reappear in `eitc_gate`). Spike 2 takes the first 10; A5b takes the rest.
+- **Known consequence, stated before the spike:** v3 has at most 36 candidates (fewer if any catalog addition fails verification), so A5b has at most 26. The plan's 60 (90) candidates and its G2 extension rule cannot be met in full. G2 (≥ 20 passing families) needs ≥ 20 of 36 to pass.
+- **Expected weak spots, stated before the spike:** the archetypes' highest income is $320k, below the joint CTC phase-out end ($488k with two children) and the joint QBI threshold ($394,600), so those joint pairs may be inert. The archetypes stay unchanged.

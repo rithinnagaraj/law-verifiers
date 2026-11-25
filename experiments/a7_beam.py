@@ -28,7 +28,7 @@ from taxgap.archetypes import witness_archetypes
 from taxgap.config import results_dir
 from taxgap.grid import sequences
 from taxgap.mutations.family import _matches
-from taxgap.mutations.generate import candidates
+from taxgap.mutations.generate import all_families
 from taxgap.runner import read_rows, run
 from taxgap.search.beam import BeamProposer
 from taxgap.verifier import Config, Verifier
@@ -37,7 +37,7 @@ BATCH = 400
 
 
 def job(j: dict) -> list:
-    fam = {f.id: f for f in candidates(0)}[j["family"]]
+    fam = all_families(0)[j["family"]]
     law = fam.laws(j["m"])["L"]
     hh = witness_archetypes()[j["household"]]
     k = j["k"]
@@ -81,7 +81,7 @@ def main():
     if not a.summary:
         a5 = results_dir("a5")
         fams = a.families.split(",") if a.families else json.load(open(a5 / "split.json"))["val"]
-        rows = {r["family"]["id"]: r for r in read_rows(a5 / "a5a.jsonl") + read_rows(a5 / "a5b.jsonl")}
+        rows = {r["family"]["id"]: r for r in [r for s in ("a5a", "a5a2", "a5a3", "a5b") for r in read_rows(a5 / f"{s}.jsonl")]}
         jobs = []
         for fid in fams:
             for g in rows[fid]["gates"]:

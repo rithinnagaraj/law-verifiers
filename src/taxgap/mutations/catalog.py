@@ -30,6 +30,7 @@ class Param:
     extra: tuple = ()  # ((tc name, index), ...) moved together with tc
     generous: int = +1  # +1: raising it lowers tax; -1: lowering it lowers tax
     status: Optional[str] = None
+    gen: int = 2  # generator version that added it (v2 uses only gen-2 params, so spike 1 stays reproducible)
 
     def change(self, kind: str, value) -> tuple:
         out = [Change(self.pe, self.tc, self.tc_index, kind, value)]
@@ -38,11 +39,11 @@ class Param:
         return tuple(out)
 
 
-def _mars(key, provision, pe_base, tc, generous=+1, extra=(), statuses=STATUSES):
+def _mars(key, provision, pe_base, tc, generous=+1, extra=(), statuses=STATUSES, gen=2):
     out = []
     for s in statuses:
         i = MARS_ORDER.index(s)
-        out.append(Param(f"{key}.{s}", provision, f"{pe_base}.{s}", tc, i, tuple((n, i) for n in extra), generous, s))
+        out.append(Param(f"{key}.{s}", provision, f"{pe_base}.{s}", tc, i, tuple((n, i) for n in extra), generous, s, gen))
     return out
 
 
@@ -72,6 +73,14 @@ def candidates() -> list[Param]:
         ps.append(Param(f"eitc_max{k}", "eitc", f"gov.irs.credits.eitc.max[{k}].amount", "EITC_c", k))
         ps.append(Param(f"eitc_ps{k}", "eitc", f"gov.irs.credits.eitc.phase_out.start[{k}].amount", "EITC_ps", k))
         ps.append(Param(f"eitc_prt{k}", "eitc", f"gov.irs.credits.eitc.phase_out.rate[{k}].amount", "EITC_prt", k, generous=-1))
+    # generator v3 (G0 revision 1, 2026-11-25): eligibility gates and the QBI phase-in
+    ps += [
+        Param("eitc_age_min", "eitc_age", "gov.irs.credits.eitc.eligibility.age.min", "EITC_MinEligAge", generous=-1, gen=3),
+        Param("eitc_age_max", "eitc_age", "gov.irs.credits.eitc.eligibility.age.max", "EITC_MaxEligAge", gen=3),
+        Param("qbi_rt", "qbi_rate", "gov.irs.deductions.qbi.max.rate", "PT_qbid_rt", gen=3),
+    ]
+    ps += _mars("qbi_thd", "qbi_threshold", "gov.irs.deductions.qbi.phase_out.start", "PT_qbid_taxinc_thd", gen=3)
+    ps += _mars("qbi_gap", "qbi_phase_in", "gov.irs.deductions.qbi.phase_out.length", "PT_qbid_taxinc_gap", gen=3)
     return ps
 
 

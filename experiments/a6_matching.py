@@ -28,7 +28,7 @@ from taxgap.archetypes import witness_archetypes
 from taxgap.config import results_dir
 from taxgap.law import CURRENT_LAW
 from taxgap.moves import MoveError, years_of
-from taxgap.mutations.generate import candidates
+from taxgap.mutations.generate import all_families
 from taxgap.runner import read_rows, run
 from taxgap.search.sample import random_move
 from taxgap.verifier import Config, Verifier
@@ -85,7 +85,7 @@ def proposals_for(w: dict, others: list, pool: list, rng) -> list:
 
 def job(j: dict) -> list:
     pool = witness_archetypes()
-    fam = {f.id: f for f in candidates(0)}[j["family"]]
+    fam = all_families(0)[j["family"]]
     law = fam.laws(j["m"])["L"]
     rng = np.random.default_rng([len(j["family"]), int(j["m"] * 10)])
     props = proposals_for(j["witness"], j["others"], pool, rng)
@@ -129,7 +129,7 @@ def main():
     a = ap.parse_args()
     d = results_dir("a6")
     if not a.summary:
-        a5 = read_rows(results_dir("a5") / "a5a.jsonl") + read_rows(results_dir("a5") / "a5b.jsonl")
+        a5 = [r for s in ("a5a", "a5a2", "a5a3", "a5b") for r in read_rows(results_dir("a5") / f"{s}.jsonl")]
         passed = [r for r in a5 if r["passed"]]
         ws = [(r["family"]["id"], g["magnitude"], g["witness"]) for r in passed for g in r["gates"]]
         jobs = []
