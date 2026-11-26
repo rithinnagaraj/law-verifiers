@@ -55,3 +55,20 @@ Chosen by the user from three options (AND structures over a wider catalog; AND 
 - **Known consequence, stated before the spike:** v3 has at most 36 candidates (fewer if any catalog addition fails verification), so A5b has at most 26. The plan's 60 (90) candidates and its G2 extension rule cannot be met in full. G2 (≥ 20 passing families) needs ≥ 20 of 36 to pass.
 - **Expected weak spots, stated before the spike:** the archetypes' highest income is $320k, below the joint CTC phase-out end ($488k with two children) and the joint QBI threshold ($394,600), so those joint pairs may be inert. The archetypes stay unchanged.
 - **Bug fix found by a pre-spike check (before spike 2 ran).** Before gating, the spike-1 diagnostic was rerun on the 10 spike-2 candidates to check that each mutated law takes effect. The age limits could not be checked that way (no archetype is a childless earner outside ages 25–64), so they were tested directly. Tax-Calculator rejects non-integer ages (25 × ½ = 12.5), so every `eitc_age_min` candidate would have errored in the gate. Fix: integer parameters are scaled and rounded to the nearest whole year, halves up (minimum age 13 at ×2 and 6 at ×4). Tax-Calculator also caps ages at 125, so the maximum age is clipped there: 64 × 2 = 128 and 64 × 4 = 256 both become 125, which means no upper age limit in both calculators. The `eitc_age_max` families therefore have the same age change at both magnitudes (only their range parameter differs between ×2 and ×4). The pre-check is used only to find bugs: operators and candidates are unchanged whatever it shows.
+
+### Positive controls (2026-11-26, after spike 2's diagnosis, before revision 2; set before they were run)
+
+Spike 2 failed (9 of 10 candidates gated so far, none passing). A diagnostic scan scored every reality-preserving grid sequence of one or two moves on the 30 witness households (37,706 sequences) for the 10 spike-2 candidates at both magnitudes, using PolicyEngine only. For 8 of the 10 it found no interacting two-move sequence at all. Every candidate had one-move matches on the gate households, so check 2 would fail all 10 even with a perfect search. Before revision 2 is chosen, the machinery is checked on loopholes known to have existed (the research plan's historical closures). The script is `experiments/a5_controls.py`; it changes nothing in the gate or the generator.
+
+| Control | Law | Expected (stated before running) |
+|---|---|---|
+| `pre1986` | kiddie tax and dependent standard-deduction limit both undone (TRA 1986); each undone alone as L1, L2 | One-move loopholes found: a gift of an interest- or dividend-paying asset to a minor, labelled `candidate`, with the anti-abuse attribution naming the kiddie tax. Each closure undone alone keeps much of the gain (an OR, not an AND), so the gate finds no interacting witness. |
+| `pre2006` | kiddie tax under age 14 only (before TIPRA 2005) | A one-move gift to the 15-year-old of `g_parent_*`, labelled `candidate` |
+| `pre2008` | kiddie tax under 18, no student extension (before SBWOTA 2007) | A one-move gift to the 20-year-old student of `w_parent_student_*`, labelled `candidate` |
+| `pre1996` | no EITC investment-income limit | Uncertain: no household combines EITC-range earnings with investment income above the limit, so possibly nothing |
+
+How the result is used:
+- If a control's loophole is missed or mislabelled, that is a bug and is fixed before revision 2.
+- If all four behave as expected, the machinery recognizes real loopholes, and real income-shifting loopholes are one-move in this move set. Revision 2 then has to build depth into the planted structure rather than expect it from generous rescaling.
+
+Correction to an option raised in the spike-2 diagnosis: narrowing check 2 to count only *interacting* one-move shortcuts is not admissible. The research plan defines non-decomposability as "no k−1-move sequence gets ≥ R of its gain from the mutation", and A6 matching counts any such sequence as finding the target. A one-move match therefore makes the target shallow for H2. Check 2 stays as written.
