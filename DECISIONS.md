@@ -192,3 +192,15 @@ Reading:
 ### Census of the next candidates (2026-11-27, before it ran)
 
 This turns the failure into a measured finding on more than 10 families. The next 20 valid v5 candidates in the seeded order (the first 20 A5b would have gated) get the same dense-pool scan at ×2 (`experiments/diag/diag_census.py`, output `results/a5/diag/census.jsonl`). It reports the same four counts per family. It is a description of the generator, not a gate. No candidate is selected, passed or gated by it, and A5b stays stopped.
+
+### Per-household probe (2026-11-27, before it ran; exploratory)
+
+The probe asks whether the two EITC investment-limit families would give usable targets if depth were judged per household, not over every household searched. It is evidence for a decision the user makes. It does not change the counting rule, and it gates nothing.
+- **Households:** for `eitc_inv+eitc_max3`, all 13 dense-pool households where only two-move sequences interact at ×2. For `eitc_inv+eitc_max1`, the 6 such households printed in the run-2 log (the log prints at most 6 of the 10).
+- **Magnitudes:** ×2 and ×4.
+- **Witness:** the household's interacting two-move sequence with the largest attributable gain at that magnitude.
+- **Checks reported:**
+  - checks 1, 3 and 5 as in the gate;
+  - one-move matches on the witness household itself;
+  - one-move matches on the 9 gate archetypes (check 2 as written).
+- **Script:** `experiments/diag/probe_instance.py`.
