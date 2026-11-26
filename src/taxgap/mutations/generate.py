@@ -292,14 +292,16 @@ def valid_law(fam: Family) -> tuple[bool, str]:
 
     for m in fam.magnitudes:
         for name, law in fam.laws(m).items():
+            ref: dict = {}
             for y in range(HORIZON_START, HORIZON_START + HORIZON_YEARS):
-                ref = law.tc_reform(y)
-                if not ref:
-                    continue
-                try:
-                    tc.Policy().implement_reform(ref)
-                except Exception as e:  # noqa: BLE001 - only parameter validation is caught
-                    if type(e).__name__ != "ValidationError":
-                        raise
-                    return False, f"{name}@{m:g} {y}: {str(e)[:300]}"
+                for k, v in law.tc_reform(y).items():
+                    ref.setdefault(k, {}).update(v)
+            if not ref:
+                continue
+            try:
+                tc.Policy().implement_reform(ref)
+            except Exception as e:  # noqa: BLE001 - only parameter validation is caught
+                if type(e).__name__ != "ValidationError":
+                    raise
+                return False, f"{name}@{m:g}: {str(e)[:300]}"
     return True, ""
