@@ -9,7 +9,10 @@ still gated in full.
           verifier on the PolicyEngine matches, exactly as check 2 does)
   alive   at both magnitudes, one of `n_two` sampled reality-preserving
           two-move grid sequences on the witness households has gain > $50,
-          attributable gain >= $50 and >= 0.3 of its gain (PolicyEngine)
+          attributable gain >= $50 and >= 0.3 of its gain, and each mutation
+          alone moves its gain by < R of it (PolicyEngine): an interacting
+          sequence, the witness's own test (amended 2026-11-26, before spike
+          3; DECISIONS.md)
 """
 
 from __future__ import annotations
@@ -20,7 +23,7 @@ from ..archetypes import gate_archetypes, witness_archetypes
 from ..grid import sequences
 from ..law import CURRENT_LAW
 from ..verifier import Config, Verifier
-from .family import FLOOR, WITNESS_SHARE, Family, _matches, _pe_gains, _real
+from .family import FLOOR, R, WITNESS_SHARE, Family, _matches, _pe_gains, _real
 
 _ONE: dict = {}
 _TWO: dict = {}
@@ -78,14 +81,25 @@ def _screen(fam: Family, n_two: int) -> dict:
     two = _two_move(n_two)
     g0 = _pe_gains(two, CURRENT_LAW)
     out["alive_at"] = {}
+    out["share_ok_at"] = {}
     for m in fam.magnitudes:  # the gate needs both magnitudes, so alive needs both
-        gl = _pe_gains(two, fam.laws(m)["L"])
-        best = [(b - a, i) for i, (a, b) in enumerate(zip(g0, gl)) if b == b and b > FLOOR and b - a >= FLOOR and b - a >= WITNESS_SHARE * b]
-        if not best:
+        laws = fam.laws(m)
+        gl = _pe_gains(two, laws["L"])
+        share_ok = [i for i, (a, b) in enumerate(zip(g0, gl)) if b == b and b > FLOOR and b - a >= FLOOR and b - a >= WITNESS_SHARE * b]
+        out["share_ok_at"][f"{m:g}"] = len(share_ok)
+        inter = []
+        if share_ok:
+            sub = [two[i] for i in share_ok]
+            g1, g2 = _pe_gains(sub, laws["L1"]), _pe_gains(sub, laws["L2"])
+            for j, i in enumerate(share_ok):
+                a, b = g0[i], gl[i]
+                if g1[j] - a < R * b and g2[j] - a < R * b:  # each mutation alone < R of the gain (check 3's test)
+                    inter.append((b - a, i))
+        if not inter:
             out["alive_at"][f"{m:g}"] = None
             return out
-        at, i = max(best)
-        out["alive_at"][f"{m:g}"] = {"hh": two[i][0].id, "moves": two[i][1], "attr": round(at), "n": len(best)}
+        at, i = max(inter)
+        out["alive_at"][f"{m:g}"] = {"hh": two[i][0].id, "moves": two[i][1], "attr": round(at), "n": len(inter)}
     out["alive"] = True
     return out
 

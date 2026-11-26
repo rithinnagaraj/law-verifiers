@@ -188,7 +188,8 @@ def all_families(seed: int = 0) -> dict[str, Family]:
 #           witness household, which is not known yet)
 #   alive   at both magnitudes, some reality-preserving two-move grid
 #           sequence (sampled) on the witness households has gain > $50 and
-#           an attributable gain >= $50 and >= 0.3 of its gain
+#           an attributable gain >= $50 and >= 0.3 of its gain, and each
+#           mutation alone < R of it (interacting; amended before spike 3)
 # Spike 3 gates the first 10 candidates that pass the screen. Spike 1 and 2
 # candidates stay rejected and are excluded.
 
