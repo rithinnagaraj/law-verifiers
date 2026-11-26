@@ -1,0 +1,142 @@
+[
+ {
+  "id": "amt_pair:brk4.SINGLE+amt_ps.SINGLE",
+  "mechanism": "regular_vs_amt",
+  "p1": "brk4.SINGLE",
+  "p2": "amt_ps.SINGLE",
+  "provisions": [
+   "rate_brackets",
+   "amt"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "eitc_pair:eitc_inv+eitc_ps1",
+  "mechanism": "eitc_tests",
+  "p1": "eitc_inv",
+  "p2": "eitc_ps1",
+  "provisions": [
+   "eitc_investment_limit",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "status_pair:brk5.HEAD_OF_HOUSEHOLD+ctc_ps.HEAD_OF_HOUSEHOLD",
+  "mechanism": "filing_status",
+  "p1": "brk5.HEAD_OF_HOUSEHOLD",
+  "p2": "ctc_ps.HEAD_OF_HOUSEHOLD",
+  "provisions": [
+   "rate_brackets",
+   "ctc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "status_child:niit.HEAD_OF_HOUSEHOLD+ctc_amt",
+  "mechanism": "filing_status",
+  "p1": "niit.HEAD_OF_HOUSEHOLD",
+  "p2": "ctc_amt",
+  "provisions": [
+   "niit",
+   "ctc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "scalar_pair:dep_std+niit_rt",
+  "mechanism": "income_shifting",
+  "p1": "dep_std",
+  "p2": "niit_rt",
+  "provisions": [
+   "dependent_std",
+   "niit"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "amt_pair:brk5.SEPARATE+amt_ps.SEPARATE",
+  "mechanism": "regular_vs_amt",
+  "p1": "brk5.SEPARATE",
+  "p2": "amt_ps.SEPARATE",
+  "provisions": [
+   "rate_brackets",
+   "amt"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "eitc_pair:eitc_inv+eitc_prt1",
+  "mechanism": "eitc_tests",
+  "p1": "eitc_inv",
+  "p2": "eitc_prt1",
+  "provisions": [
+   "eitc_investment_limit",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "status_pair:brk5.HEAD_OF_HOUSEHOLD+salt.HEAD_OF_HOUSEHOLD",
+  "mechanism": "filing_status",
+  "p1": "brk5.HEAD_OF_HOUSEHOLD",
+  "p2": "salt.HEAD_OF_HOUSEHOLD",
+  "provisions": [
+   "rate_brackets",
+   "salt_cap"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "status_child:brk5.SEPARATE+ctc_amt",
+  "mechanism": "filing_status",
+  "p1": "brk5.SEPARATE",
+  "p2": "ctc_amt",
+  "provisions": [
+   "rate_brackets",
+   "ctc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "scalar_pair:ctc_amt+eitc_max2",
+  "mechanism": "phase_out",
+  "p1": "ctc_amt",
+  "p2": "eitc_max2",
+  "provisions": [
+   "ctc",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ }
+]

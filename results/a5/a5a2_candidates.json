@@ -1,0 +1,142 @@
+[
+ {
+  "id": "eitc_gate:eitc_inv+eitc_max2",
+  "mechanism": "eitc_investment_test",
+  "p1": "eitc_inv",
+  "p2": "eitc_max2",
+  "provisions": [
+   "eitc_investment_limit",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "eitc_age:eitc_age_max+eitc_max0",
+  "mechanism": "eitc_age_test",
+  "p1": "eitc_age_max",
+  "p2": "eitc_max0",
+  "provisions": [
+   "eitc_age",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "ctc_phase_out:ctc_amt+ctc_ps.SEPARATE",
+  "mechanism": "credit_phase_out",
+  "p1": "ctc_amt",
+  "p2": "ctc_ps.SEPARATE",
+  "provisions": [
+   "ctc",
+   "ctc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "qbi_phase_in:qbi_thd.SINGLE+qbi_gap.SINGLE",
+  "mechanism": "qbi_phase_in",
+  "p1": "qbi_thd.SINGLE",
+  "p2": "qbi_gap.SINGLE",
+  "provisions": [
+   "qbi_threshold",
+   "qbi_phase_in"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "eitc_gate:eitc_inv+eitc_prt2",
+  "mechanism": "eitc_investment_test",
+  "p1": "eitc_inv",
+  "p2": "eitc_prt2",
+  "provisions": [
+   "eitc_investment_limit",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "eitc_age:eitc_age_min+eitc_prt0",
+  "mechanism": "eitc_age_test",
+  "p1": "eitc_age_min",
+  "p2": "eitc_prt0",
+  "provisions": [
+   "eitc_age",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "ctc_phase_out:odc+ctc_ps.HEAD_OF_HOUSEHOLD",
+  "mechanism": "credit_phase_out",
+  "p1": "odc",
+  "p2": "ctc_ps.HEAD_OF_HOUSEHOLD",
+  "provisions": [
+   "odc",
+   "ctc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "qbi_phase_in:qbi_rt+qbi_gap.HEAD_OF_HOUSEHOLD",
+  "mechanism": "qbi_phase_in",
+  "p1": "qbi_rt",
+  "p2": "qbi_gap.HEAD_OF_HOUSEHOLD",
+  "provisions": [
+   "qbi_rate",
+   "qbi_phase_in"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "eitc_gate:eitc_inv+eitc_prt0",
+  "mechanism": "eitc_investment_test",
+  "p1": "eitc_inv",
+  "p2": "eitc_prt0",
+  "provisions": [
+   "eitc_investment_limit",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "eitc_age:eitc_age_min+eitc_max0",
+  "mechanism": "eitc_age_test",
+  "p1": "eitc_age_min",
+  "p2": "eitc_max0",
+  "provisions": [
+   "eitc_age",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ }
+]
