@@ -1,0 +1,38 @@
+== v5:eitc_gate:eitc_inv+eitc_max3 m=2: households 416, sequences 516490, share-ok 61961, interacting 6568 (one-move 211, two-move 6357), 1896s
+   d_s3_30k_i3: 54 interacting, 0 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}, {"op": "roth_convert", "person": "a", "amount": 3750.0}] {'gL': 2223, 'attr': 2781, 's1': 38, 's2': 0}
+   d_s3_40k_i3: 309 interacting, 18 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}] {'gL': 2684, 'attr': 2672, 's1': 0, 's2': 0}
+   d_s3_50k_i2: 3 interacting, 0 one-move; e.g. [{"op": "contribute_retirement", "person": "a", "account": "ira", "amount": 7000.0}, {"op": "roth_convert", "person": "a", "amount": 6250.0, "year": 2025}] {'gL': 7025, 'attr': 4251, 's1': 630, 's2': 0}
+   d_s3_50k_i3: 375 interacting, 18 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}] {'gL': 2136, 'attr': 1970, 's1': 0, 's2': 0}
+   d_s3_60k_i2: 10 interacting, 0 one-move; e.g. [{"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 11500.0}, {"op": "roth_convert", "person": "a", "amount": 7500.0, "year": 2025}] {'gL': 8494, 'attr': 4619, 's1': 560, 's2': 0}
+   d_s3_60k_i3: 366 interacting, 18 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}] {'gL': 2401, 'attr': 1268, 's1': 0, 's2': 0}
+   d_s3_75k_i2: 16 interacting, 0 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_fund", "fraction": 0.5, "year": 2026}, {"op": "roth_convert", "person": "a", "amount": 9375.0, "year": 2026}] {'gL': 553, 'attr': 211, 's1': 0, 's2': 0}
+   d_s3_75k_i3: 228 interacting, 6 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5, "year": 2026}] {'gL': 584, 'attr': 215, 's1': 0, 's2': 0}
+   d_s3_90k_i0: 1 interacting, 0 one-move; e.g. [{"op": "realize_gain", "person": "a", "asset": "a_fund", "fraction": 1.0}, {"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 23000.0}] {'gL': 13850, 'attr': 4524, 's1': 0, 's2': 885}
+   d_s3_90k_i2: 33 interacting, 2 one-move; e.g. [{"op": "roth_convert", "person": "a", "amount": 11250.0}] {'gL': 446, 'attr': 373, 's1': 0, 's2': 0}
+   d_s3_90k_i3: 375 interacting, 9 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 1.0}] {'gL': 7028, 'attr': 5607, 's1': 178, 's2': 4}
+   d_s3_110k_i0: 3 interacting, 0 one-move; e.g. [{"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 23000.0}, {"op": "realize_gain", "person": "a", "asset": "a_fund", "fraction": 1.0, "year": 2025}] {'gL': 17769, 'attr': 5432, 's1': 1176, 's2': 1574}
+   d_s3_110k_i2: 150 interacting, 10 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_fund", "fraction": 0.5}] {'gL': 1306, 'attr': 421, 's1': 0, 's2': 0}
+   d_s3_110k_i3: 399 interacting, 9 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 1.0}] {'gL': 5773, 'attr': 4199, 's1': 0, 's2': 0}
+   d_s3_140k_i2: 127 interacting, 9 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_fund", "fraction": 0.5}] {'gL': 1306, 'attr': 421, 's1': 0, 's2': 0}
+   d_s3_140k_i3: 279 interacting, 9 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 1.0}] {'gL': 3577, 'attr': 2093, 's1': 0, 's2': 0}
+   d_s3_180k_i2: 6 interacting, 0 one-move; e.g. [{"op": "set_filing_status", "tax_unit": "t", "status": "SINGLE"}, {"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 23000.0, "year": 2025}] {'gL': 2419, 'attr': 2234, 's1': 0, 's2': 0}
+   d_m3_40k_i3: 54 interacting, 0 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}, {"op": "roth_convert", "person": "a", "amount": 5000.0}] {'gL': 1671, 'attr': 2392, 's1': 0, 's2': 0}
+   d_m3_50k_i2: 22 interacting, 1 one-move; e.g. [{"op": "roth_convert", "person": "a", "amount": 6250.0, "year": 2025}] {'gL': 439, 'attr': 439, 's1': -363, 's2': 0}
+   d_m3_50k_i3: 558 interacting, 18 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}] {'gL': 1904, 'attr': 2480, 's1': 0, 's2': 0}
+   d_m3_60k_i2: 8 interacting, 0 one-move; e.g. [{"op": "contribute_retirement", "person": "a", "account": "ira", "amount": 7000.0}, {"op": "roth_convert", "person": "a", "amount": 7500.0, "year": 2025}] {'gL': 6211, 'attr': 3673, 's1': 438, 's2': 0}
+   d_m3_60k_i3: 648 interacting, 18 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}] {'gL': 1608, 'attr': 1778, 's1': 0, 's2': 0}
+   d_m3_75k_i2: 31 interacting, 0 one-move; e.g. [{"op": "contribute_retirement", "person": "b", "account": "401k", "amount": 22500.0}, {"op": "set_filing_status", "tax_unit": "t", "status": "SEPARATE", "year": 2026}] {'gL': 5747, 'attr': 2157, 's1': -57, 's2': 0}
+   d_m3_75k_i3: 537 interacting, 18 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}] {'gL': 1555, 'attr': 725, 's1': 0, 's2': 0}
+   d_m3_90k_i0: 3 interacting, 0 one-move; e.g. [{"op": "realize_gain", "person": "a", "asset": "a_fund", "fraction": 1.0}, {"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 11500.0}] {'gL': 7346, 'attr': 2812, 's1': 0, 's2': 137}
+   d_m3_90k_i2: 62 interacting, 1 one-move; e.g. [{"op": "roth_convert", "person": "a", "amount": 11250.0}] {'gL': 1484, 'attr': 790, 's1': 0, 's2': 0}
+   d_m3_90k_i3: 138 interacting, 0 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5}, {"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 0.5, "year": 2025}] {'gL': 4106, 'attr': 2924, 's1': 87, 's2': 0}
+   d_m3_110k_i0: 5 interacting, 0 one-move; e.g. [{"op": "realize_gain", "person": "a", "asset": "a_fund", "fraction": 1.0, "year": 2025}, {"op": "contribute_retirement", "person": "a", "account": "401k", "amount": 11500.0, "year": 2026}] {'gL': 2529, 'attr': 1469, 's1': 61, 's2': -1274}
+   d_m3_110k_i2: 228 interacting, 10 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_fund", "fraction": 0.5}] {'gL': 961, 'attr': 421, 's1': 17, 's2': 0}
+   d_m3_110k_i3: 489 interacting, 9 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 1.0}] {'gL': 6344, 'attr': 5209, 's1': 0, 's2': 0}
+   d_m3_140k_i2: 298 interacting, 10 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_fund", "fraction": 0.5}] {'gL': 1306, 'attr': 421, 's1': 0, 's2': 0}
+   d_m3_140k_i3: 504 interacting, 9 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 1.0}] {'gL': 4283, 'attr': 3103, 's1': 0, 's2': 0}
+   d_m3_180k_i2: 201 interacting, 6 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_fund", "fraction": 0.5, "year": 2025}] {'gL': 838, 'attr': 343, 's1': 0, 's2': 0}
+   d_m3_180k_i3: 48 interacting, 3 one-move; e.g. [{"op": "gift_asset", "giver": "a", "recipient": "k0", "asset": "a_bond", "fraction": 1.0, "year": 2026}] {'gL': 738, 'attr': 234, 's1': 0, 's2': 0}
+== v5:ctc_phase_out:ctc_amt+ctc_ps.SINGLE m=2: households 416, sequences 516490, share-ok 8472, interacting 0 (one-move 0, two-move 0), 3671s
+
+[exited with code 0]

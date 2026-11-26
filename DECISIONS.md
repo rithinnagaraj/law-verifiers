@@ -154,3 +154,41 @@ The rules, fixed before any v5 candidate is gated or screened:
 - **Valid laws only.** A candidate is skipped at selection if Tax-Calculator rejects any law the gate builds for it (L, L1, L2, Lrev at either magnitude, any horizon year). An example is a bracket threshold scaled past the next one. The skipped candidates are recorded in `v5_invalid_laws.json`. This is a property of the law, checked before any gate.
 - **Spike 3** = the first 10 valid v5 candidates (stage `a5a3`), gated with witness search v2. A5b, if G0 passes, takes the next valid v5 candidates.
 - **Unchanged:** R, the witness share, the $50 floor, magnitudes, archetypes, all five checks, the counting rule and the split rule. Check 2 stays as written.
+
+### Spike 3: result (2026-11-27; `results/a5/a5a3.jsonl`)
+
+At least 9 of 10 fail, so **G0 FAIL** whatever the last family does. That family (`eitc_gate:eitc_inv+eitc_max1`) was still in its gate when this was written. Its result is appended when it finishes. Per magnitude, the 18 gates finished so far:
+- 17 found no interacting witness (no grid or random sequence on the 30 witness households had an attributable share of 0.3 with each mutation alone under R).
+- 1 found a two-move witness: `ctc_phase_out:ctc_amt+ctc_ps.SINGLE` at ×4 on `w_parent_student_high` (a 401(k) contribution, then filing as single). It failed three checks:
+  - check 1: labelled `intended_concession`;
+  - check 2: a one-move Roth-conversion match on `g_married_mid`;
+  - check 4: a one-move match shifting income to a child on `g_parent_high`.
+
+**The plan's stop rule applies.** Spike 3 is the third spike. Its ≤ 1 of 10 passes, so under the plan (A5, gate G0) "the catalog stops, the build failure is reported as a finding, and H2 and H5 become exploratory on whatever families passed" (none passed). A5b does not run. A6 and A7 have no families to run on. Spike 3 was already a plan deviation (revision 3), so it could not have rescued G0 on its own terms. Its result only confirms the stop.
+
+### Dense-pool diagnostic (2026-11-27; `experiments/diag/`, `results/a5/diag/`)
+
+A diagnostic, not an experiment: it changes nothing in the gate, and it ran only on families already rejected. Its question: is the failure a search failure (the 30 witness households miss the regions where the mutations interact), or does the gain not exist?
+
+The household pool was fixed before the diagnostic ran (`diag_pool.py`):
+- 8 types (single or married, 0 to 3 children);
+- 13 wage levels ($10k to $400k);
+- 4 investment levels;
+- 416 households in all.
+
+Every reality-preserving grid sequence of one or two moves (516,490) is scored under current law and under the family's law at ×2 (PolicyEngine only). Every sequence with an attributable share ≥ 0.3 then gets the full interaction test.
+
+| Spike-3 family (×2) | Households with an interacting sequence | Interacting sequences | One-move | Households where only two moves work |
+|---|---|---|---|---|
+| `eitc_gate:eitc_inv+eitc_max3` | 35 | 6,568 | 211 | 21 |
+| `eitc_gate:eitc_inv+eitc_max1` | 32 | 1,655 | 70 | 10 |
+| the other 8 | 0 | 0 | 0 | 0 |
+
+Reading:
+- **For 8 of 10, no gain to find exists.** Neither the generic witness households nor a pool 14 times larger has any interacting sequence of one or two moves. These mutations need facts the pools do not hold, such as filers over 64 (`eitc_age`), business income (`qbi_*`), dependents with earnings (`dep_std_cap`), or binding AMT (`amt_max`). For `ctc_phase_out` the two changes simply add up.
+- **For the 2 EITC investment-limit families, the interaction exists but is shallow.** Interacting sequences appear on 32–35 households. On 10–21 of them, only two moves work: for example, gifting half a bond holding to a child and then converting part of an IRA to a Roth. On other households, one move does it (gifting the bond alone). Under the counting rule, which tests every single move of every interacting sequence found, both families are shallow.
+- **Depth is a property of a law and a household together, not of the law alone.** Under the gate as written, a family counts only if no household anywhere reaches it in one move. With mutations that rescale parameters ordinary households already sit near, some household nearly always does. The rule is kept as written. The user decides on any change.
+
+### Census of the next candidates (2026-11-27, before it ran)
+
+This turns the failure into a measured finding on more than 10 families. The next 20 valid v5 candidates in the seeded order (the first 20 A5b would have gated) get the same dense-pool scan at ×2 (`experiments/diag/diag_census.py`, output `results/a5/diag/census.jsonl`). It reports the same four counts per family. It is a description of the generator, not a gate. No candidate is selected, passed or gated by it, and A5b stays stopped.
