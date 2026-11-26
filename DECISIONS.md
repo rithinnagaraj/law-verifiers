@@ -180,13 +180,13 @@ Every reality-preserving grid sequence of one or two moves (516,490) is scored u
 
 | Spike-3 family (×2) | Households with an interacting sequence | Interacting sequences | One-move | Households where only two moves work |
 |---|---|---|---|---|
-| `eitc_gate:eitc_inv+eitc_max3` | 35 | 6,568 | 211 | 21 |
+| `eitc_gate:eitc_inv+eitc_max3` | 34 | 6,568 | 211 | 13 |
 | `eitc_gate:eitc_inv+eitc_max1` | 32 | 1,655 | 70 | 10 |
 | the other 8 | 0 | 0 | 0 | 0 |
 
 Reading:
 - **For 8 of 10, no gain to find exists.** Neither the generic witness households nor a pool 14 times larger has any interacting sequence of one or two moves. These mutations need facts the pools do not hold, such as filers over 64 (`eitc_age`), business income (`qbi_*`), dependents with earnings (`dep_std_cap`), or binding AMT (`amt_max`). For `ctc_phase_out` the two changes simply add up.
-- **For the 2 EITC investment-limit families, the interaction exists but is shallow.** Interacting sequences appear on 32–35 households. On 10–21 of them, only two moves work: for example, gifting half a bond holding to a child and then converting part of an IRA to a Roth. On other households, one move does it (gifting the bond alone). Under the counting rule, which tests every single move of every interacting sequence found, both families are shallow.
+- **For the 2 EITC investment-limit families, the interaction exists but is shallow.** Interacting sequences appear on 32–34 households. On 10–13 of them, only two moves work: for example, gifting half a bond holding to a child and then converting part of an IRA to a Roth. On other households, one move does it (gifting the bond alone). Under the counting rule, which tests every single move of every interacting sequence found, both families are shallow.
 - **Depth is a property of a law and a household together, not of the law alone.** Under the gate as written, a family counts only if no household anywhere reaches it in one move. With mutations that rescale parameters ordinary households already sit near, some household nearly always does. The rule is kept as written. The user decides on any change.
 
 ### Census of the next candidates (2026-11-27, before it ran)
