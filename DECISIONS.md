@@ -89,3 +89,16 @@ The user gave standing autonomy to iterate ("keep iterating independently and ge
 - **Reporting.** The screen's counts are reported: screened, invalid law, visible to one move, not alive, survived. A pre-screened pass rate is not comparable with spikes 1–2 and is not an estimate of anything about tax law (the catalog is constructed).
 - **Unchanged:** R, the witness share, the $50 floor, magnitudes, archetypes (gate and witness), all five checks, the counting rule and the split rule.
 - **Timing test, stated for transparency.** Before this entry, the screen ran on the first 30 v4 candidates in a scratch results folder (`~/taxgap-scratch`), to time it and find crashes. It produced the invalid-law fix above. It changed no rule, and its rows are not used: the official screen runs from scratch.
+
+### Positive controls: results (2026-11-26; `results/a5/controls.jsonl`)
+
+All four behaved as expected, and no bug was found. The machinery recognizes real loopholes.
+
+| Control | One-move matches (PE), households | Verifier on the 25 largest | Notes |
+|---|---|---|---|
+| `pre1986` | 168, 13 households | 8 `candidate`, 17 `code_disagreement` | Gift of the bond to a child. Each closure undone alone keeps 54–92% of the gain (an OR), and the gate finds no interacting witness, as predicted. The disagreements are gifts to the 13-year-old. With `child_amt_limit` also switched off, both calculators give $29,043. So they are Tax-Calculator's child-AMT rule, which PolicyEngine lacks (the research plan's H4 finding), not a bug. |
+| `pre2006` | 30, 3 households | 25 `candidate` | Gifts to the 15-year-old of `g_parent_high` and the 20-year-old student of `w_parent_student_*` |
+| `pre2008` | 21, 2 households | 21 `candidate` | Gifts to the 20-year-old student |
+| `pre1996` | 9, 1 household | 9 `intended_concession` | 401(k) contributions that reach the EITC: the whitelist correctly calls them intended. Two-move: 2 `candidate` (of 5). |
+
+One expectation was wrong in detail: the anti-abuse attribution does not name the kiddie tax for `pre1986`. That attribution removes the rule from L, and L has already removed it, so it explains nothing. The labels are as expected. All real loopholes found are reachable in one move. This is the premise of revision 2.
