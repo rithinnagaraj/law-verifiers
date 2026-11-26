@@ -219,3 +219,87 @@ def candidates_v4(seed: int = 0) -> list[Family]:
 
 
 GENERATORS[4] = candidates_v4
+
+
+# --- generator v5 (G0 revision 3, 2026-11-26, before spike 3; DECISIONS.md) ---
+#
+# Beyond the plan's two G0 revisions; authorized by the user's grant of
+# autonomy (2026-11-26) and logged as a plan deviation. Diagnosis: the v4
+# screen passed 0 of 600 random cross-provision pairs (no pair with an
+# interacting two-move sequence: random pairs act additively), while spike 2's
+# AND pairs did yield interacting two-move witnesses whose failure was the old
+# search (witnesses that change hours, labelled sacrifice). v5 returns to
+# structures where each parameter alone caps or denies the benefit, keeps
+# witness search v2, and drops the screen: every selected candidate is gated
+# in full.
+#
+#   eitc_gate, eitc_age, ctc_phase_out, qbi_phase_in   v3's operators
+#   amt_max      a regular-tax parameter x the AMT exemption or its phase-out
+#                start, same filing status (s.55(a): tax = regular + the excess
+#                of tentative minimum tax over regular, i.e. max(regular, TMT))
+#   dep_std_cap  dependent standard-deduction earned-income add-on x the
+#                single basic standard deduction (s.63(c)(5): min(basic,
+#                max(floor, earned + add-on)))
+#
+# Operators round-robin, each in a seeded order; spike 1-2 candidates
+# excluded. A candidate whose mutated law a calculator rejects (a bracket
+# threshold scaled past the next one) is not a law: `valid_law` drops it at
+# selection, before it is gated (a property of the law, not an outcome).
+
+OPERATORS_V5 = (*OPERATORS_V3, "amt_max", "dep_std_cap")
+MECHANISM_V5 = {**MECHANISM_V3, "amt_max": "regular_vs_amt", "dep_std_cap": "dependent_std_cap"}
+
+
+def _by_op_v5() -> dict[str, list]:
+    ops = {**_by_op_v3(), "amt_max": [], "dep_std_cap": []}
+    ok, _ = verify()
+    by = {p.key: p for p in ok}
+    for s in ALL_STATUSES:
+        for r in REGULAR:
+            for a in AMT:
+                if f"{r}.{s}" in by and f"{a}.{s}" in by:
+                    ops["amt_max"].append((by[f"{r}.{s}"], by[f"{a}.{s}"]))
+    if "dep_std_add" in by and "std.SINGLE" in by:
+        ops["dep_std_cap"].append((by["dep_std_add"], by["std.SINGLE"]))
+    return ops
+
+
+def candidates_v5(seed: int = 0) -> list[Family]:
+    excluded = {f.id.split(":", 1)[1] for g in (candidates_v2, candidates_v3) for f in g(seed)[:10]}  # spikes 1-2 stay rejected
+    rng = np.random.default_rng(seed)
+    lists = {}
+    for op, pairs in _by_op_v5().items():
+        fams = [Family(f"v5:{op}:{a.key}+{b.key}", MECHANISM_V5[op], a, b, MAGNITUDES) for a, b in pairs
+                if f"{a.key}+{b.key}" not in excluded and f"{b.key}+{a.key}" not in excluded]
+        lists[op] = [fams[i] for i in rng.permutation(len(fams))]
+    out = []
+    for i in range(max((len(v) for v in lists.values()), default=0)):
+        for op in OPERATORS_V5:
+            if i < len(lists[op]):
+                out.append(lists[op][i])
+    return out
+
+
+GENERATORS[5] = candidates_v5
+
+
+def valid_law(fam: Family) -> tuple[bool, str]:
+    """Every law the gate builds (L, L1, L2, Lrev at both magnitudes) is
+    accepted by Tax-Calculator in every horizon year."""
+    import taxcalc as tc
+
+    from ..config import HORIZON_START, HORIZON_YEARS
+
+    for m in fam.magnitudes:
+        for name, law in fam.laws(m).items():
+            for y in range(HORIZON_START, HORIZON_START + HORIZON_YEARS):
+                ref = law.tc_reform(y)
+                if not ref:
+                    continue
+                try:
+                    tc.Policy().implement_reform(ref)
+                except Exception as e:  # noqa: BLE001 - only parameter validation is caught
+                    if type(e).__name__ != "ValidationError":
+                        raise
+                    return False, f"{name}@{m:g} {y}: {str(e)[:300]}"
+    return True, ""

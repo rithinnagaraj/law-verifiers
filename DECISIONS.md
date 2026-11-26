@@ -104,3 +104,53 @@ All four behaved as expected, and no bug was found. The machinery recognizes rea
 One expectation was wrong in detail: the anti-abuse attribution does not name the kiddie tax for `pre1986`. That attribution removes the rule from L, and L has already removed it, so it explains nothing. The labels are as expected. All real loopholes found are reachable in one move. This is the premise of revision 2.
 
 **Amendment to the revision-2 screen (2026-11-26, before spike 3; no gate had run).** The official screen started and was stopped after 85 of 300 candidates. Its rows are kept as `a5s4_draft1.jsonl` and not used. The survivors' names showed a gap in the *alive* condition. Most survivors paired a parameter that no household reaches (an AMT parameter, a separate-filer bracket) with one that some household does. The two-move gain such a pair shows comes from one mutation alone, so check 3 would reject it. The witness must be *interacting*: an attributable share of at least 0.3 *and* each mutation alone moving the gain by less than R. That is a cheap necessary condition of the gate, and it had been left out of the screen by oversight. *Alive* now requires a sampled interacting two-move sequence at both magnitudes. *Hidden* is unchanged. The screen restarts from scratch. Only survivor names and the screen's own counts were seen, never a gate result.
+
+### Spike 2: final result (2026-11-26; `results/a5/a5a2.jsonl`)
+
+0 of 10 pass; **G0 FAIL** (it needed 3 of 10). There were no crashes, and the last family took about a day in its check-2 grid. Per magnitude (20 gates):
+- 14 found no interacting witness.
+- 3 had a one-move (shallow) witness.
+- 3 had a two-move or longer witness that failed checks.
+- Failed checks: 1_witness 5, 2_grid 2, 4_spot 2.
+
+The informative cases:
+- **`eitc_gate:eitc_inv+eitc_prt2` at ×2:** a two-move witness that passed checks 2, 3, 4 and 5. It failed only check 1, because its moves were two hour cuts (`sacrifice`).
+- **`eitc_gate:eitc_inv+eitc_max2` at ×2:**
+  - its witness also changed hours;
+  - check 2 found a real one-move match: shifting $9,500 of income to a child on `g_parent_mid`.
+
+So the AND structures did produce interacting multi-move witnesses. The search spent its budget on hour changes, which revision 2's search v2 fixes.
+
+### Revision-2 screen: result (2026-11-26; `results/a5/a5s4.jsonl`)
+
+The first 600 of 3,277 v4 candidates were screened. Outcomes:
+- 110 invalid law;
+- 308 visible to one move;
+- 182 not alive;
+- **0 survived**.
+
+Spike 3 as specified in revision 2 cannot run. Breakdown:
+- Of the 182 not alive, 95 had no sampled two-move sequence with the attributable share at ×2 at all. The other 87 had such sequences (up to 51), but none was interacting: on every one, one mutation alone moved the gain by at least R. Random cross-provision pairs act additively.
+- The one-move matches came mostly from `roth_convert`, which picks up rate-structure changes through the terminal valuation; then `shift_income` to a child and `set_filing_status`.
+- The *alive* sample was thin. The full reality-preserving one- and two-move grid on the 30 witness households is 37,706 sequences, and the screen sampled 1,500 (about 4%). That makes *alive* a weak test. It does not explain the 87 additive cases.
+
+### G0 revision 3: a plan deviation (2026-11-26, before spike 3)
+
+The plan allows two G0 revisions, and this is a third. It is made under the user's standing instruction to keep iterating ("keep iterating independently and get things to work", 2026-11-26). It is reported as a deviation wherever G0 is reported.
+
+Diagnosis. Revision 2 changed two things at once, and the evidence splits them:
+- The search change was right: spike 2's best candidates failed on hour-change witnesses, which search v2 discards.
+- The generator change was wrong: random pairs have no AND structure (the screen above).
+
+The rules, fixed before any v5 candidate is gated or screened:
+- **Generator v5 (`generate.candidates_v5`).** v3's four operators (two tests of one benefit, each of which alone caps or denies it), plus two structures of the same kind from the statute:
+  - `amt_max`: a regular-tax parameter × the AMT exemption or exemption phase-out start, same filing status, all four statuses (s.55(a): the tax is the larger of regular tax and tentative minimum tax);
+  - `dep_std_cap`: the dependent standard deduction's earned-income add-on × the single basic standard deduction (s.63(c)(5): the smaller of the basic amount and the larger of the floor and earned income plus the add-on).
+  - Operators are taken round-robin, each operator's candidates in a seeded order. Spike 1 and 2 candidates are excluded. Ids are `v5:{operator}:{p1}+{p2}`.
+  - Chosen on principle, before outcomes: each is a min or max in the statute, where loosening one side does nothing while the other binds. That is the property the ablation check (3) requires. No v5 candidate has been run.
+- **No screen.** Every selected candidate is gated in full. Reasons:
+  - The v5 catalog is small (tens, not thousands), so screening saves little.
+  - A screen's thin sample would add a selection step that the gate itself does not need.
+- **Valid laws only.** A candidate is skipped at selection if Tax-Calculator rejects any law the gate builds for it (L, L1, L2, Lrev at either magnitude, any horizon year). An example is a bracket threshold scaled past the next one. The skipped candidates are recorded in `v5_invalid_laws.json`. This is a property of the law, checked before any gate.
+- **Spike 3** = the first 10 valid v5 candidates (stage `a5a3`), gated with witness search v2. A5b, if G0 passes, takes the next valid v5 candidates.
+- **Unchanged:** R, the witness share, the $50 floor, magnitudes, archetypes, all five checks, the counting rule and the split rule. Check 2 stays as written.

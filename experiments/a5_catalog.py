@@ -7,8 +7,9 @@ Stages:
                 candidates (spike 1 excluded)
   --stage a5s4  G0 revision 2: screen generator-v4 candidates in their seeded
                 order (mutations/screen.py), --screen N of them
-  --stage a5a3  spike 3: the first 10 screened v4 candidates that pass the
-                screen, gated with witness search v2
+  --stage a5a3  spike 3 after G0 revision 3 (a plan deviation, DECISIONS.md):
+                the first 10 valid-law generator-v5 candidates, gated in full
+                with witness search v2 (the v4 screen passed none of 600)
   --stage a5b   the next candidates of the last spike's generator
                 (up to 50, --extend: 80; v3 has fewer)
   --summary     family manifest, counts by operator and mechanism,
@@ -40,9 +41,9 @@ from taxgap.runner import read_rows, run
 
 SEED = 0
 SPIKE = 10
-SPIKES = {"a5a": 2, "a5a2": 3, "a5a3": 4}  # spike stage -> generator version (DECISIONS.md, G0 revisions)
+SPIKES = {"a5a": 2, "a5a2": 3, "a5a3": 5}  # spike stage -> generator version (DECISIONS.md, G0 revisions)
 SEARCH = {"a5a": 1, "a5a2": 1, "a5a3": 2}  # spike stage -> witness search version
-A5B_GEN = 4  # generator of the last spike
+A5B_GEN = 5  # generator of the last spike
 STAGES = (*SPIKES, "a5b")
 G0_MIN = 3
 G2_MIN = 20
@@ -50,7 +51,8 @@ G2_MIN = 20
 DISCLAIMER = (
     "The candidate catalog is constructed: a designed generator pairs parameters at "
     "structures chosen to interact (v2: regular tax vs AMT, the EITC's tests, filing-status parameters; "
-    "v3 after G0 revision 1: two tests of one benefit, each of which alone denies it) "
+    "v3 after G0 revision 1: two tests of one benefit, each of which alone denies it; "
+    "v5 after G0 revision 3: v3's structures plus regular tax vs AMT and the dependent standard-deduction cap) "
     "and scales them x2 and x4. Pass rates measure how many of these designed candidates "
     "yield gated, non-decomposable interaction families; they are not an estimate of how "
     "common such interactions are in tax law."
@@ -98,6 +100,20 @@ def screened(d) -> list:
             break
         if passes(r):
             out.append(f)
+    return out
+
+
+def valid_candidates(d, n: int) -> list:
+    """The first n v5 candidates, in generator order, whose laws Tax-Calculator
+    accepts; the rejected ones are recorded in v5_invalid_laws.json."""
+    from taxgap.mutations.generate import valid_law
+    out, bad = [], []
+    for f in candidates(SEED, 5):
+        if len(out) >= n:
+            break
+        ok, why = valid_law(f)
+        (out if ok else bad).append(f if ok else {"family": f.id, "reason": why})
+    json.dump(bad, open(d / "v5_invalid_laws.json", "w"), indent=1)
     return out
 
 
@@ -205,12 +221,9 @@ def main():
         c = Counter("invalid law" if r.get("invalid_law") else "pass" if r["hidden"] and r["alive"] else ("not hidden" if not r["hidden"] else "not alive") for r in rows)
         print(f"screened {len(rows)} of {len(candidates(SEED, 4))} v4 candidates: {dict(c)}; first 10 survivors: {[f.id for f in screened(d)[:SPIKE]]}")
         return
-    if a.stage == "a5a3":
-        sel = screened(d)[:SPIKE]
-        if len(sel) < SPIKE:
-            raise SystemExit(f"only {len(sel)} screened survivors so far: screen more (--stage a5s4 --screen N)")
-    elif a.stage == "a5b" and A5B_GEN == 4:
-        sel = screened(d)[SPIKE : SPIKE + (80 if a.extend else 50)]
+    if SPIKES.get(a.stage) == 5 or (a.stage == "a5b" and A5B_GEN == 5):
+        lo, hi = (0, SPIKE) if a.stage in SPIKES else (SPIKE, SPIKE + (80 if a.extend else 50))
+        sel = valid_candidates(d, hi)[lo:hi]
     elif a.stage in SPIKES:
         sel = candidates(SEED, SPIKES[a.stage])[:SPIKE]
     elif a.stage == "a5b":
