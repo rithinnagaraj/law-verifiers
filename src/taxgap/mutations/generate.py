@@ -172,3 +172,49 @@ def all_families(seed: int = 0) -> dict[str, Family]:
     for g in GENERATORS.values():
         out.update({f.id: f for f in g(seed)})
     return out
+
+
+# --- generator v4 (G0 revision 2, 2026-11-26, before spike 3; DECISIONS.md) ---
+#
+# Spike 2's diagnosis: rescaling a parameter that ordinary households are
+# near makes the mutation reachable in one move, so check 2 fails whatever
+# the structure. v4 keeps the operator (two parameters from different
+# provisions, both moved the tax-lowering way, x2 and x4) but draws from
+# every cross-provision pair of the verified catalog, and screens each
+# candidate, in a seeded order, with two necessary conditions of the gate
+# (mutations/screen.py) before it is gated:
+#   hidden  no one-move grid sequence on the 9 gate households is a match
+#           under L at either magnitude (check 2's own test, minus the
+#           witness household, which is not known yet)
+#   alive   at both magnitudes, some reality-preserving two-move grid
+#           sequence (sampled) on the witness households has gain > $50 and
+#           an attributable gain >= $50 and >= 0.3 of its gain
+# Spike 3 gates the first 10 candidates that pass the screen. Spike 1 and 2
+# candidates stay rejected and are excluded.
+
+GROUP = {
+    "eitc": "eitc", "eitc_age": "eitc", "eitc_investment_limit": "eitc",
+    "ctc": "child_credits", "actc": "child_credits", "odc": "child_credits",
+    "qbi_rate": "qbi", "qbi_threshold": "qbi", "qbi_phase_in": "qbi",
+    "amt": "amt", "capital_gains_rates": "investment_income", "niit": "investment_income",
+    "dependent_std": "dependents", "standard_deduction": "rate_structure", "rate_brackets": "rate_structure",
+    "salt_cap": "itemized",
+}
+
+
+def mechanism_v4(a: Param, b: Param) -> str:
+    g = sorted({GROUP.get(a.provision, a.provision), GROUP.get(b.provision, b.provision)})
+    return "+".join(g) if len(g) == 2 else f"within_{g[0]}"
+
+
+def candidates_v4(seed: int = 0) -> list[Family]:
+    excluded = {f.id.split(":", 1)[1] for g in (candidates_v2, candidates_v3) for f in g(seed)[:10]}  # spikes 1-2 stay rejected
+    ok, _ = verify()
+    ok = sorted(ok, key=lambda p: p.key)
+    pairs = [(a, b) for a, b in itertools.combinations(ok, 2) if a.provision != b.provision
+             and f"{a.key}+{b.key}" not in excluded and f"{b.key}+{a.key}" not in excluded]
+    rng = np.random.default_rng(seed)
+    return [Family(f"v4:{a.key}+{b.key}", mechanism_v4(a, b), a, b, MAGNITUDES) for a, b in (pairs[i] for i in rng.permutation(len(pairs)))]
+
+
+GENERATORS[4] = candidates_v4

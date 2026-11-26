@@ -4,7 +4,11 @@ Stages:
   --stage a5a   spike 1: the first 10 generator-v2 candidates; gate G0
                 (>= 3 of 10 pass) decides whether A4, A5b and A7 proceed
   --stage a5a2  spike 2 after G0 revision 1: the first 10 generator-v3
-                candidates (spike 1 excluded); a5a3 is reserved for revision 2
+                candidates (spike 1 excluded)
+  --stage a5s4  G0 revision 2: screen generator-v4 candidates in their seeded
+                order (mutations/screen.py), --screen N of them
+  --stage a5a3  spike 3: the first 10 screened v4 candidates that pass the
+                screen, gated with witness search v2
   --stage a5b   the next candidates of the last spike's generator
                 (up to 50, --extend: 80; v3 has fewer)
   --summary     family manifest, counts by operator and mechanism,
@@ -36,8 +40,9 @@ from taxgap.runner import read_rows, run
 
 SEED = 0
 SPIKE = 10
-SPIKES = {"a5a": 2, "a5a2": 3}  # spike stage -> generator version (DECISIONS.md, G0 revisions)
-A5B_GEN = 3  # generator of the last spike
+SPIKES = {"a5a": 2, "a5a2": 3, "a5a3": 4}  # spike stage -> generator version (DECISIONS.md, G0 revisions)
+SEARCH = {"a5a": 1, "a5a2": 1, "a5a3": 2}  # spike stage -> witness search version
+A5B_GEN = 4  # generator of the last spike
 STAGES = (*SPIKES, "a5b")
 G0_MIN = 3
 G2_MIN = 20
@@ -68,9 +73,32 @@ def job(j: dict) -> list:
     rows = []
     for m in fam.magnitudes:
         rng = np.random.default_rng([int(hashlib.sha1(fam.id.encode()).hexdigest()[:8], 16), int(m * 10)])
-        rows.append(gate(fam, m, rng))
+        rows.append(gate(fam, m, rng, search=SEARCH.get(j["stage"], 2)))
     st = status(rows)
     return [{"family": fam.describe(), "stage": j["stage"], "status": st, "passed": st == "pass", "gates": rows}]
+
+
+def screen_job(j: dict) -> list:
+    from taxgap.mutations.screen import screen
+    fam = all_families(SEED)[j["family"]]
+    r = screen(fam)
+    r.update({"id": j["id"], "order": j["order"], "mechanism": fam.mechanism})
+    return [r]
+
+
+def screened(d) -> list:
+    """v4 candidates that passed the screen, in the generator's order, with
+    every earlier candidate screened (a gap stops the list)."""
+    from taxgap.mutations.screen import passes
+    rows = {r["family"]: r for r in read_rows(d / "a5s4.jsonl")} if (d / "a5s4.jsonl").exists() else {}
+    out = []
+    for f in candidates(SEED, 4):
+        r = rows.get(f.id)
+        if r is None:
+            break
+        if passes(r):
+            out.append(f)
+    return out
 
 
 def split(passing: list, seed: int = SEED) -> dict:
@@ -163,13 +191,27 @@ def summarize(d) -> None:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=STAGES)
+    ap.add_argument("--stage", choices=(*STAGES, "a5s4"))
     ap.add_argument("--extend", action="store_true")
     ap.add_argument("--workers", type=int, default=None)
     ap.add_argument("--summary", action="store_true")
+    ap.add_argument("--screen", type=int, default=300)
     a = ap.parse_args()
     d = results_dir("a5")
-    if a.stage in SPIKES:
+    if a.stage == "a5s4":
+        cs = candidates(SEED, 4)[: a.screen]
+        run([{"id": f.id, "family": f.id, "order": i} for i, f in enumerate(cs)], screen_job, d / "a5s4.jsonl", workers=a.workers)
+        rows = read_rows(d / "a5s4.jsonl")
+        c = Counter("pass" if r["hidden"] and r["alive"] else ("not hidden" if not r["hidden"] else "not alive") for r in rows)
+        print(f"screened {len(rows)} of {len(candidates(SEED, 4))} v4 candidates: {dict(c)}; first 10 survivors: {[f.id for f in screened(d)[:SPIKE]]}")
+        return
+    if a.stage == "a5a3":
+        sel = screened(d)[:SPIKE]
+        if len(sel) < SPIKE:
+            raise SystemExit(f"only {len(sel)} screened survivors so far: screen more (--stage a5s4 --screen N)")
+    elif a.stage == "a5b" and A5B_GEN == 4:
+        sel = screened(d)[SPIKE : SPIKE + (80 if a.extend else 50)]
+    elif a.stage in SPIKES:
         sel = candidates(SEED, SPIKES[a.stage])[:SPIKE]
     elif a.stage == "a5b":
         sel = candidates(SEED, A5B_GEN)[SPIKE : SPIKE + (80 if a.extend else 50)]

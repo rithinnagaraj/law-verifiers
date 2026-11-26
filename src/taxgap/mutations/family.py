@@ -105,23 +105,68 @@ def _scores(props: list, laws: dict) -> list[dict]:
     return out
 
 
-def witness_search(laws: dict, rng: np.random.Generator, budget: int = 1250, batch: int = 50, pool: Optional[list] = None) -> dict:
+def _real(hh, seq, cfg=Config()) -> bool:
+    """The sequence keeps the household's real income, hours and wealth (else check 1 labels it a sacrifice)."""
+    from ..verifier import _reality
+
+    try:
+        return _reality(prepare(hh, seq), cfg)[0]
+    except (MoveError, KeyError, ValueError):
+        return False
+
+
+def grid_scan(laws: dict, pool: list, kmax: int = 2) -> list:
+    """Search v2, first stage: every reality-preserving grid sequence of 1..kmax
+    moves on every pool household, scored like the random search. Current law
+    and L first; the single mutations only where the share test can pass.
+    Returns the interacting sequences [(household index, moves, scores)]."""
+    found = []
+    for k, hh in enumerate(pool):
+        seqs = [s for j in range(1, kmax + 1) for s in sequences(hh, j) if _real(hh, s)]
+        props = [(hh, s) for s in seqs]
+        for c in range(0, len(props), 600):
+            chunk, sq = props[c : c + 600], seqs[c : c + 600]
+            g0 = _pe_gains(chunk, CURRENT_LAW)
+            gl = _pe_gains(chunk, laws["L"])
+            keep = [i for i, (a, b) in enumerate(zip(g0, gl)) if b == b and b > FLOOR and b - a >= FLOOR and b - a >= WITNESS_SHARE * b]
+            if not keep:
+                continue
+            for i, x in zip(keep, _scores([chunk[i] for i in keep], laws)):
+                if x["interacting"]:
+                    found.append((k, sq[i], x))
+    return found
+
+
+def witness_search(laws: dict, rng: np.random.Generator, budget: int = 1250, batch: int = 50, pool: Optional[list] = None, version: int = 1) -> dict:
+    """version 1 (spikes 1-2): random + elite mutation, budget counts every proposal.
+    version 2 (G0 revision 2): exhaustive 1-2-move grid scan first, then the
+    random search for continuous amounts and longer sequences; sequences that
+    change real income, hours or wealth are discarded before scoring and do
+    not count toward the budget."""
     pool = pool or witness_archetypes()
     elite: list = []  # (score, k, moves)
     found: list = []  # interacting (k, moves, score dict)
     n = 0
-    while n < budget:
+    n_grid = 0
+    tries = 0
+    if version >= 2:
+        found = grid_scan(laws, pool)
+        n_grid = len(found)
+    while n < budget and tries < 20 * budget:
         props = []
         for _ in range(batch):
+            tries += 1
             if not elite or rng.random() < 0.4:
                 k = int(rng.integers(len(pool)))
                 seq = random_sequence(pool[k], rng, max_len=3)
             else:
                 _, k, base = elite[int(rng.integers(len(elite)))]
                 seq = mutate(pool[k], base, rng, max_len=4)
-            if seq:
+            if seq and (version < 2 or _real(pool[k], seq)):
                 props.append((k, seq))
         if not props:
+            if version >= 2:
+                continue  # every draw was a sacrifice; tries bounds the loop
             break
         sc = _scores([(pool[k], s) for k, s in props], laws)
         n += len(props)
@@ -133,7 +178,7 @@ def witness_search(laws: dict, rng: np.random.Generator, budget: int = 1250, bat
         elite.sort(key=lambda e: -e[0])
         elite = elite[:8]
     if not found:
-        return {"found": False, "proposals": n, "n_interacting": 0, "n_one_move": 0}
+        return {"found": False, "proposals": n, "n_grid": n_grid, "n_interacting": 0, "n_one_move": 0}
     # does any single move of any interacting sequence interact on its own?
     singles: dict = {}
     for k, s, _ in found:
@@ -157,7 +202,7 @@ def witness_search(laws: dict, rng: np.random.Generator, budget: int = 1250, bat
                         break
             mins.append((len(seq), -x["attr"], k, seq, x))
     k_len, _, k, seq, x = min(mins, key=lambda t: t[:2])  # shortest, then largest attributable gain
-    return {"found": True, "proposals": n, "n_interacting": len(found), "n_one_move": len(ones), "household": k, "household_id": pool[k].id, "moves": seq, "k": k_len, "scores": x}
+    return {"found": True, "proposals": n, "n_grid": n_grid, "n_interacting": len(found), "n_one_move": len(ones), "household": k, "household_id": pool[k].id, "moves": seq, "k": k_len, "scores": x}
 
 
 def _matches(props: list, law: Law, verifier: Verifier) -> list:
@@ -172,11 +217,11 @@ def _matches(props: list, law: Law, verifier: Verifier) -> list:
     return [(props[i], v.to_dict(), gl[i] - g0[i]) for i, v in zip(cand, vs) if v.label == "candidate"]
 
 
-def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 1250, grid_cap: int = 30_000, spot: int = 500) -> dict:
+def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 1250, grid_cap: int = 30_000, spot: int = 500, search: int = 1) -> dict:
     laws = fam.laws(m)
-    out = {"family": fam.id, "magnitude": m, "checks": {}, "passed": False}
+    out = {"family": fam.id, "magnitude": m, "checks": {}, "passed": False, "search": search}
     pool = witness_archetypes()
-    w = witness_search(laws, rng, witness_budget, pool=pool)
+    w = witness_search(laws, rng, witness_budget, pool=pool, version=search)
     out["witness"] = w
     if not w["found"]:
         out["reason"] = "no interacting witness"
