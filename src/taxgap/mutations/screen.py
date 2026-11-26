@@ -53,6 +53,18 @@ def _two_move(n_two: int, seed: int = 0) -> list:
 
 
 def screen(fam: Family, n_two: int = 1500) -> dict:
+    """Screen one candidate. A mutated law that a calculator rejects (for
+    example a bracket threshold scaled past the next one, which Tax-Calculator
+    refuses as out of order) is recorded as `invalid_law` and fails."""
+    try:
+        return _screen(fam, n_two)
+    except Exception as e:  # noqa: BLE001 - only the calculators' parameter validation is caught
+        if type(e).__name__ != "ValidationError":
+            raise
+        return {"family": fam.id, "hidden": False, "alive": False, "invalid_law": str(e)[:400]}
+
+
+def _screen(fam: Family, n_two: int) -> dict:
     out = {"family": fam.id, "hidden": True, "alive": False, "one_move_matches": {}, "alive_at": None}
     one = _one_move()
     for m in fam.magnitudes:
@@ -79,4 +91,4 @@ def screen(fam: Family, n_two: int = 1500) -> dict:
 
 
 def passes(row: dict) -> bool:
-    return bool(row["hidden"] and row["alive"])
+    return bool(row["hidden"] and row["alive"] and not row.get("invalid_law"))

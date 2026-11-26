@@ -202,7 +202,7 @@ def main():
         cs = candidates(SEED, 4)[: a.screen]
         run([{"id": f.id, "family": f.id, "order": i} for i, f in enumerate(cs)], screen_job, d / "a5s4.jsonl", workers=a.workers)
         rows = read_rows(d / "a5s4.jsonl")
-        c = Counter("pass" if r["hidden"] and r["alive"] else ("not hidden" if not r["hidden"] else "not alive") for r in rows)
+        c = Counter("invalid law" if r.get("invalid_law") else "pass" if r["hidden"] and r["alive"] else ("not hidden" if not r["hidden"] else "not alive") for r in rows)
         print(f"screened {len(rows)} of {len(candidates(SEED, 4))} v4 candidates: {dict(c)}; first 10 survivors: {[f.id for f in screened(d)[:SPIKE]]}")
         return
     if a.stage == "a5a3":
