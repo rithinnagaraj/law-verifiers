@@ -123,9 +123,10 @@ def _run(returns: Sequence[Return], law: Law, salt: dict) -> list[ReturnResult]:
         ti = calc("taxable_income")
         savers = calc("savers_credit")
         st = calc("state_and_local_sales_or_income_tax")
+        agi = calc("adjusted_gross_income")
     if not len(fed) == len(returns):
         raise RuntimeError("PolicyEngine returned a different number of tax units")
-    return [ReturnResult(r.key, fed[i], regular[i], amt[i], ti[i], savers[i], st[i]) for i, r in enumerate(returns)]
+    return [ReturnResult(r.key, fed[i], regular[i], amt[i], ti[i], savers[i], st[i], agi[i]) for i, r in enumerate(returns)]
 
 
 def evaluate(returns: Sequence[Return], law: Law, salt: Optional[dict] = None) -> dict[str, ReturnResult]:

@@ -94,6 +94,31 @@ class KiddieRule:
     age_under: int = 19
     student_age_under: Optional[int] = 24
     allowance_multiple: float = 2.0
+    # Planted flaw (hand-authored catalog): share of the child's realized
+    # long-term gains left out of net unearned income. 0 in real law.
+    ltcg_exempt: float = 0.0
+
+
+@dataclass(frozen=True)
+class Planted:
+    """Provisions of the hand-authored catalog's base law (DECISIONS,
+    2026-11-27), implemented in this package (calc/planted.py). The default
+    is real law: none of them.
+
+    gift_window      years after a gift (0 = the gift year) in which a
+                     long-term gain realized on the gifted property is taxed
+                     to the donor (donor attribution; analogue s.644)
+    investor_rate    small-investor credit rate on realized long-term gains
+                     (0 = no credit); saver's-credit AGI limits
+    investor_cap     gains counted by the credit
+    investor_dep_share  share of the credit a filer claimed as a dependent
+                     gets (0: not available, s.25B(c)(2)(B) analogue)
+    """
+
+    gift_window: tuple = ()
+    investor_rate: float = 0.0
+    investor_cap: float = 10_000.0
+    investor_dep_share: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -101,6 +126,7 @@ class Law:
     label: str = "current law"
     changes: tuple = ()
     kiddie: KiddieRule = KiddieRule()
+    planted: Planted = Planted()
     # Internal switches implemented by the adapters: "hsa_deduction" off.
     internal_off: frozenset = frozenset()
 
@@ -151,12 +177,14 @@ class Law:
 
 
 CURRENT_LAW = Law()
+# Base law of the hand-authored catalog: real law plus the planted provisions.
+PLANTED_BASE = Law(label="planted base", planted=Planted(gift_window=(0, 1), investor_rate=0.10))
 
 
 @lru_cache(maxsize=4096)
 def _law_key(law: Law) -> str:
     return json.dumps(
-        {"c": [c.__dict__ for c in law.changes], "k": law.kiddie.__dict__, "i": sorted(law.internal_off)},
+        {"c": [c.__dict__ for c in law.changes], "k": law.kiddie.__dict__, "i": sorted(law.internal_off), "p": law.planted.__dict__},
         sort_keys=True,
         default=str,
     )

@@ -103,12 +103,12 @@ def evaluate(returns: Sequence[Return], law: Law, salt: dict) -> dict[str, Retur
     if calc.current_year != year:
         calc.advance_to_year(year)
     calc.calc_all()
-    out = calc.dataframe(["RECID", "iitax", "taxbc", "c09600", "c04800"])
+    out = calc.dataframe(["RECID", "iitax", "taxbc", "c09600", "c04800", "c00100"])
     by_id = {int(row.RECID): row for row in out.itertuples(index=False)}
     res = {}
     for i, r in enumerate(returns):
         row = by_id[i + 1]
-        res[r.key] = ReturnResult(r.key, float(row.iitax), float(row.taxbc), float(row.c09600), float(row.c04800))
+        res[r.key] = ReturnResult(r.key, float(row.iitax), float(row.taxbc), float(row.c09600), float(row.c04800), agi=float(row.c00100))
     if len(res) != len(returns):
         raise RuntimeError("Tax-Calculator returned a different number of records")
     return res

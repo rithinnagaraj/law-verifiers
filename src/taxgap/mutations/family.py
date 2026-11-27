@@ -93,7 +93,7 @@ def _pe_gains(props: list, law: Law) -> list[float]:
 
 
 def _scores(props: list, laws: dict) -> list[dict]:
-    g0 = _pe_gains(props, CURRENT_LAW)
+    g0 = _pe_gains(props, laws.get("base", CURRENT_LAW))
     gl = _pe_gains(props, laws["L"])
     g1 = _pe_gains(props, laws["L1"])
     g2 = _pe_gains(props, laws["L2"])
@@ -126,7 +126,7 @@ def grid_scan(laws: dict, pool: list, kmax: int = 2) -> list:
         props = [(hh, s) for s in seqs]
         for c in range(0, len(props), 600):
             chunk, sq = props[c : c + 600], seqs[c : c + 600]
-            g0 = _pe_gains(chunk, CURRENT_LAW)
+            g0 = _pe_gains(chunk, laws.get("base", CURRENT_LAW))
             gl = _pe_gains(chunk, laws["L"])
             keep = [i for i, (a, b) in enumerate(zip(g0, gl)) if b == b and b > FLOOR and b - a >= FLOOR and b - a >= WITNESS_SHARE * b]
             if not keep:
@@ -205,10 +205,12 @@ def witness_search(laws: dict, rng: np.random.Generator, budget: int = 1250, bat
     return {"found": True, "proposals": n, "n_grid": n_grid, "n_interacting": len(found), "n_one_move": len(ones), "household": k, "household_id": pool[k].id, "moves": seq, "k": k_len, "scores": x}
 
 
-def _matches(props: list, law: Law, verifier: Verifier) -> list:
+def _matches(props: list, law: Law, verifier: Verifier, base: Law = CURRENT_LAW) -> list:
     """Proposals that are matches under `law` (cheap PolicyEngine filter,
-    then the full verifier for those that pass it)."""
-    g0 = _pe_gains(props, CURRENT_LAW)
+    then the full verifier for those that pass it). Attributable gains are
+    measured against `base` (current law; the planted base law B for a
+    hand-authored family)."""
+    g0 = _pe_gains(props, base)
     gl = _pe_gains(props, law)
     cand = [i for i, (a, b) in enumerate(zip(g0, gl)) if b > FLOOR and b - a >= FLOOR and b - a >= R * b]
     if not cand:
@@ -220,7 +222,8 @@ def _matches(props: list, law: Law, verifier: Verifier) -> list:
 def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 1250, grid_cap: int = 30_000, spot: int = 500, search: int = 1) -> dict:
     laws = fam.laws(m)
     out = {"family": fam.id, "magnitude": m, "checks": {}, "passed": False, "search": search}
-    pool = witness_archetypes()
+    base = laws.get("base", CURRENT_LAW)
+    pool = witness_archetypes() + list(getattr(fam, "households", ()))  # hand-authored families may add witness households
     w = witness_search(laws, rng, witness_budget, pool=pool, version=search)
     out["witness"] = w
     if not w["found"]:
@@ -237,7 +240,7 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
     s = w["scores"]
     out["checks"]["3_ablation"] = {"share1": s["s1"] / s["gL"], "share2": s["s2"] / s["gL"], "ok": s["s1"] < R * s["gL"] and s["s2"] < R * s["gL"]}
     # 5. negative control
-    rv = _matches([(hh, mv)], laws["Lrev"], Verifier(laws["Lrev"], Config()))
+    rv = _matches([(hh, mv)], laws["Lrev"], Verifier(laws["Lrev"], Config()), base)
     out["checks"]["5_reverse"] = {"matches": len(rv), "ok": not rv}
     if out["shallow"]:
         out["vacuous"] = ["2_grid", "4_spot"]
@@ -255,7 +258,7 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
             seqs = [seqs[i] for i in idx]
         n_seq += len(seqs)
         for c in range(0, len(seqs), 400):
-            for p, vd, at in _matches([(a, s_) for s_ in seqs[c : c + 400]], laws["L"], vL):
+            for p, vd, at in _matches([(a, s_) for s_ in seqs[c : c + 400]], laws["L"], vL, base):
                 hits.append((a.id, p[1], vd, at))
     out["checks"]["2_grid"] = {"sequences": n_seq, "sampled": sampled, "matches": len(hits), "examples": [{"hh": h, "moves": s_, "attr": at} for h, s_, _, at in hits[:3]], "ok": not hits}
     # 4. continuous spot check
@@ -265,7 +268,7 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
         sq = random_sequence(a, rng, max_len=k - 1)
         if sq and len(sq) == k - 1:
             draws.append((a, sq))
-    sh = _matches(draws, laws["L"], vL)
+    sh = _matches(draws, laws["L"], vL, base)
     out["checks"]["4_spot"] = {"draws": len(draws), "matches": len(sh), "examples": [{"hh": p[0].id, "moves": p[1], "attr": at} for p, _, at in sh[:3]], "ok": not sh}
     out["checks"] = {k_: out["checks"][k_] for k_ in sorted(out["checks"])}
     out["passed"] = all(c["ok"] for c in out["checks"].values())

@@ -133,7 +133,7 @@ def gift_asset(hh: Household, year: int, giver: str, recipient: str, asset: str,
         raise MoveError("giver is the recipient")
     f = _fraction(fraction)
     a = g.asset(asset)
-    moved = Asset(f"{a.id}@{recipient}", a.value * f, a.basis * f, a.interest_yield, a.dividend_yield, a.sale_year)
+    moved = Asset(f"{a.id}@{recipient}", a.value * f, a.basis * f, a.interest_yield, a.dividend_yield, a.sale_year, giver, year)
     a.value *= 1 - f
     a.basis *= 1 - f
     if a.value <= 1e-9:
@@ -142,6 +142,7 @@ def gift_asset(hh: Household, year: int, giver: str, recipient: str, asset: str,
     if have:
         have.value += moved.value
         have.basis += moved.basis
+        have.gift_from, have.gift_year = giver, year
     else:
         r.assets.append(moved)
 
@@ -221,6 +222,12 @@ def realize_gain(hh: Household, year: int, person: str, asset: str, fraction: fl
         return
     p.ltcg += gain
     a.basis += gain
+    if a.gift_from is not None and a.gift_year is not None and year - a.gift_year in (0, 1):
+        if year == a.gift_year:
+            p.gift_ltcg_y0 += gain
+        else:
+            p.gift_ltcg_y1 += gain
+        p.gift_donor = a.gift_from
 
 
 def contribute_hsa(hh: Household, year: int, person: str, amount: float, coverage: str = "self") -> None:
@@ -310,7 +317,7 @@ MOVES: dict[str, Callable] = {
     "roth_convert": roth_convert,
 }
 ONE_TIME = frozenset({"realize_gain", "contribute_hsa", "donate_cash", "reduce_donation", "donate_asset", "roth_convert"})
-FLOWS = ("ltcg", "charitable_cash", "charitable_noncash", "hsa")
+FLOWS = ("ltcg", "charitable_cash", "charitable_noncash", "hsa", "gift_ltcg_y0", "gift_ltcg_y1")
 OTHER_FLOWS = ("ira_distributions",)
 
 

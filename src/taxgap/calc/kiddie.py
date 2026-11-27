@@ -55,6 +55,16 @@ def _scaled(p, keep: float):
     return q
 
 
+def _exempt(child, share: float):
+    """The child with `share` of its realized long-term gains left out (the
+    planted ltcg_exempt flaw); the child itself when share is 0."""
+    if share <= 0 or child.ltcg <= 0:
+        return child
+    q = copy.deepcopy(child)
+    q.ltcg *= 1.0 - share
+    return q
+
+
 def _parent_plus(parent: Return, kids: list, shares: list[float]) -> Return:
     v = copy.deepcopy(parent)
     v.key = parent.key + "+nui"
@@ -91,9 +101,10 @@ def adjustments(
         child = r.head
         if not applies(law, child.age, child.is_student):
             continue
-        nui = min(max(child.unearned_income - allow, 0.0), max(results[r.key].taxable_income, 0.0))
+        eff = _exempt(child, law.kiddie.ltcg_exempt)
+        nui = min(max(eff.unearned_income - allow, 0.0), max(results[r.key].taxable_income, 0.0))
         if nui > 0:
-            groups.setdefault(r.claimed_by, []).append((r, nui))
+            groups.setdefault(r.claimed_by, []).append((r, nui, eff))
     if not groups:
         return {}
     variants: list[Return] = []
@@ -101,15 +112,16 @@ def adjustments(
     plan = []
     for parent_key, kids in groups.items():
         parent = by_key[parent_key]
-        shares = [nui / r.head.unearned_income for r, nui in kids]
-        pv = _parent_plus(parent, [r.head for r, _ in kids], shares)
+        shares = [nui / eff.unearned_income for _, nui, eff in kids]
+        pv = _parent_plus(parent, [eff for _, _, eff in kids], shares)
         variants.append(pv)
         vsalt[pv.key] = salt.get(parent.key, 0.0)
         kvs = []
-        for (r, _), share in zip(kids, shares):
+        for (r, _, eff), share in zip(kids, shares):
             cv = copy.deepcopy(r)
             cv.key = r.key + "-nui"
-            cv.members[0].person = _scaled(r.head, 1.0 - share)
+            cv.members[0].person = _scaled(eff, 1.0 - share)
+            cv.members[0].person.ltcg += r.head.ltcg - eff.ltcg  # exempt gains stay at the child's rates
             variants.append(cv)
             vsalt[cv.key] = salt.get(r.key, 0.0)
             kvs.append(cv)
@@ -118,8 +130,8 @@ def adjustments(
     out: dict[str, float] = {}
     for parent, pv, kids, kvs in plan:
         parental = max(vres[pv.key].regular_tax - results[parent.key].regular_tax, 0.0)
-        total = sum(n for _, n in kids)
-        for (r, nui), cv in zip(kids, kvs):
+        total = sum(n for _, n, _ in kids)
+        for (r, nui, _), cv in zip(kids, kvs):
             kiddie_regular = vres[cv.key].regular_tax + parental * nui / total
             orig = results[r.key]
             before = orig.regular_tax + orig.amt

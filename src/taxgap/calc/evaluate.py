@@ -20,7 +20,7 @@ from typing import Sequence
 
 from ..law import Law
 from ..model import Household, compile_returns
-from . import kiddie, pe, tc
+from . import kiddie, pe, planted, tc
 
 MEMO_MAX = 400_000
 BATCH_RETURNS = 1_500  # returns per calculator call
@@ -31,7 +31,7 @@ class YearTax:
     pe: float  # federal income tax, PolicyEngine (kiddie tax included)
     tc: float  # federal income tax, Tax-Calculator (kiddie tax included); nan if not computed
     pe_only: float  # PolicyEngine-only federal credits (saver's credit) applied in pe; pe + pe_only is comparable with tc
-    kiddie_pe: float  # Form 8615 tax computed by this package, part of pe
+    kiddie_pe: float  # tax computed by this package (Form 8615 and planted credits), part of pe
     kiddie_tc: float
 
 
@@ -58,6 +58,7 @@ def _chunks(per_hh: list) -> list:
 
 def _compute(items: Sequence[Household], law: Law, with_tc: bool) -> list[YearTax]:
     year = items[0].year
+    items = [planted.attribute_gifts(h, law) for h in items]
     per_hh = [compile_returns(h, f"h{i}", year) for i, h in enumerate(items)]
     pe_res, tc_res, adj_pe, adj_tc = {}, {}, {}, {}
     for chunk in _chunks(per_hh):
@@ -65,12 +66,18 @@ def _compute(items: Sequence[Household], law: Law, with_tc: bool) -> list[YearTa
         stats["returns"] += len(chunk)
         pr = pe.evaluate(chunk, law)
         salt = {k: r.salt for k, r in pr.items()}
-        adj_pe.update(kiddie.adjustments(chunk, pr, law, lambda rs, s: pe.evaluate(rs, law, s), salt))
+        kp = kiddie.adjustments(chunk, pr, law, lambda rs, s: pe.evaluate(rs, law, s), salt)
+        for k, v in planted.credits(chunk, pr, law, kp).items():
+            kp[k] = kp.get(k, 0.0) + v
+        adj_pe.update(kp)
         pe_res.update(pr)
         if with_tc:
             stats["tc_calls"] += 1
             tr = tc.evaluate(chunk, law, salt)
-            adj_tc.update(kiddie.adjustments(chunk, tr, law, lambda rs, s: tc.evaluate(rs, law, s), salt))
+            kt = kiddie.adjustments(chunk, tr, law, lambda rs, s: tc.evaluate(rs, law, s), salt)
+            for k, v in planted.credits(chunk, tr, law, kt).items():
+                kt[k] = kt.get(k, 0.0) + v
+            adj_tc.update(kt)
             tc_res.update(tr)
     out = []
     for rs in per_hh:

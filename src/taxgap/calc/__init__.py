@@ -12,3 +12,4 @@ class ReturnResult:
     taxable_income: float
     pe_only_credits: float = 0.0  # federal credits only PolicyEngine computes (saver's)
     salt: float = 0.0  # state and local income tax (PolicyEngine), for Tax-Calculator
+    agi: float = 0.0  # adjusted gross income

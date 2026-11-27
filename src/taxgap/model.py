@@ -42,6 +42,8 @@ class Asset:
     interest_yield: float = 0.0  # taxable interest per $ of value per year
     dividend_yield: float = 0.0  # qualified dividends per $ of value per year
     sale_year: Optional[int] = None  # planned sale: remaining gain realized that year
+    gift_from: Optional[str] = None  # received by gift from this household member
+    gift_year: Optional[int] = None  # tax year of that gift
 
     @property
     def unrealized_gain(self) -> float:
@@ -69,6 +71,12 @@ class Person:
     ira_balance: float = 0.0  # traditional IRA balance
     roth_balance: float = 0.0
     given_away: float = 0.0  # cumulative value donated (left the household)
+    # Long-term gains realized this year on property received by gift, by the
+    # number of years since the gift (0: the gift year, 1: the next year), and
+    # the donor of the last such property (planted donor-attribution rule).
+    gift_ltcg_y0: float = 0.0
+    gift_ltcg_y1: float = 0.0
+    gift_donor: Optional[str] = None
     other: dict = field(default_factory=dict)  # OTHER_ITEMS
 
     @property
