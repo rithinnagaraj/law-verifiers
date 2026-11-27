@@ -1,0 +1,142 @@
+[
+ {
+  "id": "v5:eitc_gate:eitc_inv+eitc_max1",
+  "mechanism": "eitc_investment_test",
+  "p1": "eitc_inv",
+  "p2": "eitc_max1",
+  "provisions": [
+   "eitc_investment_limit",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:eitc_age:eitc_age_max+eitc_ps0",
+  "mechanism": "eitc_age_test",
+  "p1": "eitc_age_max",
+  "p2": "eitc_ps0",
+  "provisions": [
+   "eitc_age",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:ctc_phase_out:ctc_amt+ctc_ps.SINGLE",
+  "mechanism": "credit_phase_out",
+  "p1": "ctc_amt",
+  "p2": "ctc_ps.SINGLE",
+  "provisions": [
+   "ctc",
+   "ctc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:qbi_phase_in:qbi_thd.JOINT+qbi_gap.JOINT",
+  "mechanism": "qbi_phase_in",
+  "p1": "qbi_thd.JOINT",
+  "p2": "qbi_gap.JOINT",
+  "provisions": [
+   "qbi_threshold",
+   "qbi_phase_in"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:dep_std_cap:dep_std_add+std.SINGLE",
+  "mechanism": "dependent_std_cap",
+  "p1": "dep_std_add",
+  "p2": "std.SINGLE",
+  "provisions": [
+   "dependent_std",
+   "standard_deduction"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:eitc_gate:eitc_inv+eitc_max3",
+  "mechanism": "eitc_investment_test",
+  "p1": "eitc_inv",
+  "p2": "eitc_max3",
+  "provisions": [
+   "eitc_investment_limit",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:eitc_age:eitc_age_max+eitc_prt0",
+  "mechanism": "eitc_age_test",
+  "p1": "eitc_age_max",
+  "p2": "eitc_prt0",
+  "provisions": [
+   "eitc_age",
+   "eitc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:ctc_phase_out:ctc_amt+ctc_ps.JOINT",
+  "mechanism": "credit_phase_out",
+  "p1": "ctc_amt",
+  "p2": "ctc_ps.JOINT",
+  "provisions": [
+   "ctc",
+   "ctc"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:qbi_phase_in:qbi_thd.SEPARATE+qbi_gap.SEPARATE",
+  "mechanism": "qbi_phase_in",
+  "p1": "qbi_thd.SEPARATE",
+  "p2": "qbi_gap.SEPARATE",
+  "provisions": [
+   "qbi_threshold",
+   "qbi_phase_in"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ },
+ {
+  "id": "v5:amt_max:brk1.JOINT+amt_ps.JOINT",
+  "mechanism": "regular_vs_amt",
+  "p1": "brk1.JOINT",
+  "p2": "amt_ps.JOINT",
+  "provisions": [
+   "rate_brackets",
+   "amt"
+  ],
+  "magnitudes": [
+   2.0,
+   4.0
+  ]
+ }
+]

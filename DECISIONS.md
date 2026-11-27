@@ -157,12 +157,14 @@ The rules, fixed before any v5 candidate is gated or screened:
 
 ### Spike 3: result (2026-11-27; `results/a5/a5a3.jsonl`)
 
-At least 9 of 10 fail, so **G0 FAIL** whatever the last family does. That family (`eitc_gate:eitc_inv+eitc_max1`) was still in its gate when this was written. Its result is appended when it finishes. Per magnitude, the 18 gates finished so far:
+0 of 10 pass; **G0 FAIL** (it needed 3 of 10). There were no crashes. Per magnitude (20 gates):
 - 17 found no interacting witness (no grid or random sequence on the 30 witness households had an attributable share of 0.3 with each mutation alone under R).
 - 1 found a two-move witness: `ctc_phase_out:ctc_amt+ctc_ps.SINGLE` at ×4 on `w_parent_student_high` (a 401(k) contribution, then filing as single). It failed three checks:
   - check 1: labelled `intended_concession`;
   - check 2: a one-move Roth-conversion match on `g_married_mid`;
   - check 4: a one-move match shifting income to a child on `g_parent_high`.
+- `eitc_gate:eitc_inv+eitc_max1` found witnesses on `w_partners_high` at both magnitudes (three moves at ×2, two at ×4: moving a child to the other partner's return and giving that partner a bond holding). Both failed check 2, through matches one move shorter than the witness (at ×2 on `g_married_low`: giving half a bond holding to the spouse, then a Roth conversion), and both failed check 4. At ×2 the witness was also labelled `intended_concession`.
+- Failed checks per magnitude: 1_witness 2, 2_grid 3, 4_spot 3.
 
 **The plan's stop rule applies.** Spike 3 is the third spike. Its ≤ 1 of 10 passes, so under the plan (A5, gate G0) "the catalog stops, the build failure is reported as a finding, and H2 and H5 become exploratory on whatever families passed" (none passed). A5b does not run. A6 and A7 have no families to run on. Spike 3 was already a plan deviation (revision 3), so it could not have rescued G0 on its own terms. Its result only confirms the stop.
 

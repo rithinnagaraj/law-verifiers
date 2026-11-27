@@ -1,0 +1,6 @@
+[
+ {
+  "family": "v5:amt_max:brk5.JOINT+amt_em.JOINT",
+  "reason": "L@2: {\n    \"errors\": {\n        \"II_brk5\": [\n            \"II_brk5[MARS=mjoint, year=2024] 974900.0 > max 731200.0 II_brk6[MARS=mjoint, year=2024]\",\n            \"II_brk5[MARS=mjoint, year=2025] 1002100.0 > max 751600.0 II_brk6[MARS=mjoint, year=2025]\",\n            \"II_brk5[MARS=mjoint, year=2026] 1024900.0"
+ }
+]
