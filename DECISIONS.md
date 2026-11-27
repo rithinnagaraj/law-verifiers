@@ -206,3 +206,22 @@ The probe asks whether the two EITC investment-limit families would give usable 
   - one-move matches on the witness household itself;
   - one-move matches on the 9 gate archetypes (check 2 as written).
 - **Script:** `experiments/diag/probe_instance.py`.
+
+### Census: result (2026-11-27; `results/a5/diag/census.jsonl`)
+
+Over the 30 v5 candidates scanned on the dense pool at ×2 (the 10 from spike 3 and the 20 from the census):
+
+| Operator | Candidates | Any interacting sequence | One-move interacting somewhere | Some household needs exactly two moves |
+|---|---|---|---|---|
+| `eitc_gate` (investment limit × EITC amount, start or rate) | 7 | 7 | 7 | 7 (2–16 households each) |
+| `ctc_phase_out` | 6 | 1 (`ctc_amt+ctc_ps.HEAD_OF_HOUSEHOLD`, 7 households) | 1 | 0 |
+| `qbi_phase_in` | 8 | 0 | 0 | 0 |
+| `amt_max` | 4 | 0 | 0 | 0 |
+| `eitc_age` | 4 | 0 | 0 | 0 |
+| `dep_std_cap` | 1 | 0 | 0 | 0 |
+
+Reading:
+- No candidate is deep under the counting rule. Every candidate with an interacting sequence also has a one-move interacting sequence on some household.
+- The 22 candidates with no interaction at all act on facts the pool does not hold: business income, binding AMT, filers outside the EITC age band, or adult dependents.
+- The eitc_gate operator is the only one that reliably creates an AND structure that moves can reach.
+- This is a description of generator v5 on one fixed pool, not an estimate of how common interactions are in law.
