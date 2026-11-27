@@ -215,9 +215,9 @@ Over the 30 v5 candidates scanned on the dense pool at ×2 (the 10 from spike 3 
 |---|---|---|---|---|
 | `eitc_gate` (investment limit × EITC amount, start or rate) | 7 | 7 | 7 | 7 (2–16 households each) |
 | `ctc_phase_out` | 6 | 1 (`ctc_amt+ctc_ps.HEAD_OF_HOUSEHOLD`, 7 households) | 1 | 0 |
-| `qbi_phase_in` | 8 | 0 | 0 | 0 |
+| `qbi_phase_in` | 9 | 0 | 0 | 0 |
 | `amt_max` | 4 | 0 | 0 | 0 |
-| `eitc_age` | 4 | 0 | 0 | 0 |
+| `eitc_age` | 3 | 0 | 0 | 0 |
 | `dep_std_cap` | 1 | 0 | 0 | 0 |
 
 Reading:
