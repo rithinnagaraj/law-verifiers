@@ -235,6 +235,6 @@ Reading:
   - one-move matches on the witness household itself: 11;
   - one-move matches on the 9 gate archetypes: 11 (all for `eitc_inv+eitc_max1`; `eitc_inv+eitc_max3` had none at either magnitude);
   - checks 3 and 5 passed on all 33.
-- Caveat: the witness was the household's largest-gain interacting sequence, chosen without regard to its label. A label-aware choice could do better. It was not tried, because choosing after seeing labels would select on the outcome.
+- Caveat: the witness was the household's largest-gain interacting sequence, chosen without regard to its label. A label-aware choice could do better. It was not tried here, because the probe's rules were fixed before it ran.
 
 Reading: judging depth per household would not by itself have produced families here. The binding checks were the witness label and one-move routes. The 12 calculator disagreements on gift-to-child EITC strategies are worth noting for H4.
