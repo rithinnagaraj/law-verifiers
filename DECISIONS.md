@@ -225,3 +225,16 @@ Reading:
 - The 22 candidates with no interaction at all act on facts the pool does not hold: business income, binding AMT, filers outside the EITC age band, or adult dependents.
 - The eitc_gate operator is the only one that reliably creates an AND structure that moves can reach.
 - This is a description of generator v5 on one fixed pool, not an estimate of how common interactions are in law.
+
+### Per-household probe: result (2026-11-27; `results/a5/diag/probe_instance.jsonl`)
+
+38 rows: 19 households × 2 magnitudes, for the two EITC families from spike 3.
+- 5 rows had no interacting two-move sequence at that magnitude.
+- **0 of the other 33 witnesses passed every check.** Failures by check:
+  - check 1 failed on 32. The verifier labelled 20 `intended_concession`: the moves run through retirement contributions or Roth conversions. It labelled 12 `code_disagreement`: PolicyEngine and Tax-Calculator disagree on the gain. The one witness labelled `candidate` (`eitc_inv+eitc_max3` ×4, `d_s3_30k_i3`) had 15 one-move matches on its own household.
+  - one-move matches on the witness household itself: 11;
+  - one-move matches on the 9 gate archetypes: 11 (all for `eitc_inv+eitc_max1`; `eitc_inv+eitc_max3` had none at either magnitude);
+  - checks 3 and 5 passed on all 33.
+- Caveat: the witness was the household's largest-gain interacting sequence, chosen without regard to its label. A label-aware choice could do better. It was not tried, because choosing after seeing labels would select on the outcome.
+
+Reading: judging depth per household would not by itself have produced families here. The binding checks were the witness label and one-move routes. The 12 calculator disagreements on gift-to-child EITC strategies are worth noting for H4.
