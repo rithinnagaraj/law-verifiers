@@ -238,3 +238,34 @@ Reading:
 - Caveat: the witness was the household's largest-gain interacting sequence, chosen without regard to its label. A label-aware choice could do better. It was not tried here, because the probe's rules were fixed before it ran.
 
 Reading: judging depth per household would not by itself have produced families here. The binding checks were the witness label and one-move routes. The 12 calculator disagreements on gift-to-child EITC strategies are worth noting for H4.
+
+## Hand-authored catalog (plan deviation, 2026-11-27)
+
+**Decision (the user, in chat, 2026-11-27).** After the stop rule, the user chose to build planted loopholes by hand instead of with a generator. The user accepted three risks: the author is an AI, new rules must be implemented in both calculators, and this is a plan change. This deviation is reported wherever A5 is reported. Everything below was fixed before any code for it ran.
+
+**What carries over unchanged:** the gate (all five checks, R = 0.1, witness share 0.3, $50 floor), the counting rule (≥ 2 moves at both magnitudes; one-move families are shallow), the witness search (v2), the 9 gate archetypes, the verifier and its whitelist, and the split rule.
+
+**What is new:**
+- **Base law B.** Real current law plus two planted provisions, written like statute and modelled on real anti-abuse and low-income rules. They are implemented in this package on top of each calculator's own results (as Form 8615 already is). The verifier tags gains from them as shared-code, because the cross-check cannot vouch for them.
+  - **Donor attribution of recent gifts** (analogue s.644; assignment of income). A long-term gain realized on property received as a gift from a household member, in the year of the gift or the next year, is taxed to the donor: it moves to the donor's return.
+  - **Small-investor credit** (modelled on the saver's credit, s.25B). It is 10% of the return's realized long-term gains up to $10,000. It is nonrefundable, limited to the income tax left after all other credits, and available only where AGI ≤ the saver's-credit AGI limit for the filing status and year. That limit is taken from PolicyEngine's parameters: the joint limit, × 0.5 for single and separate returns, × 0.75 for head of household. It is not available to a filer who is claimed as a dependent (s.25B(c)(2)(B)).
+- **Reference law.** For a planted family, the attributable gain is the gain under L minus the gain under B, not current law. B is the law before the flaw. Without this, ordinary use of a new provision would count as a loophole.
+- **Family structure.** Each family is one flaw made of two changes, c1 and c2. Each change relaxes one guard, and the guards sit in series on one exploit path, so either guard alone blocks it. L1 = B + c1, L2 = B + c2, L = B + both. There are two magnitudes, f = 0.5 and f = 1, where f sets the size of the relaxed benefit. Lrev makes an intended provision more generous with the guards intact (the plan's wording for check 5).
+- **Witness pool.** The 30 witness archetypes, plus any household the author adds for a family. The plan's A5 wording allows households "with the relevant facts". Every household added is recorded with its family.
+
+**Pilot (3 families):**
+
+| id | mechanism | c1 | c2 | intended exploit |
+|---|---|---|---|---|
+| `h:kid_gain` | income shifting | the kiddie tax ignores a share f of a child's realized long-term gains | donor attribution removed | gift appreciated property to a child, who sells it (child's 0% rate) |
+| `h:kid_credit` | income shifting via a credit | dependents get the small-investor credit at f × its amount | donor attribution removed | gift to a child, who sells; the credit offsets the child's tax |
+| `h:kid_gain_timing` | timing | as `h:kid_gain` | donor attribution covers only the gift year | gift in one year, child sells in the next |
+
+Lrev: for `kid_gain` and `kid_gain_timing`, the kiddie-tax allowance × (1 + f); for `kid_credit`, the credit rate × (1 + f).
+
+**Integrity rules for the hand-authored catalog:**
+- Every design, version and gate outcome is recorded.
+- A design that fails the gate is not edited. A replacement gets a new id, and the number of attempts is reported.
+- Designs never change after any search result from Phase B or C.
+- Parameter values come from real-law analogues (above). They are never tuned to the archetype households.
+- **Pilot decision rule:** if ≥ 2 of 3 pass, the full catalog is written under these rules (≥ 20 families, ≥ 4 mechanisms). If fewer pass, report and wait for the user.
