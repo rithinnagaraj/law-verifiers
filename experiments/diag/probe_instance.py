@@ -15,6 +15,7 @@ Families, households and order fixed before it ran (DECISIONS, 2026-11-27).
 Output: ~/diag_census/probe_instance.jsonl
 """
 import json, os, sys
+from multiprocessing import Pool
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import diag_pool2 as d2  # noqa: E402
@@ -72,6 +73,16 @@ def probe(fid, m, hid):
     return row
 
 
+def gate_for(key):
+    fid, m = key
+    laws = all_families(0)[fid].laws(m)
+    return key, one_move_matches(gate_archetypes(), laws["L"], Verifier(laws["L"], Config()))
+
+
+def probe_args(a):
+    return probe(*a)
+
+
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     log = open(os.path.join(here, "..", "..", "results", "a5", "diag", "dense_pool_run2.txt")).read().split("\n")
@@ -79,12 +90,12 @@ if __name__ == "__main__":
     done = set()
     if os.path.exists(OUT):
         done = {(r["family"], r["magnitude"], r["household"]) for r in map(json.loads, open(OUT))}
-    for fid, hids in DEPTH2.items():
-        for m in (2.0, 4.0):
-            for hid in hids:
-                if (fid, m, hid) in done:
-                    continue
-                row = probe(fid, m, hid)
-                with open(OUT, "a") as fh:
-                    fh.write(json.dumps(row, default=str) + "\n")
-                print(fid, m, hid, {k: row[k].get("ok") for k in row if isinstance(row[k], dict) and "ok" in row[k]}, flush=True)
+    todo = [(fid, m, hid) for fid, hids in DEPTH2.items() for m in (2.0, 4.0) for hid in hids if (fid, m, hid) not in done]
+    # Parallel from 2026-11-27, after 10 rows ran serially: same rows, same fields.
+    with Pool(4) as p:
+        GATE.update(p.map(gate_for, sorted({(f, m) for f, m, _ in todo})))
+    with Pool(24) as p:
+        for row in p.imap_unordered(probe_args, todo):
+            with open(OUT, "a") as fh:
+                fh.write(json.dumps(row, default=str) + "\n")
+            print(row["family"], row["magnitude"], row["household"], {k: row[k].get("ok") for k in row if isinstance(row[k], dict) and "ok" in row[k]}, flush=True)

@@ -1,0 +1,22 @@
+[
+ "v5:eitc_gate:eitc_inv+eitc_ps2",
+ "v5:eitc_age:eitc_age_min+eitc_ps0",
+ "v5:ctc_phase_out:odc+ctc_ps.JOINT",
+ "v5:qbi_phase_in:qbi_rt+qbi_gap.SEPARATE",
+ "v5:amt_max:cg0.SINGLE+amt_em.SINGLE",
+ "v5:eitc_gate:eitc_inv+eitc_prt3",
+ "v5:ctc_phase_out:odc+ctc_ps.SEPARATE",
+ "v5:qbi_phase_in:qbi_rt+qbi_thd.JOINT",
+ "v5:eitc_gate:eitc_inv+eitc_ps3",
+ "v5:ctc_phase_out:ctc_amt+ctc_ps.HEAD_OF_HOUSEHOLD",
+ "v5:qbi_phase_in:qbi_rt+qbi_thd.SEPARATE",
+ "v5:eitc_gate:eitc_inv+eitc_max0",
+ "v5:ctc_phase_out:odc+ctc_ps.SINGLE",
+ "v5:qbi_phase_in:qbi_rt+qbi_gap.SINGLE",
+ "v5:eitc_gate:eitc_inv+eitc_ps0",
+ "v5:qbi_phase_in:qbi_rt+qbi_gap.JOINT",
+ "v5:amt_max:cg15.HEAD_OF_HOUSEHOLD+amt_em.HEAD_OF_HOUSEHOLD",
+ "v5:qbi_phase_in:qbi_thd.HEAD_OF_HOUSEHOLD+qbi_gap.HEAD_OF_HOUSEHOLD",
+ "v5:amt_max:cg15.HEAD_OF_HOUSEHOLD+amt_ps.HEAD_OF_HOUSEHOLD",
+ "v5:qbi_phase_in:qbi_rt+qbi_thd.HEAD_OF_HOUSEHOLD"
+]
