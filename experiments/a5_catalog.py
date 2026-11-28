@@ -179,9 +179,9 @@ def summarize(d) -> None:
         if stage in SPIKES:
             if c["pass"] >= G0_MIN:
                 g0_met.add(stage)
+            lines.append(f"**G0, spike {list(SPIKES).index(stage) + 1} (generator v{SPIKES[stage]}; >= {G0_MIN} of {SPIKE} pass, shallow excluded): {'PASS' if c['pass'] >= G0_MIN else 'FAIL'}**")
         if stage == "a5h":
             lines.append(f"**Hand-authored pilot (>= {HAND_MIN} of {len(rs)} pass -> full catalog): {'MET' if c['pass'] >= HAND_MIN else 'NOT MET'}**")
-            lines.append(f"**G0, spike {list(SPIKES).index(stage) + 1} (generator v{SPIKES[stage]}; >= {G0_MIN} of {SPIKE} pass, shallow excluded): {'PASS' if c['pass'] >= G0_MIN else 'FAIL'}**")
         lines.append("")
         lines += _table(rs, lambda r: operator(r["family"]["id"]), "operator") + [""]
         lines += _table(rs, lambda r: r["family"]["mechanism"], "mechanism") + [""]
