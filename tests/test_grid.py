@@ -4,7 +4,7 @@ import json
 
 from taxgap.grid import _base_moves, grid_moves, n_opened, opened_moves, sequences
 from taxgap.model import Asset, Household, Person, TaxUnit
-from taxgap.mutations.family import grid_scan
+from taxgap.mutations.family import _real, _scores
 from taxgap.mutations.handmade import hand_families
 
 K = lambda m: json.dumps(m, sort_keys=True)
@@ -58,7 +58,10 @@ def test_opened_moves_need_their_opener():
                 assert openers[K(s[j])] & before  # its opener comes first
 
 
-def test_witness_grid_scan_finds_the_planted_exploit():
-    laws = hand_families()["h:kid_gain"].laws(1.0)
-    found = grid_scan(laws, [hh()])
-    assert any(len(s) == 2 and {m["op"] for m in s} == {"gift_asset", "realize_gain"} and any(m.get("asset") == "fund@c" for m in s) for _, s, _ in found)
+def test_witness_grid_scan_scores_gift_then_sell():
+    # The scan reaches and keeps the sequence (it preserves reality); whether it
+    # interacts is the gate's test. Here it does not: its gain over doing
+    # nothing is small (DECISIONS, 2026-11-28).
+    assert _real(hh(), [GIFT, SELL])
+    s = _scores([(hh(), [GIFT, SELL])], hand_families()["h:kid_gain"].laws(1.0))[0]
+    assert s["attr"] > 2_000 and not s["interacting"]
