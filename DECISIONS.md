@@ -347,3 +347,12 @@ So on this household model, these designs cannot give a deep, non-padded family.
 - `s_married_{low,mid,high}`: `g_married_{lvl}` (wage earners with some self-employment), with the child aged 16 instead of 12 and spouse a's fund's sale planned for 2025.
 
 The wage-earner variants have a little self-employment income (10% of the level). They are in the pool as-is: whether the path is open there is for the search to find. The households are in the witness pool only. Check 2 uses the 9 gate archetypes plus the witness household, as before.
+
+**Implementation fix found by the pilot-2 tests (before any pilot-2 run).** The planted donor-attribution rule tagged only gains from a `realize_gain` move. A planned sale (`sale_year`) of gifted property was not tagged, so B did not attribute it, contrary to the rule as pre-registered ("a long-term gain realized on property received by gift"). It is fixed: both paths call one helper (`moves._tag_gift_gain`). Pilot 1's results are unaffected, since none of its households had a planned sale.
+
+On the test household (self-employed parent, child 16, $60,000 planned gain in 2025), the designs now behave as specified:
+- shift + gift gains $2,364 under L over B;
+- each change alone gives ≤ $165, the allowance leak;
+- the timing variant is blocked for a gift in the sale year.
+
+The offset design gives the same gain at f = 0.5 and f = 1 there: half the offset already lifts the kiddie tax entirely. That is noted, not changed.
