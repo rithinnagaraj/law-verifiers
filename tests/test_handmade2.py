@@ -38,6 +38,15 @@ def test_real_law_and_base_are_unchanged():
     assert earned_threshold(2024) == 14_600
 
 
+def test_planned_sale_of_gifted_property_is_attributed():
+    from taxgap.calc import planted
+    from taxgap.moves import years_of
+
+    y = years_of(hh(), [GIFT], None)[1]  # 2025, the planned sale, the year after the gift
+    assert y.people["c"].gift_ltcg_y1 == 60_000 and y.people["c"].gift_donor == "p"
+    assert planted.attribute_gifts(y, PLANTED_BASE).people["p"].ltcg == 60_000
+
+
 def test_exemption_needs_earned_income():
     # gift alone: the child earns nothing, the kiddie tax applies; only the allowance leaks
     assert abs(attr("h:kid_support", 1.0, [GIFT])) < 500

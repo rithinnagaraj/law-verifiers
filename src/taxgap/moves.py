@@ -211,6 +211,18 @@ def contribute_retirement(hh: Household, year: int, person: str, account: str, a
         raise MoveError(f"unknown account {account!r}")
 
 
+def _tag_gift_gain(p, a, year: int, gain: float) -> None:
+    """Record a gain realized on recently gifted property, by years since
+    the gift (the planted donor-attribution rule reads it; real law ignores
+    it). Planned sales are tagged as sales by a move are (DECISIONS 2026-11-28)."""
+    if a.gift_from is not None and a.gift_year is not None and year - a.gift_year in (0, 1):
+        if year == a.gift_year:
+            p.gift_ltcg_y0 += gain
+        else:
+            p.gift_ltcg_y1 += gain
+        p.gift_donor = a.gift_from
+
+
 def realize_gain(hh: Household, year: int, person: str, asset: str, fraction: float = 1.0) -> None:
     """Sell and immediately repurchase (part of) an asset: its unrealized
     gain becomes a long-term gain this year and the basis steps up. A loss
@@ -222,12 +234,7 @@ def realize_gain(hh: Household, year: int, person: str, asset: str, fraction: fl
         return
     p.ltcg += gain
     a.basis += gain
-    if a.gift_from is not None and a.gift_year is not None and year - a.gift_year in (0, 1):
-        if year == a.gift_year:
-            p.gift_ltcg_y0 += gain
-        else:
-            p.gift_ltcg_y1 += gain
-        p.gift_donor = a.gift_from
+    _tag_gift_gain(p, a, year, gain)
 
 
 def contribute_hsa(hh: Household, year: int, person: str, amount: float, coverage: str = "self") -> None:
@@ -412,6 +419,7 @@ def years_of(hh: Household, moves: list, future: Optional[Future], years: Option
             for a in p.assets:
                 if a.sale_year == y and a.unrealized_gain > 0:
                     p.ltcg += a.unrealized_gain
+                    _tag_gift_gain(p, a, y, a.unrealized_gain)
             sp = state.people[pid]
             for a in sp.assets:
                 if a.sale_year == y:
