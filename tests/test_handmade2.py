@@ -71,7 +71,10 @@ def test_timing_variant_needs_gift_before_the_sale_year():
 def test_offset_scales_with_earned_income():
     a1 = attr("h:kid_earned_offset", 1.0, [SHIFT, GIFT])
     a5 = attr("h:kid_earned_offset", 0.5, [SHIFT, GIFT])
-    assert a1 > a5 > 0
+    # equal here: on this household half the offset already lifts the kiddie tax entirely
+    assert a1 >= a5 > 0
+    small = dict(SHIFT, amount=3_000.0)
+    assert 0 <= attr("h:kid_earned_offset", 1.0, [small, GIFT]) < a1
 
 
 def test_selling_households_change_only_age_and_sale():
