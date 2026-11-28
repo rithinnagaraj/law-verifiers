@@ -308,3 +308,18 @@ Run on the VM with the gate unchanged: 3 families, 2 magnitudes each, 88 min. **
 - c1 alone 0, c2 alone $210.
 
 The gate's shares are taken of the gain under L, the gain over doing nothing. Since $210 is more than 10% of $540, the sequence is not interacting. The reason is structural. None of the 30 witness archetypes has a planned asset sale (`sale_year` is unset everywhere), so realizing a gain is never a saving against doing nothing. The planted rate cut only shrinks a loss. That explains the shape of the pilot's witnesses: each pairs gift-then-sell with an unrelated move that makes the total gain large (an IRA contribution; a $27,800 income shift). The one pass, `kid_gain_timing` at f = 1, is such a padded witness. Its k = 3 holds under the gate's rules, but its depth comes from the padding move, not from the planted guards. With a planned sale, the gift alone would realize the gain at the child, giving a one-move (shallow) path. This is recorded before the re-run and changes nothing in it.
+
+### Hand-authored pilot, re-run with the corrected grid: result (2026-11-28; `results/a5/a5h2.jsonl`)
+
+Same 3 designs, seeds and budgets, 117 min, no errors. **0 of 3 families pass. The pilot decision rule is NOT MET.** Every gate outcome is identical to the first run:
+- `kid_gain_timing` passes at f = 1 only, with the same padded witness (income shift + gift + next-year sale);
+- `kid_gain` at f = 0.5 fails check 1 (intended_concession);
+- the other 4 gates find no witness.
+
+The corrected grid did enlarge check 2: 24,530 and 20,838 sequences, of which 2,786 and 2,570 contain an opened move. None of them matched. The witness grid scan still found no interacting sequence in any gate (`n_grid` = 0). This is what the observation recorded before the run predicts: with no planned asset sales in the archetypes, gift-then-sell has a small gain over doing nothing, and c2's leakage exceeds 10% of it.
+
+**Conclusion recorded for the user.** The search was not the binding limit. The pilot designs are blocked by how the gain is defined (against doing nothing) and by a household pool with no planned sales:
+- without a planned sale, the planted rate cut only shrinks a loss;
+- with one, the gift alone is the exploit (one move, shallow).
+
+So on this household model, these designs cannot give a deep, non-padded family. No design was edited, and no household was added. The next step waits for the user.
