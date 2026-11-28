@@ -323,3 +323,27 @@ The corrected grid did enlarge check 2: 24,530 and 20,838 sequences, of which 2,
 - with one, the gift alone is the exploit (one move, shallow).
 
 So on this household model, these designs cannot give a deep, non-padded family. No design was edited, and no household was added. The next step waits for the user.
+
+## Hand-authored pilot 2: households that sell (2026-11-28, before any code for it ran)
+
+**Decision (the user, in chat, 2026-11-28): "Households that sell".** Add witness households with a planned asset sale, and write new designs that need two separate moves even with a planned sale. The three pilot-1 designs (`h:kid_gain`, `h:kid_credit`, `h:kid_gain_timing`) are recorded as failed attempts 1–3 and are not edited. Pilot 2 is attempts 4–6. Everything carries over unchanged: the gate, the counting rule, the base law B, the witness search, the corrected grid, R, the witness share, the floor, the integrity rules and Lrev. The pilot decision rule is the same: **≥ 2 of 3 pass → the full catalog. Otherwise report and wait for the user.**
+
+**Why two moves even with a planned sale.** With a planned sale, a gift alone already moves the gain to the child, so a design whose only path is gift + sale would be one move (shallow). Each design below needs, in addition to the gift, a move that gives the child **earned income**: `shift_income`, the parent's business paying the child wages. The real-law analogue is the kiddie tax's earned-income (self-support) test for children aged 18 and full-time students aged 19–23 (s.1(g)(2)(A)(ii)(II)), which this package does not model (`KiddieRule`). The planted designs extend a test of that kind to all children, as a drafting flaw would.
+
+**Earned-income threshold E** (fixed): the basic standard deduction for a single filer in the tax year, from PolicyEngine's parameters ($14,600 in 2024, $15,750 in 2025). Analogue: the earned income at which a single filer must file. Chosen as a real parameter, not from any household.
+
+**Designs.** Each has two guards in series on the path *shift income to the child + gift the asset with a planned sale*. Lrev for each: the kiddie-tax allowance × (1 + f).
+
+| id | attempt | mechanism | c1 (guard 1: the kiddie tax) | c2 (guard 2: donor attribution) |
+|---|---|---|---|---|
+| `h:kid_support` | 4 | income shifting | a share f of the realized long-term gains of a child whose earned income ≥ E is left out of net unearned income | removed |
+| `h:kid_support_timing` | 5 | timing | as `h:kid_support` | covers only the gift year (a gift the year before the planned sale escapes it) |
+| `h:kid_earned_offset` | 6 | income shifting | net unearned income is reduced by f × the child's earned income | removed |
+
+`h:kid_support` and `h:kid_earned_offset` are two forms of one drafting flaw, a threshold and an offset. They are counted as separate families, and that is reported. Exempt gains stay at the child's own rates, as in pilot 1.
+
+**Witness households added (all three designs).** These are six author-added households, built with the archetype helpers at the archetypes' three income levels. The parameters are copied from existing archetypes and changed only as described here; they are not chosen to make a design pass:
+- `s_business_{low,mid,high}`: `w_business_{lvl}` (one self-employed spouse, the archetype's fund), with the child aged 16 instead of 10 and the fund's sale planned for 2025.
+- `s_married_{low,mid,high}`: `g_married_{lvl}` (wage earners with some self-employment), with the child aged 16 instead of 12 and spouse a's fund's sale planned for 2025.
+
+The wage-earner variants have a little self-employment income (10% of the level). They are in the pool as-is: whether the path is open there is for the search to find. The households are in the witness pool only. Check 2 uses the 9 gate archetypes plus the witness household, as before.
