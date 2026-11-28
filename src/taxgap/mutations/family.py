@@ -20,7 +20,8 @@ families do not count toward G0, G2 or the split.
 
 Gate (both magnitudes must pass):
   1 witness valid: labelled candidate under L; attributable share >= 0.3
-  2 non-decomposable: no (k-1)-move grid sequence on the 10 archetypes
+  2 non-decomposable: no (k-1)-move grid sequence (moves opened by an
+    earlier move included, DECISIONS 2026-11-28) on the 10 archetypes
     (9 stratified + the witness household) is a match under L
   3 single-mutation ablation: each mutation alone gives share < R on the witness
   4 continuous spot check: 500 random (k-1)-move draws, same test as 2
@@ -39,7 +40,7 @@ from typing import Optional
 import numpy as np
 
 from ..archetypes import gate_archetypes, witness_archetypes
-from ..grid import sequences
+from ..grid import n_opened, sequences
 from ..law import CURRENT_LAW, Law
 from ..moves import MoveError
 from ..search.pool import mutate
@@ -249,7 +250,7 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
         return out
     # 2. non-decomposability on 10 archetypes
     arch = gate_archetypes() + [hh]
-    n_seq, sampled, hits = 0, False, []
+    n_seq, n_open, sampled, hits = 0, 0, False, []
     for a in arch:
         seqs = list(sequences(a, k - 1, limit=grid_cap + 1))
         if len(seqs) > grid_cap:
@@ -257,10 +258,11 @@ def gate(fam: Family, m: float, rng: np.random.Generator, witness_budget: int = 
             idx = rng.choice(len(seqs), grid_cap, replace=False)
             seqs = [seqs[i] for i in idx]
         n_seq += len(seqs)
+        n_open += n_opened(a, seqs)
         for c in range(0, len(seqs), 400):
             for p, vd, at in _matches([(a, s_) for s_ in seqs[c : c + 400]], laws["L"], vL, base):
                 hits.append((a.id, p[1], vd, at))
-    out["checks"]["2_grid"] = {"sequences": n_seq, "sampled": sampled, "matches": len(hits), "examples": [{"hh": h, "moves": s_, "attr": at} for h, s_, _, at in hits[:3]], "ok": not hits}
+    out["checks"]["2_grid"] = {"sequences": n_seq, "opened": n_open, "sampled": sampled, "matches": len(hits), "examples": [{"hh": h, "moves": s_, "attr": at} for h, s_, _, at in hits[:3]], "ok": not hits}
     # 4. continuous spot check
     draws = []
     for _ in range(spot):

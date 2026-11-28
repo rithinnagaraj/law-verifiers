@@ -15,6 +15,8 @@ Stages:
   --stage a5h   hand-authored pilot (plan deviation, DECISIONS 2026-11-27):
                 the 3 families of mutations/handmade.py, gated in full with
                 witness search v2; >= 2 of 3 pass -> the full hand-authored catalog
+  --stage a5h2  the same pilot, re-run once with the corrected move grid
+                (moves opened by an earlier move, DECISIONS 2026-11-28)
   --summary     family manifest, counts by operator and mechanism,
                 rejection reasons, G0/G2, split (once A5b is complete)
 
@@ -47,7 +49,8 @@ SPIKE = 10
 SPIKES = {"a5a": 2, "a5a2": 3, "a5a3": 5}  # spike stage -> generator version (DECISIONS.md, G0 revisions)
 SEARCH = {"a5a": 1, "a5a2": 1, "a5a3": 2}  # spike stage -> witness search version
 A5B_GEN = 5  # generator of the last spike
-STAGES = (*SPIKES, "a5b", "a5h")
+HAND = ("a5h", "a5h2")  # hand-authored pilot: first run, re-run with the corrected grid (DECISIONS 2026-11-28)
+STAGES = (*SPIKES, "a5b", *HAND)
 HAND_MIN = 2  # pilot decision rule (DECISIONS, 2026-11-27)
 G0_MIN = 3
 G2_MIN = 20
@@ -180,7 +183,7 @@ def summarize(d) -> None:
             if c["pass"] >= G0_MIN:
                 g0_met.add(stage)
             lines.append(f"**G0, spike {list(SPIKES).index(stage) + 1} (generator v{SPIKES[stage]}; >= {G0_MIN} of {SPIKE} pass, shallow excluded): {'PASS' if c['pass'] >= G0_MIN else 'FAIL'}**")
-        if stage == "a5h":
+        if stage in HAND:
             lines.append(f"**Hand-authored pilot (>= {HAND_MIN} of {len(rs)} pass -> full catalog): {'MET' if c['pass'] >= HAND_MIN else 'NOT MET'}**")
         lines.append("")
         lines += _table(rs, lambda r: operator(r["family"]["id"]), "operator") + [""]
@@ -238,7 +241,7 @@ def main():
         sel = valid_candidates(d, hi)[lo:hi]
     elif a.stage in SPIKES:
         sel = candidates(SEED, SPIKES[a.stage])[:SPIKE]
-    elif a.stage == "a5h":
+    elif a.stage in HAND:
         from taxgap.mutations.handmade import hand_families
 
         sel = list(hand_families().values())
