@@ -17,6 +17,8 @@ Stages:
                 witness search v2; >= 2 of 3 pass -> the full hand-authored catalog
   --stage a5h2  the same pilot, re-run once with the corrected move grid
                 (moves opened by an earlier move, DECISIONS 2026-11-28)
+  --stage a5h3  hand-authored pilot 2 (households that sell, DECISIONS
+                2026-11-28): the 3 families of handmade.pilot2()
   --summary     family manifest, counts by operator and mechanism,
                 rejection reasons, G0/G2, split (once A5b is complete)
 
@@ -49,7 +51,7 @@ SPIKE = 10
 SPIKES = {"a5a": 2, "a5a2": 3, "a5a3": 5}  # spike stage -> generator version (DECISIONS.md, G0 revisions)
 SEARCH = {"a5a": 1, "a5a2": 1, "a5a3": 2}  # spike stage -> witness search version
 A5B_GEN = 5  # generator of the last spike
-HAND = ("a5h", "a5h2")  # hand-authored pilot: first run, re-run with the corrected grid (DECISIONS 2026-11-28)
+HAND = ("a5h", "a5h2", "a5h3")  # hand-authored pilots: 1, 1 re-run with the corrected grid, 2 (DECISIONS 2026-11-28)
 STAGES = (*SPIKES, "a5b", *HAND)
 HAND_MIN = 2  # pilot decision rule (DECISIONS, 2026-11-27)
 G0_MIN = 3
@@ -242,9 +244,9 @@ def main():
     elif a.stage in SPIKES:
         sel = candidates(SEED, SPIKES[a.stage])[:SPIKE]
     elif a.stage in HAND:
-        from taxgap.mutations.handmade import hand_families
+        from taxgap.mutations.handmade import pilot, pilot2
 
-        sel = list(hand_families().values())
+        sel = pilot2() if a.stage == "a5h3" else pilot()
     elif a.stage == "a5b":
         sel = candidates(SEED, A5B_GEN)[SPIKE : SPIKE + (80 if a.extend else 50)]
     else:

@@ -17,6 +17,7 @@ they derive from (the parent's itemized deductions do not change).
 from __future__ import annotations
 
 import copy
+from functools import lru_cache
 from typing import Callable, Sequence
 
 from ..law import Law
@@ -32,6 +33,12 @@ def floor(law: Law, year: int) -> float:
     limit' switch of the dependent_std_limit provision, not a floor."""
     v = law.pe_param(FLOOR_PATH, year)
     return float(v) if v < 100_000 else pe_value(FLOOR_PATH, year)
+
+
+@lru_cache(maxsize=32)
+def earned_threshold(year: int) -> float:
+    """E of the hand-authored pilot 2: the single basic standard deduction."""
+    return pe_value("gov.irs.deductions.standard.amount.SINGLE", year)
 
 
 def applies(law: Law, age: int, is_student: bool) -> bool:
@@ -101,8 +108,10 @@ def adjustments(
         child = r.head
         if not applies(law, child.age, child.is_student):
             continue
-        eff = _exempt(child, law.kiddie.ltcg_exempt)
-        nui = min(max(eff.unearned_income - allow, 0.0), max(results[r.key].taxable_income, 0.0))
+        kr = law.kiddie
+        eff = _exempt(child, kr.ltcg_exempt if (not kr.exempt_if_earned or child.earned_income >= earned_threshold(r.year)) else 0.0)
+        off = kr.earned_offset * max(child.earned_income, 0.0)
+        nui = min(max(eff.unearned_income - allow - off, 0.0), max(results[r.key].taxable_income, 0.0))
         if nui > 0:
             groups.setdefault(r.claimed_by, []).append((r, nui, eff))
     if not groups:

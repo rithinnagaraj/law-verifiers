@@ -97,6 +97,11 @@ class KiddieRule:
     # Planted flaw (hand-authored catalog): share of the child's realized
     # long-term gains left out of net unearned income. 0 in real law.
     ltcg_exempt: float = 0.0
+    # Pilot 2 (DECISIONS 2026-11-28): ltcg_exempt applies only to a child whose
+    # earned income is at least the single basic standard deduction (E); and
+    # net unearned income reduced by earned_offset x the child's earned income.
+    exempt_if_earned: bool = False
+    earned_offset: float = 0.0
 
 
 @dataclass(frozen=True)
