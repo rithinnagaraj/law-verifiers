@@ -269,3 +269,22 @@ Lrev: for `kid_gain` and `kid_gain_timing`, the kiddie-tax allowance × (1 + f);
 - Designs never change after any search result from Phase B or C.
 - Parameter values come from real-law analogues (above). They are never tuned to the archetype households.
 - **Pilot decision rule:** if ≥ 2 of 3 pass, the full catalog is written under these rules (≥ 20 families, ≥ 4 mechanisms). If fewer pass, report and wait for the user.
+
+### Hand-authored pilot: result (2026-11-28; `results/a5/a5h.jsonl`)
+
+Run on the VM with the gate unchanged: 3 families, 2 magnitudes each, 88 min. **0 of 3 families pass** under the counting rule, which needs both magnitudes. **Pilot decision rule: NOT MET**, so the result is reported and the next step waits for the user. No design was edited.
+
+| family | f | witness (household, k) | 1 | 2 | 3 | 4 | 5 | gate result |
+|---|---|---|---|---|---|---|---|---|
+| `h:kid_credit` | 0.5 | none (1,269 proposals) | - | - | - | - | - | no interacting witness |
+| `h:kid_credit` | 1 | none (1,271) | - | - | - | - | - | no interacting witness |
+| `h:kid_gain` | 0.5 | `w_business_high`, 3 | FAIL | ok | ok | ok | ok | witness labelled intended_concession |
+| `h:kid_gain` | 1 | none (1,260) | - | - | - | - | - | no interacting witness |
+| `h:kid_gain_timing` | 0.5 | none (1,273) | - | - | - | - | - | no interacting witness |
+| `h:kid_gain_timing` | 1 | `g_married_high`, 3 | ok | ok | ok | ok | ok | **pass** |
+
+- **The one magnitude that passed** is `kid_gain_timing` at f = 1. The witness shifts $27,800 of income to the child, gives the child 6.6% of the fund, and the child sells it the next year. The gain is $11,294, of which $4,137 is attributable to the flaw. Each change alone leaves 0% and 7.8% of it, and the two calculators agree to within a cent. The 21,744 two-move sequences in check 2, the spot draws in check 4 and the reversed law in check 5 all found no match.
+- **The check-1 failure** is `kid_gain` at f = 0.5. The witness is an IRA contribution plus a gift plus a sale of 6% of the fund the next year. Most of its gain comes from whitelisted provisions (the retirement deduction, and a gain within the child's allowance), so the verifier labels it intended_concession. The witness search maximizes the attributable gain and does not look at the label. That is the gate's existing behaviour.
+- **4 of the 6 gates found no witness.** The grid found none in any gate (`n_grid` = 0). As noted when the pilot was built, the grid scans moves on the starting household and cannot produce the gift-then-sell path. The random search found an interacting witness in 2 of 6 gates. It found none for `kid_gain` at f = 1, although the planted benefit there is twice as large as at f = 0.5, where it did find one. A witness exists for that family on a gate archetype (`w_business_high`, found at f = 0.5). So these misses are failures of the search to reach the gift-then-sell sequence within its budget, not evidence that the flaw is absent. This is an observation only. The search budget and the witness pool were not changed.
+- `kid_credit` was already expected to fail check 3 (recorded when it was built: the real kiddie allowance gives c2 alone more than 10% of the credit-capped gain). It failed earlier, at the witness search.
+- Check 4 draws 500 random sequences and keeps those that are exactly k − 1 moves long (225 and 231 here). That is the gate's existing behaviour, the same in every spike.
